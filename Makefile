@@ -6,7 +6,7 @@
 # ── First-time setup ──
 
 setup: install db-up db-migrate  ## First-time project setup (one command)
-	@if [ ! -f apps/web/.env ]; then cp apps/web/.env.example apps/web/.env; fi
+	@if [ ! -f apps/web/.env ] && [ -f apps/web/.env.example ]; then cp apps/web/.env.example apps/web/.env; fi
 
 install:                         ## Install all workspace deps + generate Prisma + build database package
 	npm install
