@@ -48,3 +48,28 @@ output "domain_health_url" {
   description = "Health endpoint via the habitpair.com domain (requires Cloudflare A record for api.habitpair.com → public_ip)."
   value       = "https://api.habitpair.com/api/health"
 }
+
+output "frontend_bucket_name" {
+  description = "S3 bucket holding the SPA build artifacts."
+  value       = aws_s3_bucket.frontend.bucket
+}
+
+output "frontend_distribution_id" {
+  description = "CloudFront distribution ID — used by CI for cache invalidation."
+  value       = aws_cloudfront_distribution.frontend.id
+}
+
+output "frontend_distribution_domain" {
+  description = "CloudFront domain name (the CNAME target you'd see in DNS)."
+  value       = aws_cloudfront_distribution.frontend.domain_name
+}
+
+output "gha_web_deploy_role_arn" {
+  description = "Role ARN that the web CI workflow assumes via OIDC."
+  value       = aws_iam_role.gha_web_deploy.arn
+}
+
+output "gha_terraform_role_arn" {
+  description = "Role ARN that the infra CI workflow assumes via OIDC."
+  value       = aws_iam_role.gha_terraform.arn
+}

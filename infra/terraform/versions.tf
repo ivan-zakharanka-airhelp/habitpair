@@ -14,6 +14,10 @@ terraform {
       source  = "hashicorp/http"
       version = "~> 3.4"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.0"
+    }
   }
 }
 
@@ -23,6 +27,21 @@ provider "aws" {
   default_tags {
     tags = local.common_tags
   }
+}
+
+# CloudFront requires ACM certs to live in us-east-1, regardless of
+# which region the rest of the stack runs in.
+provider "aws" {
+  alias  = "useast1"
+  region = "us-east-1"
+
+  default_tags {
+    tags = local.common_tags
+  }
+}
+
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
 }
 
 locals {

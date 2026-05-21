@@ -93,3 +93,27 @@ variable "my_ip_override" {
   type        = string
   default     = null
 }
+
+variable "frontend_domain" {
+  description = "Apex domain that serves the SPA via CloudFront."
+  type        = string
+  default     = "habitpair.com"
+}
+
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token with Zone:DNS:Edit for habitpair.com. Set via TF_VAR_cloudflare_api_token."
+  type        = string
+  sensitive   = true
+}
+
+variable "github_owner" {
+  description = "GitHub org/user owning the habitpair repo."
+  type        = string
+  default     = "ivan-zakharanka-airhelp"
+}
+
+variable "github_repo" {
+  description = "GitHub repo name (used to scope OIDC trust)."
+  type        = string
+  default     = "habitpair"
+}
