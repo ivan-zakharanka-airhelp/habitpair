@@ -1,7 +1,7 @@
 apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
-  name: mobile-backend
+  name: habitpair
 build:
   local:
     useBuildkit: false
@@ -19,6 +19,6 @@ deploy:
 portForward:
   - resourceType: service
     resourceName: auth-api-service
-    namespace: mobile-backend
+    namespace: habitpair
     port: 3000
     localPort: 3000

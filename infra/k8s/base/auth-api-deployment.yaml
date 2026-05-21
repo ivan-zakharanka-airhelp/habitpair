@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: auth-api
-  namespace: mobile-backend
+  namespace: habitpair
 spec:
   replicas: 1
   selector:

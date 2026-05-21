@@ -1,4 +1,4 @@
-name: mobile-backend
+name: habitpair
 
 services:
   postgres:
@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: dev
-      POSTGRES_DB: mobile_backend
+      POSTGRES_DB: habitpair
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

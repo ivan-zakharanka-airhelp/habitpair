@@ -9,7 +9,7 @@
 #   1. Wait for cloud-init to mark k3s ready
 #   2. Fetch the kubeconfig from the EC2, rewrite server URL, rename context
 #   3. Merge it into ~/.kube/config
-#   4. Create the mobile-backend namespace + db-credentials secret
+#   4. Create the habitpair namespace + db-credentials secret
 #   5. Update infra/k8s/overlays/aws/ingress-patch.yaml with the new sslip host
 #   6. Apply Traefik HelmChartConfig + the AWS kustomize overlay
 #   7. Print a summary with the URL to hit
@@ -21,7 +21,7 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TF_DIR="$PROJECT_ROOT/infra/terraform"
 KUBECONFIG_PATH="$HOME/.kube/k3s-aws.yaml"
 CONTEXT_NAME="aws-k3s"
-NAMESPACE="mobile-backend"
+NAMESPACE="habitpair"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/aws_learning_ed25519}"
 INGRESS_PATCH="$PROJECT_ROOT/infra/k8s/overlays/aws/ingress-patch.yaml"
 

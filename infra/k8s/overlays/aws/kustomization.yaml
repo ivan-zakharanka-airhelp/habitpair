@@ -18,5 +18,5 @@ patches:
 #   - Manual: `kustomize edit set image auth-api=...:<tag>` then apply
 images:
   - name: auth-api
-    newName: ghcr.io/ivan-zakharanka-airhelp/mobile-backend/auth-api
+    newName: ghcr.io/ivan-zakharanka-airhelp/habitpair/auth-api
     newTag: manual-1

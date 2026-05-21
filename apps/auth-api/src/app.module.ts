@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { PrismaModule } from '@mobile-backend/database';
+import { PrismaModule } from '@habitpair/database';
 import { HealthModule } from './health/health.module';
 
 @Module({

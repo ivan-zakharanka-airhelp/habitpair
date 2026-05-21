@@ -9,13 +9,13 @@ setup: install db-up db-migrate  ## First-time project setup (one command)
 
 install:                         ## Install all workspace deps + generate Prisma + build database package
 	npm install
-	npm run generate -w @mobile-backend/database
-	npm run build -w @mobile-backend/database
+	npm run generate -w @habitpair/database
+	npm run build -w @habitpair/database
 
 # ── Local development (no K8s, fastest feedback loop) ──
 
 up: db-up                        ## Start Postgres + NestJS in watch mode
-	npm run start:dev -w @mobile-backend/auth-api
+	npm run start:dev -w @habitpair/auth-api
 
 down:                            ## Stop local services
 	docker compose -f infra/docker/docker-compose.yaml down
@@ -24,16 +24,16 @@ db-up:                           ## Start Postgres container
 	docker compose -f infra/docker/docker-compose.yaml up -d
 
 db-migrate:                      ## Run Prisma migrations
-	npm run migrate -w @mobile-backend/database
+	npm run migrate -w @habitpair/database
 
 db-studio:                       ## Open Prisma Studio (DB GUI)
-	npm run studio -w @mobile-backend/database
+	npm run studio -w @habitpair/database
 
 # ── Build ──
 
 build:                           ## Build all packages and apps
-	npm run build -w @mobile-backend/database
-	npm run build -w @mobile-backend/auth-api
+	npm run build -w @habitpair/database
+	npm run build -w @habitpair/auth-api
 
 # ── K8s local development (test K8s behavior on MacBook) ──
 
@@ -61,17 +61,17 @@ aws-down:                        ## Destroy everything (AWS + local kubeconfig).
 aws-status:                      ## Show Terraform outputs + pod status.
 	@cd infra/terraform && terraform output 2>/dev/null || echo "No Terraform state — nothing provisioned"
 	@echo ""
-	@kubectl --context aws-k3s get pods -n mobile-backend 2>/dev/null || echo "Cluster not reachable"
+	@kubectl --context aws-k3s get pods -n habitpair 2>/dev/null || echo "Cluster not reachable"
 
 aws-ssh:                         ## SSH to the current EC2 instance.
 	ssh -i ~/.ssh/aws_learning_ed25519 ubuntu@$$(cd infra/terraform && terraform output -raw public_ip)
 
 aws-deploy:                      ## Build + push image + rollout on AWS k3s (manual deploy).
-	$(eval IMAGE := ghcr.io/ivan-zakharanka-airhelp/mobile-backend/auth-api:manual-$(shell date +%Y%m%d-%H%M%S))
+	$(eval IMAGE := ghcr.io/ivan-zakharanka-airhelp/habitpair/auth-api:manual-$(shell date +%Y%m%d-%H%M%S))
 	docker build --platform linux/arm64 -t $(IMAGE) -f apps/auth-api/Dockerfile .
 	docker push $(IMAGE)
-	kubectl --context aws-k3s set image -n mobile-backend deployment/auth-api auth-api=$(IMAGE)
-	kubectl --context aws-k3s rollout status -n mobile-backend deployment/auth-api --timeout=120s
+	kubectl --context aws-k3s set image -n habitpair deployment/auth-api auth-api=$(IMAGE)
+	kubectl --context aws-k3s rollout status -n habitpair deployment/auth-api --timeout=120s
 
 # ── Legacy Skaffold deploy target (kept for reference) ──
 
@@ -81,13 +81,13 @@ deploy:                          ## Build, push, deploy via Skaffold (alternativ
 # ── Quality ──
 
 lint:                            ## Lint all code
-	npm run lint -w @mobile-backend/auth-api
+	npm run lint -w @habitpair/auth-api
 
 test:                            ## Run unit tests
-	npm test -w @mobile-backend/auth-api
+	npm test -w @habitpair/auth-api
 
 test-e2e:                        ## Run e2e tests
-	npm run test:e2e -w @mobile-backend/auth-api
+	npm run test:e2e -w @habitpair/auth-api
 
 # ── Help ──
 

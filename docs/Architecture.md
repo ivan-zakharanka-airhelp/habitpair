@@ -7,7 +7,7 @@ A NestJS service deployed on Kubernetes (k3s on a single AWS EC2 instance for pr
 What's running:
 
 - A single NestJS app (`auth-api`) with a `HealthModule` exposing `/health` and `/health/ready`.
-- A shared `@mobile-backend/database` package providing a global `PrismaModule`.
+- A shared `@habitpair/database` package providing a global `PrismaModule`.
 - One PostgreSQL instance — Docker Compose for local dev, AWS RDS in production.
 - k3s in production (one EC2 node, Traefik ingress with Let's Encrypt TLS).
 - k3d locally with the same kustomize base, patched via a `local/` overlay.
@@ -80,7 +80,7 @@ Shared code lives in `packages/database/`. Each app in `apps/` depends on it via
 ## Repository structure
 
 ```
-mobile-backend/
+habitpair/
 ├── package.json                       # npm workspaces root
 │
 ├── packages/
@@ -235,7 +235,7 @@ ServiceLB is disabled because on a single-node setup the Traefik ingress uses ho
 
 ```bash
 # infra/scripts/setup-k3d.sh
-k3d cluster create mobile-backend \
+k3d cluster create habitpair \
   --port "8080:80@loadbalancer" \
   --port "8443:443@loadbalancer" \
   --agents 0
@@ -274,7 +274,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: auth-api
-  namespace: mobile-backend
+  namespace: habitpair
 spec:
   replicas: 1
   selector:
@@ -309,7 +309,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: auth-api-service
-  namespace: mobile-backend
+  namespace: habitpair
 spec:
   selector:
     app: auth-api
@@ -332,7 +332,7 @@ Build context is the repo root (not the app directory) so workspace dependencies
 
 ```yaml
 # infra/docker/docker-compose.yaml
-name: mobile-backend
+name: habitpair
 
 services:
   postgres:
@@ -342,7 +342,7 @@ services:
     environment:
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: dev
-      POSTGRES_DB: mobile_backend
+      POSTGRES_DB: habitpair
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -362,7 +362,7 @@ volumes:
 apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
-  name: mobile-backend
+  name: habitpair
 build:
   local:
     useBuildkit: false
@@ -380,7 +380,7 @@ deploy:
 portForward:
   - resourceType: service
     resourceName: auth-api-service
-    namespace: mobile-backend
+    namespace: habitpair
     port: 3000
     localPort: 3000
 ```
@@ -420,14 +420,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run generate -w @mobile-backend/database
-      - run: npm run build -w @mobile-backend/database
-      - run: npm run lint -w @mobile-backend/auth-api
-      - run: npm run build -w @mobile-backend/auth-api
-      - run: npm run migrate:deploy -w @mobile-backend/database
+      - run: npm run generate -w @habitpair/database
+      - run: npm run build -w @habitpair/database
+      - run: npm run lint -w @habitpair/auth-api
+      - run: npm run build -w @habitpair/auth-api
+      - run: npm run migrate:deploy -w @habitpair/database
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test
-      - run: npm test -w @mobile-backend/auth-api
+      - run: npm test -w @habitpair/auth-api
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test
 ```
@@ -484,8 +484,8 @@ jobs:
             export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
             kubectl set image deployment/auth-api \
               auth-api=ghcr.io/${{ github.repository }}/auth-api:${{ github.sha }} \
-              -n mobile-backend
-            kubectl rollout status deployment/auth-api -n mobile-backend --timeout=120s
+              -n habitpair
+            kubectl rollout status deployment/auth-api -n habitpair --timeout=120s
 ```
 
 ---
@@ -496,7 +496,7 @@ jobs:
 # apps/auth-api/.env.example
 
 # Database
-DATABASE_URL=postgresql://dev:dev@localhost:5433/mobile_backend
+DATABASE_URL=postgresql://dev:dev@localhost:5433/habitpair
 
 # App
 PORT=3000

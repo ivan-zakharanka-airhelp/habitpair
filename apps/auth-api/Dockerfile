@@ -1,4 +1,4 @@
-# Build context: repo root (mobile-backend/)
+# Build context: repo root (habitpair/)
 FROM node:22-alpine AS build
 WORKDIR /app
 
@@ -9,9 +9,9 @@ RUN npm ci
 
 COPY packages/database/ ./packages/database/
 COPY apps/auth-api/ ./apps/auth-api/
-RUN npm run generate -w @mobile-backend/database
-RUN npm run build -w @mobile-backend/database
-RUN npm run build -w @mobile-backend/auth-api
+RUN npm run generate -w @habitpair/database
+RUN npm run build -w @habitpair/database
+RUN npm run build -w @habitpair/auth-api
 
 FROM node:22-alpine AS production
 WORKDIR /app

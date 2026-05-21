@@ -52,5 +52,5 @@ jobs:
             export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
             kubectl set image deployment/auth-api \
               auth-api=ghcr.io/${{ github.repository }}/auth-api:${{ github.sha }} \
-              -n mobile-backend
-            kubectl rollout status deployment/auth-api -n mobile-backend --timeout=120s
+              -n habitpair
+            kubectl rollout status deployment/auth-api -n habitpair --timeout=120s

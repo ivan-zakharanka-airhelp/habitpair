@@ -31,23 +31,23 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma client
-        run: npm run generate -w @mobile-backend/database
+        run: npm run generate -w @habitpair/database
 
       - name: Build database package
-        run: npm run build -w @mobile-backend/database
+        run: npm run build -w @habitpair/database
 
       - name: Lint
-        run: npm run lint -w @mobile-backend/auth-api
+        run: npm run lint -w @habitpair/auth-api
 
       - name: Build auth-api
-        run: npm run build -w @mobile-backend/auth-api
+        run: npm run build -w @habitpair/auth-api
 
       - name: Run migrations
-        run: npm run migrate:deploy -w @mobile-backend/database
+        run: npm run migrate:deploy -w @habitpair/database
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test
 
       - name: Test
-        run: npm test -w @mobile-backend/auth-api
+        run: npm test -w @habitpair/auth-api
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test

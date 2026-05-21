@@ -26,7 +26,7 @@ make aws-down    # terraform destroy everything (prompts for confirmation)
 1. `terraform apply` — provisions EC2, EIP, RDS, security groups
 2. Waits for cloud-init to signal k3s readiness (`/var/lib/k3s-ready` on the EC2)
 3. Fetches `/etc/rancher/k3s/k3s.yaml`, rewrites server URL to the EC2 public IP, renames context to `aws-k3s`, merges into `~/.kube/config`
-4. Creates the `mobile-backend` namespace + `db-credentials` Secret (uses the Terraform-generated RDS password)
+4. Creates the `habitpair` namespace + `db-credentials` Secret (uses the Terraform-generated RDS password)
 5. Auto-updates `infra/k8s/overlays/aws/ingress-patch.yaml` with the new sslip hostname
 6. Applies `infra/k8s/traefik-config.yaml` + `infra/k8s/overlays/aws`
 7. Prints the URL to curl

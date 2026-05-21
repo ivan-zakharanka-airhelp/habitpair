@@ -25,7 +25,7 @@
  │               │                                                             │                       │
  │  ┌────────────▼──────────────────┐          ┌───────────────────────────────▼─────────────────┐    │
  │  │ packages/database/            │◄─────────│ apps/auth-api/                                  │    │
- │  │ (@mobile-backend/database)    │  depends │ (@mobile-backend/auth-api)                      │    │
+ │  │ (@habitpair/database)    │  depends │ (@habitpair/auth-api)                      │    │
  │  │                               │   via    │                                                 │    │
  │  │  prisma/schema/base.prisma    │  package │  src/main.ts       ← entry: NestFactory.create │    │
  │  │   └─ DB connection config     │  .json   │       │                                         │    │
@@ -92,7 +92,7 @@
                                                      ▼
  ┌─[ 9. KUBERNETES RESOURCES (applied in dependency order) ]─────────────────────────────────────────┐
  │                                                                                                    │
- │   ①  Namespace: mobile-backend                    ← isolated "room" for all resources              │
+ │   ①  Namespace: habitpair                    ← isolated "room" for all resources              │
  │           │                                                                                        │
  │           ▼                                                                                        │
  │   ②  Secret: db-credentials                       ← DATABASE_URL sits in etcd                      │

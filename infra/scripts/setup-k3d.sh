@@ -4,7 +4,7 @@ set -euo pipefail
 # Create a local k3d cluster for development
 # Requires: k3d (https://k3d.io), Docker (via Colima or Docker Desktop)
 
-CLUSTER_NAME="mobile-backend"
+CLUSTER_NAME="habitpair"
 
 if k3d cluster list 2>/dev/null | grep -q "$CLUSTER_NAME"; then
   echo "Cluster '$CLUSTER_NAME' already exists. Delete it first with: k3d cluster delete $CLUSTER_NAME"
