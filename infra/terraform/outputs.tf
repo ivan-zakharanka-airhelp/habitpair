@@ -43,3 +43,8 @@ output "health_url" {
   description = "Health endpoint URL (valid ~60s after first deploy)."
   value       = "https://${replace(aws_eip.main.public_ip, ".", "-")}.sslip.io/api/health"
 }
+
+output "domain_health_url" {
+  description = "Health endpoint via the habitpair.com domain (requires Cloudflare A record for api.habitpair.com → public_ip)."
+  value       = "https://api.habitpair.com/api/health"
+}

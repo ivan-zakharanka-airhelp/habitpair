@@ -52,6 +52,13 @@ DB_PASSWORD=$(terraform output -raw db_password)
 cd "$PROJECT_ROOT"
 ok "Public IP: $PUBLIC_IP — sslip hostname: $SSLIP"
 
+# Capture old EIP from the existing kubeconfig before step 3 overwrites it, so
+# the summary can detect IP changes and nudge about the Cloudflare A record.
+OLD_PUBLIC_IP=""
+if [ -f "$KUBECONFIG_PATH" ]; then
+  OLD_PUBLIC_IP=$(grep -oE 'https://[0-9.]+:6443' "$KUBECONFIG_PATH" 2>/dev/null | head -1 | sed -E 's|https://([0-9.]+):6443|\1|')
+fi
+
 # ── 1b. Clean up stale SSH host key ──
 # Terraform replaces the EC2 when user_data changes; the new instance has a new
 # host key. Without this, SSH blocks with "WARNING: REMOTE HOST IDENTIFICATION
@@ -183,10 +190,25 @@ echo -e "${GREEN}═════════════════════
 echo
 echo "  Context:       $CONTEXT_NAME"
 echo "  Public IP:     $PUBLIC_IP"
-echo "  URL:           https://$SSLIP/api/health"
-echo "                 (cert provisioning takes ~60s on first request)"
+echo "  URLs:"
+echo "    sslip:       https://$SSLIP/api/health"
+echo "    domain:      https://api.habitpair.com/api/health"
+echo "                 (cert provisioning takes ~60s on first request per host)"
 echo "  RDS:           $RDS_ENDPOINT:$RDS_PORT/$DB_NAME"
 echo "  SSH:           ssh -i $SSH_KEY ubuntu@$PUBLIC_IP"
+echo
+
+# Cloudflare reminder — emphasised when the EIP changed, soft note when it didn't.
+if [ -z "$OLD_PUBLIC_IP" ]; then
+  echo -e "${YELLOW}!${NC} First bootstrap on this host. Create Cloudflare A record:"
+  echo "      api.habitpair.com → $PUBLIC_IP   (proxy status: DNS only / grey cloud)"
+elif [ "$OLD_PUBLIC_IP" != "$PUBLIC_IP" ]; then
+  echo -e "${YELLOW}!${NC} Public IP changed: $OLD_PUBLIC_IP → $PUBLIC_IP"
+  echo -e "${YELLOW}!${NC} Update the Cloudflare A record:"
+  echo "      api.habitpair.com → $PUBLIC_IP   (proxy status: DNS only / grey cloud)"
+else
+  echo "  Cloudflare A record for api.habitpair.com → $PUBLIC_IP unchanged."
+fi
 echo
 echo "  Next step — deploy an image:"
 echo "    make aws-deploy                (local build + push + rollout)"
