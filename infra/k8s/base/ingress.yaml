@@ -52,7 +52,7 @@ spec:
     - websecure
   routes:
     # Auth routes — stricter rate limit
-    - match: Host(`api.yourapp.com`) && PathPrefix(`/api/auth`)
+    - match: Host(`api.habitpair.com`) && PathPrefix(`/api/auth`)
       kind: Rule
       middlewares:
         - name: rate-limit-auth
@@ -62,7 +62,7 @@ spec:
         - name: auth-api-service
           port: 3000
     # All other /api routes
-    - match: Host(`api.yourapp.com`) && PathPrefix(`/api`)
+    - match: Host(`api.habitpair.com`) && PathPrefix(`/api`)
       kind: Rule
       middlewares:
         - name: rate-limit

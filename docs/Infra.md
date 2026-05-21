@@ -85,7 +85,7 @@
  │     - ingress-patch.yaml  (web entrypoint, no Host)            - ingress.yaml  (Middlewares +    │
  │     - remove /spec/tls  (no Let's Encrypt in k3d)                                IngressRoute)    │
  │                                                                                                    │
- │   Production deploy reads base/ directly → TLS + Host(`api.yourapp.com`) + websecure kept intact  │
+ │   Production deploy reads base/ directly → TLS + Host(`api.habitpair.com`) + websecure kept intact│
  │                                                                                                    │
  └───────────────────────────────────────────────────┬────────────────────────────────────────────────┘
                                                      │
@@ -166,3 +166,15 @@
  ║  .github/workflows/*       → CI (PR) + deploy (main→Hetzner)                                      ║
  ║  .env.example files        → document required env vars (per package that needs them)             ║
  ╚══════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+
+## Custom domain: api.habitpair.com
+
+The AWS overlay accepts two hostnames in parallel:
+
+- `api.habitpair.com` — canonical. Resolves via a manual Cloudflare A record (proxy status: **DNS only** / grey cloud) pointing at the current Elastic IP.
+- `<EIP-with-dashes>.sslip.io` — fallback. Auto-rewritten by `infra/scripts/aws-bootstrap.sh` on every `make aws-up` so the cluster is reachable even before any DNS change propagates.
+
+The Elastic IP is destroyed and re-allocated on every `make aws-down` / `aws-up` cycle. Whenever it changes, **manually update the Cloudflare A record** to the new IP. `aws-bootstrap.sh` prints a yellow reminder with the new IP at the end of every run.
+
+Let's Encrypt issues one certificate per matched `Host()` on first request to that host (~60s). Certs are persisted in `/data/acme.json` on the EC2 node, so they survive Traefik pod restarts.

@@ -9,8 +9,9 @@ spec:
   entryPoints:
     - websecure
   routes:
-    # Auth routes — stricter rate limit
-    - match: Host(`54-217-103-149.sslip.io`) && PathPrefix(`/api/auth`)
+    # Auth routes — stricter rate limit.
+    # sslip.io literal is rewritten on every aws-up by aws-bootstrap.sh; keep the OR.
+    - match: (Host(`api.habitpair.com`) || Host(`52-51-252-121.sslip.io`)) && PathPrefix(`/api/auth`)
       kind: Rule
       middlewares:
         - name: rate-limit-auth
@@ -20,7 +21,7 @@ spec:
         - name: auth-api-service
           port: 3000
     # All other /api routes
-    - match: Host(`54-217-103-149.sslip.io`) && PathPrefix(`/api`)
+    - match: (Host(`api.habitpair.com`) || Host(`52-51-252-121.sslip.io`)) && PathPrefix(`/api`)
       kind: Rule
       middlewares:
         - name: rate-limit
