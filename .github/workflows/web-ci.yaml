@@ -15,6 +15,10 @@ on:
       - 'package-lock.json'
       - '.github/workflows/web-ci.yaml'
 
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     runs-on: ubuntu-latest

@@ -10,6 +10,12 @@ on:
       - '.github/workflows/deploy.yaml'
   workflow_dispatch:
 
+# Don't cancel an in-flight deploy — half-rolled-out k8s deployments are
+# worse than waiting for the previous run to finish.
+concurrency:
+  group: backend-deploy
+  cancel-in-progress: false
+
 # Explicit permissions — GITHUB_TOKEN needs `packages: write` to push to GHCR.
 # Some accounts/orgs default to read-only, which causes docker push to fail.
 permissions:

@@ -11,6 +11,10 @@ on:
       - 'infra/terraform/**'
       - '.github/workflows/infra-ci.yaml'
 
+concurrency:
+  group: infra-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   TF_VERSION: '1.9.8'
   AWS_REGION: eu-west-1
@@ -96,6 +100,9 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: tfplan
-          path: infra/terraform
+          # Workspace root: artifact paths are preserved, so files land at
+          # infra/terraform/tfplan and infra/terraform/plan.txt, matching
+          # what `terraform apply tfplan` expects under the working-directory.
+          path: .
       - run: terraform init -input=false
       - run: terraform apply -input=false -auto-approve tfplan
