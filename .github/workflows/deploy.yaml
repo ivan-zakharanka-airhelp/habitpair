@@ -2,6 +2,12 @@ name: Deploy
 on:
   push:
     branches: [main]
+    paths:
+      - 'apps/auth-api/**'
+      - 'packages/database/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy.yaml'
   workflow_dispatch:
 
 # Explicit permissions — GITHUB_TOKEN needs `packages: write` to push to GHCR.
