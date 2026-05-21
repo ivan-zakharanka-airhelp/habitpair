@@ -1,11 +1,12 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup install up down db-up db-migrate db-studio build lint test test-e2e \
+.PHONY: help setup install up web down db-up db-migrate db-studio build lint test test-e2e \
         k8s-setup k8s deploy \
         aws-up aws-bootstrap aws-down aws-status aws-ssh aws-deploy aws-cleanup-manual
 
 # ── First-time setup ──
 
 setup: install db-up db-migrate  ## First-time project setup (one command)
+	@if [ ! -f apps/web/.env ]; then cp apps/web/.env.example apps/web/.env; fi
 
 install:                         ## Install all workspace deps + generate Prisma + build database package
 	npm install
@@ -14,8 +15,11 @@ install:                         ## Install all workspace deps + generate Prisma
 
 # ── Local development (no K8s, fastest feedback loop) ──
 
-up: db-up                        ## Start Postgres + NestJS in watch mode
-	npm run start:dev -w @habitpair/auth-api
+up: db-up                        ## Start the full local stack (postgres + auth-api + web)
+	npm run dev
+
+web:                             ## Run only the web SPA (no DB, no api)
+	npm run dev:web
 
 down:                            ## Stop local services
 	docker compose -f infra/docker/docker-compose.yaml down
