@@ -1,12 +1,16 @@
 # AWS Infrastructure — Terraform
 
-Provisions everything needed to run the auth service on a single-node k3s cluster on AWS:
+Provisions everything needed to run the auth service on a single-node k3s cluster on AWS, plus the static-site stack that serves the SPA:
 
 - EC2 `t4g.small` with Ubuntu 24.04 ARM64, k3s auto-installed via cloud-init
 - Elastic IP (destroyed with the stack — each cycle gets a new public IP + sslip.io hostname)
 - Security groups (SSH + k3s API from your IP; HTTP/HTTPS from anywhere; RDS only from EC2)
 - RDS `db.t4g.micro` PostgreSQL 16 in private subnets (password auto-generated)
 - EC2 key pair imported from your local `~/.ssh/aws_learning_ed25519.pub`
+- **S3 bucket + CloudFront distribution** serving the `apps/web` SPA at `https://habitpair.com`
+- **ACM certificate** in `us-east-1` (CloudFront requirement), DNS-validated via Cloudflare
+- **Cloudflare DNS records** for ACM validation + apex CNAME → CloudFront
+- **GitHub OIDC provider + two IAM roles** (`gha-web-deploy`, `gha-terraform`) so GitHub Actions can deploy without long-lived AWS credentials
 
 ## One-command lifecycle
 
@@ -81,6 +85,44 @@ aws ec2 describe-addresses --profile development \
 ```
 
 All three should print empty tables.
+
+## First-time bootstrap for the CI/CD pipeline
+
+The OIDC role that GitHub Actions assumes is itself managed by this Terraform — chicken-and-egg. The very first apply has to run locally; after that, all infra and web changes can flow through CI.
+
+### One-time steps
+
+1. **Get a Cloudflare API token** with `Zone:DNS:Edit` permission on `habitpair.com`. Cloudflare dashboard → My Profile → API Tokens → Create.
+2. **Set the token + apply Terraform locally:**
+   ```bash
+   export TF_VAR_cloudflare_api_token=<token>
+   export AWS_PROFILE=development
+   make aws-up   # runs terraform apply + k8s bootstrap
+   ```
+3. **Copy four Terraform outputs into GitHub repo Variables** (Settings → Secrets and variables → Actions → Variables tab):
+
+   | TF output | GitHub Variable |
+   |---|---|
+   | `frontend_bucket_name` | `WEB_BUCKET_NAME` |
+   | `frontend_distribution_id` | `WEB_DISTRIBUTION_ID` |
+   | `gha_web_deploy_role_arn` | `AWS_WEB_DEPLOY_ROLE_ARN` |
+   | `gha_terraform_role_arn` | `AWS_TERRAFORM_ROLE_ARN` |
+
+   Get the values with `terraform output -json` from `infra/terraform/`.
+
+4. **Add one GitHub Secret:** `CLOUDFLARE_API_TOKEN` (same value as the local `TF_VAR_*`). Used by the `infra-ci` workflow.
+5. **Configure the `production` GitHub Environment** (Settings → Environments → New environment → `production`):
+   - Add yourself as a Required Reviewer. This is the manual-approval gate before any `terraform apply` runs in CI.
+
+### What happens after bootstrap
+
+- Pushes to `apps/web/**` on `main` → `web-ci.yaml` builds, syncs to S3, invalidates CloudFront
+- PRs touching `infra/terraform/**` → `infra-ci.yaml` posts a `terraform plan` comment
+- Merges to `main` touching `infra/terraform/**` → `infra-ci.yaml` waits for your approval on the `production` environment, then applies
+
+### Caveat: Terraform state still lives on your laptop
+
+`infra-ci.yaml` currently `terraform init`s against the same backend declared in `versions.tf`. As long as that's the local backend, the CI's `apply` job will operate against an empty state and try to recreate resources you've already provisioned. **Migrate the state to S3 (see the section below) before relying on `infra-ci.yaml`'s `apply` job in anger.** Until then, treat the workflow as plan-only and run `terraform apply` from your laptop.
 
 ## Migrating to S3 backend (follow-up)
 
