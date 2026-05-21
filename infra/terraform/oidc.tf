@@ -17,13 +17,16 @@ resource "aws_iam_openid_connect_provider" "github" {
     "1c58a3a8518e8759bf075b76b750d4f2df264fcd",
   ]
 
-  tags = local.common_tags
+  tags = merge(local.common_tags, {
+    Name = "${var.name_prefix}-github-actions-oidc"
+  })
 }
 
 # ── gha-web-deploy: S3 sync + CloudFront invalidation only ──
-# Trust allows any ref on the repo (branches, PRs, tags) so PR preview jobs
-# work. The role's permissions are narrow enough that this is acceptable;
-# we can tighten the trust later if needed.
+# Trust is scoped to main pushes and pull-request workflow runs. PR jobs
+# only ever run read-only checks today, but the role's permissions are
+# narrow enough (just this bucket + just this distribution's invalidation)
+# that allowing PR contexts is acceptable.
 
 data "aws_iam_policy_document" "gha_web_deploy_trust" {
   statement {
@@ -44,7 +47,10 @@ data "aws_iam_policy_document" "gha_web_deploy_trust" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["${local.gha_repo_sub}:*"]
+      values = [
+        "${local.gha_repo_sub}:ref:refs/heads/main",
+        "${local.gha_repo_sub}:pull_request",
+      ]
     }
   }
 }
