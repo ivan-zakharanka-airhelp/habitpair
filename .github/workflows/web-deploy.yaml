@@ -19,9 +19,13 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     env:
-      # Build-time API URL baked into the bundle. The /api suffix is required —
-      # Traefik's `api-strip` middleware routes only PathPrefix(`/api`).
-      VITE_API_URL: https://api.habitpair.com/api
+      # Build-time API URLs baked into the bundle. apiClient.ts callers pass paths like
+      # `/auth/health` or `/habits/health`; in production both services share a host and
+      # are routed by path, with Traefik's `api-strip` middleware stripping the leading
+      # `/api` before forwarding to the auth-api / habits-api pods. So both vars resolve
+      # to the same origin in prod — they only diverge for local dev (different ports).
+      VITE_AUTH_API_URL: https://api.habitpair.com/api
+      VITE_HABITS_API_URL: https://api.habitpair.com/api
     steps:
       # On workflow_run, github.sha is the default-branch HEAD at event-creation time,
       # not the commit tests passed on. Pin to the upstream run's head_sha to be safe.
