@@ -1,6 +1,6 @@
 # AWS Infrastructure — Terraform
 
-Provisions everything needed to run the auth service on a single-node k3s cluster on AWS, plus the static-site stack that serves the SPA:
+Provisions everything needed to run the two backend services (`auth-api`, `habits-api`) on a single-node k3s cluster on AWS, plus the static-site stack that serves the SPA:
 
 - EC2 `t4g.small` with Ubuntu 24.04 ARM64, k3s auto-installed via cloud-init
 - Elastic IP (destroyed with the stack — each cycle gets a new public IP + sslip.io hostname)
@@ -27,13 +27,14 @@ make aws-down    # terraform destroy everything (prompts for confirmation)
 
 ## What `make aws-up` does
 
-1. `terraform apply` — provisions EC2, EIP, RDS, security groups
+1. `terraform apply` — provisions EC2, EIP, RDS (DB `auth`), security groups
 2. Waits for cloud-init to signal k3s readiness (`/var/lib/k3s-ready` on the EC2)
 3. Fetches `/etc/rancher/k3s/k3s.yaml`, rewrites server URL to the EC2 public IP, renames context to `aws-k3s`, merges into `~/.kube/config`
-4. Creates the `habitpair` namespace + `db-credentials` Secret (uses the Terraform-generated RDS password)
-5. Auto-updates `infra/k8s/overlays/aws/ingress-patch.yaml` with the new sslip hostname
-6. Applies `infra/k8s/traefik-config.yaml` + `infra/k8s/overlays/aws`
-7. Prints the URL to curl
+4. Creates the `habitpair` namespace + `db-credentials` Secret (auth-api's connection string)
+5. SSHes into EC2 to create the `habits` database on RDS (RDS is in a private subnet, so psql runs from inside the VPC). Creates `habits-db-credentials` Secret.
+6. Creates `auth-jwt-secret` (32-byte HS256 key, shared by both services). Preserves the existing value on re-runs so live sessions aren't invalidated.
+7. Applies `infra/k8s/traefik-config.yaml` + `infra/k8s/overlays/aws`
+8. Prints health URLs to curl (both services)
 
 After bootstrap the cluster is fully configured but has no app image yet. Use `make aws-deploy` (or push to main → GitHub Actions).
 
@@ -62,7 +63,8 @@ Most defaults in `variables.tf` are appropriate for the AirHelp development acco
 | `UnauthorizedOperation` on apply | Your SSO session expired | `aws sso login --profile development` |
 | Bootstrap times out on `/var/lib/k3s-ready` | cloud-init failed | `make aws-ssh` → `sudo cat /var/log/cloud-init-output.log` |
 | Bootstrap fails on `kubectl --context aws-k3s get nodes` | Your IP changed since security group was created | `terraform apply` again (picks up new IP via `checkip.amazonaws.com`) |
-| `/api/health` returns 404 | Ingress patch not updated, or Traefik cert still issuing | Wait ~60s for Let's Encrypt; check `kubectl logs -n kube-system -l app.kubernetes.io/name=traefik` |
+| `/api/auth/health` or `/api/habits/health` returns 404 | Ingress patch not updated, or Traefik cert still issuing | Wait ~60s for Let's Encrypt; check `kubectl logs -n kube-system -l app.kubernetes.io/name=traefik` |
+| Plain `/api/health` returns 404 | Expected — every path is service-scoped. Use `/api/auth/health` or `/api/habits/health`. | — |
 
 ## Teardown verification
 
@@ -76,7 +78,7 @@ aws ec2 describe-instances --profile development \
 
 # RDS
 aws rds describe-db-instances --profile development \
-  --query 'DBInstances[?DBName==`auth_service`].[DBInstanceIdentifier,DBInstanceStatus]' --output table
+  --query 'DBInstances[?DBName==`auth`].[DBInstanceIdentifier,DBInstanceStatus]' --output table
 
 # Elastic IPs (free while attached; $3.60/mo when dangling)
 aws ec2 describe-addresses --profile development \
