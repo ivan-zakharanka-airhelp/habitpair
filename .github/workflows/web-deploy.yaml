@@ -36,7 +36,7 @@ jobs:
       - run: npm run build -w @habitpair/web
 
       - name: Upload built SPA
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: web-dist
           path: apps/web/dist/
@@ -50,7 +50,7 @@ jobs:
       AWS_REGION: eu-west-1
     steps:
       - name: Download built SPA
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: web-dist
           path: apps/web/dist/
@@ -61,7 +61,7 @@ jobs:
       # "security token included in the request is invalid".
       # Replace with permanent IAM-user access keys (no session token) or
       # OIDC role-assume once an admin can provision either.
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
