@@ -1,18 +1,19 @@
-# Mobile backend
+# habitpair
 
-A learning project that implements a production-grade authentication service using the same infrastructure patterns used in larger multi-service platforms, but at smaller scale. Runs on a single AWS EC2 instance with k3s (lightweight Kubernetes).
+A habit-tracking app — full-stack learning project. The point isn't the app itself; it's exercising production patterns end-to-end at small scale: NestJS backend on k3s, Vite/React SPA on S3 + CloudFront, infra as code with Terraform, Traefik ingress with Let's Encrypt, path-filtered CI/CD per concern.
 
-**Learning goals:** practice full Kubernetes deployment lifecycle, CI/CD pipelines, Traefik ingress with TLS, and kustomize overlays — exercised against a realistic application (auth with JWT, refresh token rotation, OAuth).
-Generic backend for a React Native + Expo mobile app. npm workspaces monorepo with NestJS services, deployed to k3s on Hetzner.
+**Learning goals:** full Kubernetes deployment lifecycle, CI/CD pipelines, Traefik ingress with TLS, kustomize overlays, S3+CloudFront SPA hosting, IAM/OIDC trust, Cloudflare DNS via Terraform — exercised against a realistic application (auth with JWT, refresh token rotation, OAuth eventually).
 
-See [Architecture.md](Architecture.md) for the full design document.
+Live at [habitpair.com](https://habitpair.com); API at [api.habitpair.com/api](https://api.habitpair.com/api). See [docs/Architecture.md](docs/Architecture.md) for the full design document and [docs/Infra.md](docs/Infra.md) for the infra notes.
 
 ## Stack
 
-- **Runtime:** Node.js 22 + TypeScript 5.x + NestJS 11
+- **Backend:** Node.js 22 + TypeScript 5.x + NestJS 11
+- **Frontend:** Vite + React 18 + TanStack Router/Query + Tailwind v4
 - **Data:** PostgreSQL 16 + Prisma 6
-- **Infra:** Docker, k3s (prod on EC2), k3d (local K8s), Skaffold, kustomize
-- **CI/CD:** GitHub Actions → GHCR → SSH deploy to k3s
+- **Infra:** Docker, k3s (prod on AWS EC2), k3d (local K8s), Skaffold, kustomize, Terraform
+- **CDN/DNS:** AWS S3 + CloudFront for the SPA, Cloudflare for DNS, Let's Encrypt for the API cert
+- **CI/CD:** GitHub Actions, path-filtered per concern (auth-api / web / infra)
 
 ## Prerequisites
 
@@ -41,23 +42,38 @@ make down
 
 ## Available Commands
 
-Run `make help` to see all commands:
+Run `make help` to see all commands.
+
+**Local dev**
 
 | Command | Description |
 |---|---|
-| `make setup` | First-time project setup (one command) |
-| `make install` | Install deps + generate Prisma + build database package |
-| `make up` | Start Postgres + auth-api dev server |
+| `make setup` | First-time setup: install deps + Prisma + Postgres + `.env` files |
+| `make up` | Postgres + auth-api + web SPA in one foreground process |
+| `make web` | Web SPA only (no DB, no API) |
 | `make down` | Stop local services |
-| `make build` | Build all packages and apps |
 | `make db-migrate` | Run Prisma migrations |
 | `make db-studio` | Open Prisma Studio |
-| `make lint` | Lint code |
-| `make test` | Run unit tests |
-| `make test-e2e` | Run e2e tests |
-| `make k8s-setup` | Create local k3d cluster |
-| `make k8s` | Start Skaffold dev loop |
-| `make deploy` | Build, push, deploy to production |
+| `make build` / `make lint` / `make test` | Self-explanatory |
+
+**Local K8s (k3d, optional)**
+
+| Command | Description |
+|---|---|
+| `make k8s-setup` | Create k3d cluster |
+| `make k8s` | Start Skaffold dev loop against k3d |
+
+**AWS deploy**
+
+| Command | Description |
+|---|---|
+| `make aws-up` | Terraform apply + k3s bootstrap + sync GH Actions secrets/variables |
+| `make aws-deploy` | Build + push + roll out both backend and frontend |
+| `make aws-deploy-api` | Backend only (Docker → GHCR → kubectl) |
+| `make aws-deploy-web` | Frontend only (Vite build → S3 sync → CloudFront invalidate) |
+| `make aws-status` | Terraform outputs + pod status |
+| `make aws-ssh` | SSH into the current EC2 instance |
+| `make aws-down` | Destroy everything (prompts for confirmation) |
 
 ## Project Structure
 
@@ -110,13 +126,13 @@ k3d runs k3s inside Docker, so the app behaves in local dev the same way it does
 Three independent pipelines, each triggered only when its own files change:
 
 - **`apps/auth-api/**`** → `auth-api-ci.yaml` runs tests on PRs; on merge to main, its `deploy` job builds a Docker image, pushes to GHCR, SSHes to EC2 and runs `kubectl set image`.
-- **`apps/web/**`** → `web-ci.yaml` builds the SPA, syncs to S3, invalidates CloudFront.
-- **`infra/terraform/**`** → `infra-ci.yaml` posts a `terraform plan` on PR; `apply` runs on merge to `main` behind a manual approval gate.
+- **`apps/web/**`** → `web-ci.yaml` runs lint/typecheck/vitest on PRs; on merge to main, its `build-and-deploy` job builds the SPA with `VITE_API_URL=https://api.habitpair.com/api`, syncs to S3, invalidates CloudFront.
+- **`infra/terraform/**`** → `infra-ci.yaml` runs `terraform fmt -check` + `validate` only. Plan/apply are intentionally disabled until (a) state is migrated to S3 and (b) an admin can provision an OIDC role — apply runs manually via `make aws-up` from a laptop until then.
 
 Production backend runs on a single AWS EC2 `t4g.small` (~$12/mo) with k3s + RDS PostgreSQL. The SPA is served from S3 behind CloudFront at `https://habitpair.com`.
 
-See [infra/terraform/README.md](infra/terraform/README.md) for the one-time bootstrap (Cloudflare token, GitHub Variables/Secrets to set, `production` Environment approval gate).
+See [infra/terraform/README.md](infra/terraform/README.md) for the one-time bootstrap (Cloudflare token, IAM user for CI, GitHub Variables/Secrets to set).
 
 ```bash
-make deploy   # manual backend deploy (alternative to merging to main)
+make aws-deploy   # manual full-stack deploy (alternative to merging to main)
 ```
