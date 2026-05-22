@@ -88,8 +88,6 @@ All three should print empty tables.
 
 ## First-time bootstrap for the CI/CD pipeline
 
-The OIDC role that GitHub Actions assumes is itself managed by this Terraform — chicken-and-egg. The very first apply has to run locally; after that, all infra and web changes can flow through CI.
-
 ### One-time steps
 
 1. **Get a Cloudflare API token** with `Zone:DNS:Edit` permission on `habitpair.com`. Cloudflare dashboard → My Profile → API Tokens → Create.
@@ -99,30 +97,41 @@ The OIDC role that GitHub Actions assumes is itself managed by this Terraform �
    export AWS_PROFILE=development
    make aws-up   # runs terraform apply + k8s bootstrap
    ```
-3. **Copy four Terraform outputs into GitHub repo Variables** (Settings → Secrets and variables → Actions → Variables tab):
+3. **Create an IAM user for the web deploy.** The `romeo` SSO role can't create IAM resources, so do this in the AWS console (or ask an AirHelp admin):
+   - User name suggestion: `habitpair-web-deploy`
+   - Inline policy: same as `oidc.tf.disabled`'s `gha_web_deploy` policy — `s3:ListBucket` on the frontend bucket, `s3:GetObject/PutObject/DeleteObject` on `${bucket}/*`, `cloudfront:CreateInvalidation` + `cloudfront:GetInvalidation` on the distribution ARN.
+   - Generate access keys for the user.
+4. **Copy values into GitHub repo Variables + Secrets** (Settings → Secrets and variables → Actions):
 
-   | TF output | GitHub Variable |
-   |---|---|
-   | `frontend_bucket_name` | `WEB_BUCKET_NAME` |
-   | `frontend_distribution_id` | `WEB_DISTRIBUTION_ID` |
-   | `gha_web_deploy_role_arn` | `AWS_WEB_DEPLOY_ROLE_ARN` |
-   | `gha_terraform_role_arn` | `AWS_TERRAFORM_ROLE_ARN` |
+   | Type | Name | Source |
+   |---|---|---|
+   | Variable | `WEB_BUCKET_NAME` | TF output `frontend_bucket_name` |
+   | Variable | `WEB_DISTRIBUTION_ID` | TF output `frontend_distribution_id` |
+   | Secret | `AWS_ACCESS_KEY_ID` | IAM user access key |
+   | Secret | `AWS_SECRET_ACCESS_KEY` | IAM user secret access key |
 
-   Get the values with `terraform output -json` from `infra/terraform/`.
-
-4. **Add one GitHub Secret:** `CLOUDFLARE_API_TOKEN` (same value as the local `TF_VAR_*`). Used by the `infra-ci` workflow.
-5. **Configure the `production` GitHub Environment** (Settings → Environments → New environment → `production`):
-   - Add yourself as a Required Reviewer. This is the manual-approval gate before any `terraform apply` runs in CI.
+   Get the TF outputs with `terraform output -json` from `infra/terraform/`.
 
 ### What happens after bootstrap
 
 - Pushes to `apps/web/**` on `main` → `web-ci.yaml` builds, syncs to S3, invalidates CloudFront
-- PRs touching `infra/terraform/**` → `infra-ci.yaml` posts a `terraform plan` comment
-- Merges to `main` touching `infra/terraform/**` → `infra-ci.yaml` waits for your approval on the `production` environment, then applies
+- PRs touching `infra/terraform/**` → `infra-ci.yaml` runs `terraform fmt -check`, `init -backend=false`, and `validate` (lint-only, no plan/apply)
+- All `terraform apply` runs from a developer's laptop via `make aws-up` until OIDC + remote state are in place
 
-### Caveat: Terraform state still lives on your laptop
+### Deferred: OIDC role-assume for CI
 
-`infra-ci.yaml` currently `terraform init`s against the same backend declared in `versions.tf`. As long as that's the local backend, the CI's `apply` job will operate against an empty state and try to recreate resources you've already provisioned. **Migrate the state to S3 (see the section below) before relying on `infra-ci.yaml`'s `apply` job in anger.** Until then, treat the workflow as plan-only and run `terraform apply` from your laptop.
+The plan called for GitHub OIDC + two scoped IAM roles instead of access keys. The Terraform for that lives in `oidc.tf.disabled` (renamed because the `romeo` SSO role lacks `iam:CreateOpenIDConnectProvider` / `iam:CreateRole`). To re-enable:
+
+1. Ask an AirHelp IAM admin to either grant your role `iam:*` on `arn:aws:iam::*:role/habitpair-*` + `iam:CreateOpenIDConnectProvider`, OR have them pre-provision the resources and we'll reference them via `data` sources.
+2. Rename `oidc.tf.disabled` → `oidc.tf`.
+3. Restore the OIDC outputs in `outputs.tf` (currently removed — see the comment in that file).
+4. `terraform apply`.
+5. Swap `web-ci.yaml`'s access-key step back to `role-to-assume: ${{ vars.AWS_WEB_DEPLOY_ROLE_ARN }}` with `permissions: id-token: write`.
+6. Restore the gated `plan` + `apply` jobs in `infra-ci.yaml` (was lint-only after OIDC was disabled).
+
+### Deferred: Terraform state on S3
+
+`infra-ci.yaml` currently runs `init -backend=false` precisely because state is still local. When you migrate state per the section below, restore the `terraform plan` + `apply` jobs (the previous version of the workflow is in `git log` under commit `71165be`).
 
 ## Migrating to S3 backend (follow-up)
 

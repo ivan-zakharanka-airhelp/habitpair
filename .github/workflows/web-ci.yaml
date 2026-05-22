@@ -37,9 +37,6 @@ jobs:
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
     env:
       AWS_REGION: eu-west-1
       # Build-time API URL baked into the bundle. Update this if backend domain changes.
@@ -53,9 +50,15 @@ jobs:
       - run: npm ci
       - run: npm run build -w @habitpair/web
 
+      # Long-lived access keys for an IAM user with S3 PutObject/DeleteObject
+      # on the frontend bucket + cloudfront:CreateInvalidation on the
+      # distribution. Created manually via the AWS console because the SSO
+      # role can't create IAM resources. Migrate to OIDC role-assume when
+      # an admin pre-provisions the OIDC provider + roles.
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_WEB_DEPLOY_ROLE_ARN }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
       # Hashed assets — immutable for a year

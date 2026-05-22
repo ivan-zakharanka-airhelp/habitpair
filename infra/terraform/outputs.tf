@@ -64,12 +64,7 @@ output "frontend_distribution_domain" {
   value       = aws_cloudfront_distribution.frontend.domain_name
 }
 
-output "gha_web_deploy_role_arn" {
-  description = "Role ARN that the web CI workflow assumes via OIDC."
-  value       = aws_iam_role.gha_web_deploy.arn
-}
-
-output "gha_terraform_role_arn" {
-  description = "Role ARN that the infra CI workflow assumes via OIDC."
-  value       = aws_iam_role.gha_terraform.arn
-}
+# gha_web_deploy_role_arn / gha_terraform_role_arn — temporarily removed.
+# The romeo SSO role can't create IAM resources, so oidc.tf is disabled
+# (renamed to oidc.tf.disabled). Re-enable once an admin grants IAM perms
+# or pre-provisions the OIDC provider + roles.
