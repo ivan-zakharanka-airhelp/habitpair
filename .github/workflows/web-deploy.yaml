@@ -12,13 +12,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  build:
     # Manual dispatch always runs. workflow_run fires on ANY conclusion (success/failure/cancelled),
     # so we must explicitly require success — otherwise a failed test would still deploy.
+    # The guard lives on `build` only; `deploy` skips transitively via `needs:`.
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     env:
-      AWS_REGION: eu-west-1
       # Build-time API URL baked into the bundle. The /api suffix is required —
       # Traefik's `api-strip` middleware routes only PathPrefix(`/api`).
       VITE_API_URL: https://api.habitpair.com/api
@@ -34,6 +34,26 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build -w @habitpair/web
+
+      - name: Upload built SPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist/
+          retention-days: 1
+          if-no-files-found: error
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: eu-west-1
+    steps:
+      - name: Download built SPA
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist/
 
       # TEMPORARY: using AWS IAM Identity Center (SSO) session credentials
       # because the SSO role can't create IAM users either. These expire
