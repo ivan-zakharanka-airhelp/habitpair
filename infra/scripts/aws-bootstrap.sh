@@ -10,9 +10,8 @@
 #   2. Fetch the kubeconfig from the EC2, rewrite server URL, rename context
 #   3. Merge it into ~/.kube/config
 #   4. Create the habitpair namespace + db-credentials secret
-#   5. Update infra/k8s/overlays/aws/ingress-patch.yaml with the new sslip host
-#   6. Apply Traefik HelmChartConfig + the AWS kustomize overlay
-#   7. Print a summary with the URL to hit
+#   5. Apply Traefik HelmChartConfig + the AWS kustomize overlay
+#   6. Print a summary with the URL to hit
 
 set -euo pipefail
 
@@ -23,7 +22,6 @@ KUBECONFIG_PATH="$HOME/.kube/k3s-aws.yaml"
 CONTEXT_NAME="aws-k3s"
 NAMESPACE="habitpair"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/aws_learning_ed25519}"
-INGRESS_PATCH="$PROJECT_ROOT/infra/k8s/overlays/aws/ingress-patch.yaml"
 
 # ── Colors ──
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
@@ -43,14 +41,13 @@ command -v kubectl   >/dev/null 2>&1 || fail "kubectl not installed"
 step "Reading Terraform outputs"
 cd "$TF_DIR"
 PUBLIC_IP=$(terraform output -raw public_ip 2>/dev/null)   || fail "No terraform state — run 'make aws-up' or 'terraform apply' first"
-SSLIP=$(terraform output -raw sslip_hostname)
 RDS_ENDPOINT=$(terraform output -raw rds_endpoint)
 RDS_PORT=$(terraform output -raw rds_port)
 DB_NAME=$(terraform output -raw db_name)
 DB_USER=$(terraform output -raw db_username)
 DB_PASSWORD=$(terraform output -raw db_password)
 cd "$PROJECT_ROOT"
-ok "Public IP: $PUBLIC_IP — sslip hostname: $SSLIP"
+ok "Public IP: $PUBLIC_IP"
 
 # Capture old EIP from the existing kubeconfig before step 3 overwrites it, so
 # the summary can detect IP changes and nudge about the Cloudflare A record.
@@ -137,27 +134,13 @@ kubectl --context "$CONTEXT_NAME" create secret generic db-credentials \
   --dry-run=client -o yaml | kubectl --context "$CONTEXT_NAME" apply -f - >/dev/null
 ok "Secret applied (points at ${RDS_ENDPOINT})"
 
-# ── 7. Update ingress-patch.yaml with new sslip hostname ──
-step "Updating $INGRESS_PATCH with new sslip hostname"
-if [ ! -f "$INGRESS_PATCH" ]; then
-  fail "Ingress patch file not found: $INGRESS_PATCH"
-fi
-# Replace any existing Host(`...sslip.io`) with the new value
-sed -i.bak -E "s|Host\\(\\\`[0-9a-z.-]+\\.sslip\\.io\\\`\\)|Host(\\\`$SSLIP\\\`)|g" "$INGRESS_PATCH"
-rm -f "${INGRESS_PATCH}.bak"
-if grep -q "Host(\`$SSLIP\`)" "$INGRESS_PATCH"; then
-  ok "ingress-patch.yaml now matches Host($SSLIP)"
-else
-  warn "Could not update ingress-patch — verify manually"
-fi
-
-# ── 8. Apply Traefik HelmChartConfig + AWS overlay ──
+# ── 7. Apply Traefik HelmChartConfig + AWS overlay ──
 step "Applying Traefik config + AWS kustomize overlay"
 kubectl --context "$CONTEXT_NAME" apply -f "$PROJECT_ROOT/infra/k8s/traefik-config.yaml" >/dev/null
 kubectl --context "$CONTEXT_NAME" apply -k "$PROJECT_ROOT/infra/k8s/overlays/aws" >/dev/null
 ok "Manifests applied"
 
-# ── 8b. Sync GitHub Actions secrets so the Deploy workflow points at the new EC2 ──
+# ── 7b. Sync GitHub Actions secrets so the Deploy workflow points at the new EC2 ──
 # Without this, pushing to main would SSH to a stale/destroyed IP and fail.
 # Silently skipped if gh CLI isn't installed / authenticated.
 step "Syncing GitHub Actions secrets (SERVER_HOST, SERVER_SSH_KEY)"
@@ -182,7 +165,7 @@ else
   warn "Or update manually: gh secret set SERVER_HOST --body '$PUBLIC_IP'"
 fi
 
-# ── 9. Summary ──
+# ── 8. Summary ──
 echo
 echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
 echo -e "${GREEN}  Cluster ready${NC}"
@@ -190,10 +173,8 @@ echo -e "${GREEN}═════════════════════
 echo
 echo "  Context:       $CONTEXT_NAME"
 echo "  Public IP:     $PUBLIC_IP"
-echo "  URLs:"
-echo "    sslip:       https://$SSLIP/api/health"
-echo "    domain:      https://api.habitpair.com/api/health"
-echo "                 (cert provisioning takes ~60s on first request per host)"
+echo "  Health URL:    https://api.habitpair.com/api/health"
+echo "                 (cert provisioning takes ~60s on first request after a fresh cluster)"
 echo "  RDS:           $RDS_ENDPOINT:$RDS_PORT/$DB_NAME"
 echo "  SSH:           ssh -i $SSH_KEY ubuntu@$PUBLIC_IP"
 echo
@@ -213,8 +194,4 @@ echo "  Next step — deploy an image:"
 echo "    make aws-deploy                (local build + push + rollout)"
 echo "    git push origin main           (triggers GitHub Actions Deploy workflow)"
 echo "    gh workflow run Deploy         (manually trigger Deploy from current main)"
-echo
-echo -e "${YELLOW}  Note:${NC} infra/k8s/overlays/aws/ingress-patch.yaml was edited locally."
-echo "    Commit the change if you want it to survive across 'make aws-down/up' cycles:"
-echo "      git add infra/k8s/overlays/aws/ingress-patch.yaml && git commit -m 'deploy: sslip $SSLIP'"
 echo
