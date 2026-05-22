@@ -1,8 +1,8 @@
 {
-  "name": "@habitpair/auth-api",
+  "name": "@habitpair/habits-api",
   "version": "0.0.1",
   "private": true,
-  "description": "Auth API — authentication and user identity",
+  "description": "Habits API — habit tracking for authenticated users",
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
@@ -26,6 +26,7 @@
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.0",
+    "@nestjs/jwt": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/terminus": "^11.0.0",
     "@prisma/client": "^6.0.0",

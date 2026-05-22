@@ -1,32 +1,32 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: auth-api
+  name: habits-api
   namespace: habitpair
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: auth-api
+      app: habits-api
   template:
     metadata:
       labels:
-        app: auth-api
+        app: habits-api
     spec:
       containers:
-        - name: auth-api
-          image: auth-api:latest
+        - name: habits-api
+          image: habits-api:latest
           ports:
             - containerPort: 3000
           livenessProbe:
             httpGet:
-              path: /auth/health
+              path: /habits/health
               port: 3000
             initialDelaySeconds: 10
             periodSeconds: 15
           readinessProbe:
             httpGet:
-              path: /auth/health/ready
+              path: /habits/health/ready
               port: 3000
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -41,9 +41,13 @@ spec:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: db-credentials
+                  name: habits-db-credentials
                   key: url
-            # Origins allowed to call the API (CORS). For local dev,
-            # main.ts defaults to http://localhost:5173 if unset.
+            # Shared with auth-api — both services HS256-verify against this secret.
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-jwt-secret
+                  key: secret
             - name: CORS_ORIGINS
               value: https://habitpair.com

@@ -1,23 +1,23 @@
-name: auth-api
+name: habits-api
 
 on:
   pull_request:
     paths:
-      - 'apps/auth-api/**'
+      - 'apps/habits-api/**'
       - 'package.json'
       - 'package-lock.json'
-      - '.github/workflows/auth-api-ci.yaml'
+      - '.github/workflows/habits-api-ci.yaml'
   push:
     branches: [main]
     paths:
-      - 'apps/auth-api/**'
+      - 'apps/habits-api/**'
       - 'package.json'
       - 'package-lock.json'
-      - '.github/workflows/auth-api-ci.yaml'
+      - '.github/workflows/habits-api-ci.yaml'
   workflow_dispatch:
 
 concurrency:
-  group: auth-api-${{ github.ref }}
+  group: habits-api-${{ github.ref }}
   # PRs cancel in-progress (latest push wins). Main pushes don't —
   # half-rolled-out k8s deployments are worse than waiting.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -56,21 +56,21 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma client
-        run: npm run generate -w @habitpair/auth-api
+        run: npm run generate -w @habitpair/habits-api
 
       - name: Lint
-        run: npm run lint -w @habitpair/auth-api
+        run: npm run lint -w @habitpair/habits-api
 
-      - name: Build auth-api
-        run: npm run build -w @habitpair/auth-api
+      - name: Build habits-api
+        run: npm run build -w @habitpair/habits-api
 
       - name: Run migrations
-        run: npm run migrate:deploy -w @habitpair/auth-api
+        run: npm run migrate:deploy -w @habitpair/habits-api
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test
 
       - name: Test
-        run: npm test -w @habitpair/auth-api
+        run: npm test -w @habitpair/habits-api
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test
 
@@ -98,10 +98,10 @@ jobs:
       - uses: docker/build-push-action@v5
         with:
           context: .
-          file: apps/auth-api/Dockerfile
+          file: apps/habits-api/Dockerfile
           platforms: linux/arm64        # must match EC2 architecture (t4g = Graviton)
           push: true
-          tags: ghcr.io/${{ github.repository }}/auth-api:${{ github.sha }}
+          tags: ghcr.io/${{ github.repository }}/habits-api:${{ github.sha }}
           cache-from: type=gha          # speed up future builds via GHA cache
           cache-to: type=gha,mode=max
 
@@ -115,7 +115,7 @@ jobs:
           # or .profile, so the shell env from cloud-init's bashrc line isn't inherited here.
           script: |
             export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-            kubectl set image deployment/auth-api \
-              auth-api=ghcr.io/${{ github.repository }}/auth-api:${{ github.sha }} \
+            kubectl set image deployment/habits-api \
+              habits-api=ghcr.io/${{ github.repository }}/habits-api:${{ github.sha }} \
               -n habitpair
-            kubectl rollout status deployment/auth-api -n habitpair --timeout=120s
+            kubectl rollout status deployment/habits-api -n habitpair --timeout=120s

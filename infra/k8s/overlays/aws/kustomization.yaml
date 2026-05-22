@@ -20,3 +20,6 @@ images:
   - name: auth-api
     newName: ghcr.io/ivan-zakharanka-airhelp/habitpair/auth-api
     newTag: manual-1
+  - name: habits-api
+    newName: ghcr.io/ivan-zakharanka-airhelp/habitpair/habits-api
+    newTag: manual-1

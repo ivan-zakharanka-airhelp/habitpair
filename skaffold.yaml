@@ -10,6 +10,10 @@ build:
       context: .
       docker:
         dockerfile: apps/auth-api/Dockerfile
+    - image: habits-api
+      context: .
+      docker:
+        dockerfile: apps/habits-api/Dockerfile
 manifests:
   kustomize:
     paths:
@@ -22,3 +26,8 @@ portForward:
     namespace: habitpair
     port: 3000
     localPort: 3000
+  - resourceType: service
+    resourceName: habits-api-service
+    namespace: habitpair
+    port: 3000
+    localPort: 3001

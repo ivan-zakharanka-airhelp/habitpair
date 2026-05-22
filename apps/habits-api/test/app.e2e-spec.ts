@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 
-describe('Health (e2e)', () => {
+describe('Habits API (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -19,16 +19,20 @@ describe('Health (e2e)', () => {
     await app.close();
   });
 
-  it('GET /auth/health — liveness', () => {
-    return request(app.getHttpServer()).get('/auth/health').expect(200).expect({ status: 'ok' });
+  it('GET /habits/health — liveness', () => {
+    return request(app.getHttpServer()).get('/habits/health').expect(200).expect({ status: 'ok' });
   });
 
-  it('GET /auth/health/ready — readiness', () => {
+  it('GET /habits/health/ready — readiness', () => {
     return request(app.getHttpServer())
-      .get('/auth/health/ready')
+      .get('/habits/health/ready')
       .expect(200)
       .expect((res) => {
         expect(res.body.status).toBe('ok');
       });
+  });
+
+  it('GET /habits without Authorization → 401', () => {
+    return request(app.getHttpServer()).get('/habits').expect(401);
   });
 });

@@ -4,6 +4,9 @@ node_modules/
 # Build output
 dist/
 
+# Prisma generated clients (per-service to avoid hoist conflicts)
+apps/*/generated/
+
 # Environment files
 .env
 .env*.local
