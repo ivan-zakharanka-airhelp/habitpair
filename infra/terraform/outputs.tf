@@ -40,13 +40,13 @@ output "ssh_command" {
 }
 
 output "health_url" {
-  description = "Health endpoint URL (valid ~60s after first deploy)."
-  value       = "https://${replace(aws_eip.main.public_ip, ".", "-")}.sslip.io/api/health"
+  description = "auth-api health endpoint (valid ~60s after first deploy). habits-api is at /api/habits/health."
+  value       = "https://${replace(aws_eip.main.public_ip, ".", "-")}.sslip.io/api/auth/health"
 }
 
 output "domain_health_url" {
-  description = "Health endpoint via the habitpair.com domain (requires Cloudflare A record for api.habitpair.com → public_ip)."
-  value       = "https://api.habitpair.com/api/health"
+  description = "auth-api health via the habitpair.com domain. habits-api is at /api/habits/health."
+  value       = "https://api.habitpair.com/api/auth/health"
 }
 
 output "frontend_bucket_name" {

@@ -8,9 +8,14 @@ services:
     environment:
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: dev
-      POSTGRES_DB: habitpair
+      # First boot creates `auth`; the init-databases.sql below adds `habits`.
+      # Names match the services (auth-api, habits-api) and AWS (var.db_name).
+      POSTGRES_DB: auth
     volumes:
       - pgdata:/var/lib/postgresql/data
+      # Runs on first boot only (when pgdata is empty). Creates `habits`
+      # alongside the default `auth` DB. See init-databases.sql.
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U dev"]
       interval: 5s
