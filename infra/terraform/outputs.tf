@@ -48,3 +48,23 @@ output "domain_health_url" {
   description = "Health endpoint via the habitpair.com domain (requires Cloudflare A record for api.habitpair.com → public_ip)."
   value       = "https://api.habitpair.com/api/health"
 }
+
+output "frontend_bucket_name" {
+  description = "S3 bucket holding the SPA build artifacts."
+  value       = aws_s3_bucket.frontend.bucket
+}
+
+output "frontend_distribution_id" {
+  description = "CloudFront distribution ID — used by CI for cache invalidation."
+  value       = aws_cloudfront_distribution.frontend.id
+}
+
+output "frontend_distribution_domain" {
+  description = "CloudFront domain name (the CNAME target you'd see in DNS)."
+  value       = aws_cloudfront_distribution.frontend.domain_name
+}
+
+# gha_web_deploy_role_arn / gha_terraform_role_arn — temporarily removed.
+# The romeo SSO role can't create IAM resources, so oidc.tf is disabled
+# (renamed to oidc.tf.disabled). Re-enable once an admin grants IAM perms
+# or pre-provisions the OIDC provider + roles.

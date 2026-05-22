@@ -1,12 +1,16 @@
 # AWS Infrastructure — Terraform
 
-Provisions everything needed to run the auth service on a single-node k3s cluster on AWS:
+Provisions everything needed to run the auth service on a single-node k3s cluster on AWS, plus the static-site stack that serves the SPA:
 
 - EC2 `t4g.small` with Ubuntu 24.04 ARM64, k3s auto-installed via cloud-init
 - Elastic IP (destroyed with the stack — each cycle gets a new public IP + sslip.io hostname)
 - Security groups (SSH + k3s API from your IP; HTTP/HTTPS from anywhere; RDS only from EC2)
 - RDS `db.t4g.micro` PostgreSQL 16 in private subnets (password auto-generated)
 - EC2 key pair imported from your local `~/.ssh/aws_learning_ed25519.pub`
+- **S3 bucket + CloudFront distribution** serving the `apps/web` SPA at `https://habitpair.com`
+- **ACM certificate** in `us-east-1` (CloudFront requirement), DNS-validated via Cloudflare
+- **Cloudflare DNS records** for ACM validation + apex CNAME → CloudFront
+- **GitHub OIDC provider + two IAM roles** (`gha-web-deploy`, `gha-terraform`) so GitHub Actions can deploy without long-lived AWS credentials
 
 ## One-command lifecycle
 
@@ -81,6 +85,53 @@ aws ec2 describe-addresses --profile development \
 ```
 
 All three should print empty tables.
+
+## First-time bootstrap for the CI/CD pipeline
+
+### One-time steps
+
+1. **Get a Cloudflare API token** with `Zone:DNS:Edit` permission on `habitpair.com`. Cloudflare dashboard → My Profile → API Tokens → Create.
+2. **Set the token + apply Terraform locally:**
+   ```bash
+   export TF_VAR_cloudflare_api_token=<token>
+   export AWS_PROFILE=development
+   make aws-up   # runs terraform apply + k8s bootstrap
+   ```
+3. **Create an IAM user for the web deploy.** The `romeo` SSO role can't create IAM resources, so do this in the AWS console (or ask an AirHelp admin):
+   - User name suggestion: `habitpair-web-deploy`
+   - Inline policy: same as `oidc.tf.disabled`'s `gha_web_deploy` policy — `s3:ListBucket` on the frontend bucket, `s3:GetObject/PutObject/DeleteObject` on `${bucket}/*`, `cloudfront:CreateInvalidation` + `cloudfront:GetInvalidation` on the distribution ARN.
+   - Generate access keys for the user.
+4. **Copy values into GitHub repo Variables + Secrets** (Settings → Secrets and variables → Actions):
+
+   | Type | Name | Source |
+   |---|---|---|
+   | Variable | `WEB_BUCKET_NAME` | TF output `frontend_bucket_name` |
+   | Variable | `WEB_DISTRIBUTION_ID` | TF output `frontend_distribution_id` |
+   | Secret | `AWS_ACCESS_KEY_ID` | IAM user access key |
+   | Secret | `AWS_SECRET_ACCESS_KEY` | IAM user secret access key |
+
+   Get the TF outputs with `terraform output -json` from `infra/terraform/`.
+
+### What happens after bootstrap
+
+- Pushes to `apps/web/**` on `main` → `web-ci.yaml` builds, syncs to S3, invalidates CloudFront
+- PRs touching `infra/terraform/**` → `infra-ci.yaml` runs `terraform fmt -check`, `init -backend=false`, and `validate` (lint-only, no plan/apply)
+- All `terraform apply` runs from a developer's laptop via `make aws-up` until OIDC + remote state are in place
+
+### Deferred: OIDC role-assume for CI
+
+The plan called for GitHub OIDC + two scoped IAM roles instead of access keys. The Terraform for that lives in `oidc.tf.disabled` (renamed because the `romeo` SSO role lacks `iam:CreateOpenIDConnectProvider` / `iam:CreateRole`). To re-enable:
+
+1. Ask an AirHelp IAM admin to either grant your role `iam:*` on `arn:aws:iam::*:role/habitpair-*` + `iam:CreateOpenIDConnectProvider`, OR have them pre-provision the resources and we'll reference them via `data` sources.
+2. Rename `oidc.tf.disabled` → `oidc.tf`.
+3. Restore the OIDC outputs in `outputs.tf` (currently removed — see the comment in that file).
+4. `terraform apply`.
+5. Swap `web-ci.yaml`'s access-key step back to `role-to-assume: ${{ vars.AWS_WEB_DEPLOY_ROLE_ARN }}` with `permissions: id-token: write`.
+6. Restore the gated `plan` + `apply` jobs in `infra-ci.yaml` (was lint-only after OIDC was disabled).
+
+### Deferred: Terraform state on S3
+
+`infra-ci.yaml` currently runs `init -backend=false` precisely because state is still local. When you migrate state per the section below, restore the `terraform plan` + `apply` jobs (the previous version of the workflow is in `git log` under commit `71165be`).
 
 ## Migrating to S3 backend (follow-up)
 

@@ -25,17 +25,19 @@ See [Architecture.md](Architecture.md) for the full design document.
 ## Quick Start
 
 ```bash
-# First-time setup (installs deps, starts Postgres, runs migrations)
+# First-time setup (installs deps, starts Postgres, runs migrations,
+# copies apps/web/.env.example → apps/web/.env)
 make setup
 
-# Daily development (starts Postgres + auth-api in watch mode)
+# Daily development (Postgres + auth-api + Vite SPA in one foreground process)
 make up
 
 # Stop everything
 make down
 ```
 
-The auth API will be available at `http://localhost:3000`. Health check: `http://localhost:3000/health`.
+- Auth API: `http://localhost:3000` (health check at `/health`)
+- Web SPA: `http://localhost:5173` (hits the auth API for `/health` via CORS)
 
 ## Available Commands
 
@@ -61,7 +63,8 @@ Run `make help` to see all commands:
 
 ```
 apps/
-  auth-api/          - Authentication service (NestJS)
+  auth-api/          - Authentication service (NestJS, port 3000)
+  web/               - SPA (Vite + React + TanStack Router/Query + Tailwind v4, port 5173)
 packages/
   database/          - Shared Prisma schema, client, and NestJS module
 infra/
@@ -69,8 +72,9 @@ infra/
   k8s/
     base/            - Production-accurate K8s manifests
     overlays/local/  - k3d-specific patches for local dev
+  terraform/         - AWS + Cloudflare resources (EC2/k3s, S3+CloudFront, OIDC)
   scripts/           - k3s/k3d setup scripts
-.github/workflows/   - CI/CD pipelines
+.github/workflows/   - Path-filtered CI/CD pipelines (auth-api, web, infra)
 ```
 
 ### Adding a new service
@@ -103,12 +107,16 @@ k3d runs k3s inside Docker, so the app behaves in local dev the same way it does
 
 ## Deployment
 
-Production runs on an AWS EC2 instance (~$12/mo for a `t4g.small`) with k3s installed. Postgres runs either on AWS RDS (~$13/mo) or self-hosted on the same EC2 instance to reduce cost.
+Three independent pipelines, each triggered only when its own files change:
 
-See `infra/scripts/setup-k3s.sh` for initial server setup.
+- **`apps/auth-api/**`** → `auth-api-ci.yaml` runs tests on PRs; on merge to main, its `deploy` job builds a Docker image, pushes to GHCR, SSHes to EC2 and runs `kubectl set image`.
+- **`apps/web/**`** → `web-ci.yaml` builds the SPA, syncs to S3, invalidates CloudFront.
+- **`infra/terraform/**`** → `infra-ci.yaml` posts a `terraform plan` on PR; `apply` runs on merge to `main` behind a manual approval gate.
+
+Production backend runs on a single AWS EC2 `t4g.small` (~$12/mo) with k3s + RDS PostgreSQL. The SPA is served from S3 behind CloudFront at `https://habitpair.com`.
+
+See [infra/terraform/README.md](infra/terraform/README.md) for the one-time bootstrap (Cloudflare token, GitHub Variables/Secrets to set, `production` Environment approval gate).
 
 ```bash
-make deploy
+make deploy   # manual backend deploy (alternative to merging to main)
 ```
-
-Or merge to `main` to trigger the GitHub Actions deploy workflow.

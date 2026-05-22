@@ -12,7 +12,7 @@ Applied against the single-node k3s cluster running on the `ivan-sandbox` EC2 in
 
 ### CI / automated (on merge to main)
 
-`deploy.yaml` workflow uses `kubectl set image` with the git SHA. It bypasses this kustomization's `newTag` at runtime — that's intentional and fine. No file changes needed in git.
+The `deploy` job in `auth-api-ci.yaml` uses `kubectl set image` with the git SHA. It bypasses this kustomization's `newTag` at runtime — that's intentional and fine. No file changes needed in git.
 
 ### Manual (for testing or hotfix)
 

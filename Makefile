@@ -1,11 +1,13 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup install up down db-up db-migrate db-studio build lint test test-e2e \
+.PHONY: help setup install up web down db-up db-migrate db-studio build lint test test-e2e \
         k8s-setup k8s deploy \
-        aws-up aws-bootstrap aws-down aws-status aws-ssh aws-deploy aws-cleanup-manual
+        aws-up aws-bootstrap aws-down aws-status aws-ssh \
+        aws-deploy aws-deploy-api aws-deploy-web aws-cleanup-manual
 
 # ── First-time setup ──
 
 setup: install db-up db-migrate  ## First-time project setup (one command)
+	@if [ ! -f apps/web/.env ] && [ -f apps/web/.env.example ]; then cp apps/web/.env.example apps/web/.env; fi
 
 install:                         ## Install all workspace deps + generate Prisma + build database package
 	npm install
@@ -14,8 +16,11 @@ install:                         ## Install all workspace deps + generate Prisma
 
 # ── Local development (no K8s, fastest feedback loop) ──
 
-up: db-up                        ## Start Postgres + NestJS in watch mode
-	npm run start:dev -w @habitpair/auth-api
+up: db-up                        ## Start the full local stack (postgres + auth-api + web)
+	npm run dev
+
+web:                             ## Run only the web SPA (no DB, no api)
+	npm run dev:web
 
 down:                            ## Stop local services
 	docker compose -f infra/docker/docker-compose.yaml down
@@ -66,12 +71,33 @@ aws-status:                      ## Show Terraform outputs + pod status.
 aws-ssh:                         ## SSH to the current EC2 instance.
 	ssh -i ~/.ssh/aws_learning_ed25519 ubuntu@$$(cd infra/terraform && terraform output -raw public_ip)
 
-aws-deploy:                      ## Build + push image + rollout on AWS k3s (manual deploy).
+aws-deploy: aws-deploy-api aws-deploy-web  ## Deploy backend + frontend to AWS.
+
+aws-deploy-api:                  ## Build + push image + rollout auth-api on AWS k3s.
 	$(eval IMAGE := ghcr.io/ivan-zakharanka-airhelp/habitpair/auth-api:manual-$(shell date +%Y%m%d-%H%M%S))
 	docker build --platform linux/arm64 -t $(IMAGE) -f apps/auth-api/Dockerfile .
 	docker push $(IMAGE)
+	# Apply manifests first in case env/routes/middlewares changed since last deploy.
+	# kustomize resets the image to its placeholder (manual-1), so we set the real
+	# tag immediately after to avoid an ImagePullBackOff window.
+	kubectl --context aws-k3s apply -k infra/k8s/overlays/aws
 	kubectl --context aws-k3s set image -n habitpair deployment/auth-api auth-api=$(IMAGE)
 	kubectl --context aws-k3s rollout status -n habitpair deployment/auth-api --timeout=120s
+
+aws-deploy-web:                  ## Build SPA + sync to S3 + invalidate CloudFront.
+	$(eval BUCKET := $(shell cd infra/terraform && terraform output -raw frontend_bucket_name))
+	$(eval DIST_ID := $(shell cd infra/terraform && terraform output -raw frontend_distribution_id))
+	VITE_API_URL=https://api.habitpair.com/api npm run build -w @habitpair/web
+	aws s3 sync apps/web/dist/ s3://$(BUCKET)/ \
+		--delete \
+		--exclude "index.html" \
+		--cache-control "public, max-age=31536000, immutable"
+	aws s3 cp apps/web/dist/index.html s3://$(BUCKET)/index.html \
+		--cache-control "no-cache, no-store, must-revalidate" \
+		--content-type "text/html; charset=utf-8"
+	aws cloudfront create-invalidation \
+		--distribution-id $(DIST_ID) \
+		--paths "/index.html" "/"
 
 # ── Legacy Skaffold deploy target (kept for reference) ──
 
