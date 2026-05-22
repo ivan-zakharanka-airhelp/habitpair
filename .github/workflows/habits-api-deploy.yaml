@@ -65,6 +65,11 @@ jobs:
           tags: ${{ steps.meta.outputs.image }}
           cache-from: type=gha          # speed up future builds via GHA cache
           cache-to: type=gha,mode=max
+          # Single-platform builds default to wrapping the manifest in a multi-arch index
+          # (for provenance attestation). Trivy then looks for a linux/amd64 child in
+          # that index, doesn't find one (we only push arm64), and fails. Disabling
+          # provenance produces a single-manifest image that Trivy can scan directly.
+          provenance: false
 
   scan:
     needs: build
