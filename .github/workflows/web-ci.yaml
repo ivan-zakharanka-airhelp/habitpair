@@ -39,9 +39,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       AWS_REGION: eu-west-1
-      # Build-time API URL baked into the bundle. The /api suffix is required —
-      # Traefik's `api-strip` middleware routes only PathPrefix(`/api`).
-      VITE_API_URL: https://api.habitpair.com/api
+      # Build-time API URLs baked into the bundle. The /api suffix is required —
+      # Traefik's `api-strip` middleware routes only PathPrefix(`/api`). Both
+      # services live behind the same ingress in prod, so both vars get the
+      # same value; locally they point to different ports.
+      VITE_AUTH_API_URL: https://api.habitpair.com/api
+      VITE_HABITS_API_URL: https://api.habitpair.com/api
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
