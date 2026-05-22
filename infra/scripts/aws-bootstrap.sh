@@ -46,6 +46,8 @@ RDS_PORT=$(terraform output -raw rds_port)
 DB_NAME=$(terraform output -raw db_name)
 DB_USER=$(terraform output -raw db_username)
 DB_PASSWORD=$(terraform output -raw db_password)
+WEB_BUCKET_NAME=$(terraform output -raw frontend_bucket_name 2>/dev/null || true)
+WEB_DISTRIBUTION_ID=$(terraform output -raw frontend_distribution_id 2>/dev/null || true)
 cd "$PROJECT_ROOT"
 ok "Public IP: $PUBLIC_IP"
 
@@ -140,10 +142,11 @@ kubectl --context "$CONTEXT_NAME" apply -f "$PROJECT_ROOT/infra/k8s/traefik-conf
 kubectl --context "$CONTEXT_NAME" apply -k "$PROJECT_ROOT/infra/k8s/overlays/aws" >/dev/null
 ok "Manifests applied"
 
-# ── 7b. Sync GitHub Actions secrets so the Deploy workflow points at the new EC2 ──
-# Without this, pushing to main would SSH to a stale/destroyed IP and fail.
+# ── 7b. Sync GitHub Actions secrets + variables ──
+# Secrets:   SERVER_HOST + SERVER_SSH_KEY  → auth-api-ci.yaml deploy job (SSH to EC2)
+# Variables: WEB_BUCKET_NAME + WEB_DISTRIBUTION_ID → web-ci.yaml deploy job (S3 + CF)
 # Silently skipped if gh CLI isn't installed / authenticated.
-step "Syncing GitHub Actions secrets (SERVER_HOST, SERVER_SSH_KEY)"
+step "Syncing GitHub Actions secrets + variables"
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
   REPO=$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null || true)
   if [ -n "$REPO" ]; then
@@ -156,11 +159,21 @@ if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
     else
       warn "SSH private key not found at $SSH_KEY — only SERVER_HOST was updated"
     fi
+
+    # Variables — only set if Terraform exposed them (frontend stack might be
+    # disabled in some branches). gh variable set upserts.
+    if [ -n "$WEB_BUCKET_NAME" ] && [ -n "$WEB_DISTRIBUTION_ID" ]; then
+      gh variable set WEB_BUCKET_NAME --repo "$REPO" --body "$WEB_BUCKET_NAME"
+      gh variable set WEB_DISTRIBUTION_ID --repo "$REPO" --body "$WEB_DISTRIBUTION_ID"
+      ok "Variables updated on $REPO (WEB_BUCKET_NAME + WEB_DISTRIBUTION_ID)"
+    else
+      warn "frontend_bucket_name / frontend_distribution_id outputs missing — web variables NOT updated"
+    fi
   else
     warn "Not inside a GitHub repo context — skipping (run 'gh repo view' to check)"
   fi
 else
-  warn "gh CLI missing or not authenticated — GitHub secrets NOT updated"
+  warn "gh CLI missing or not authenticated — GitHub secrets/variables NOT updated"
   warn "Install: brew install gh && gh auth login"
   warn "Or update manually: gh secret set SERVER_HOST --body '$PUBLIC_IP'"
 fi
