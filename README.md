@@ -56,7 +56,7 @@ make k8s-setup   # one-time: creates k3d cluster named "habitpair" (ingress on 8
 make k8s         # daily: skaffold dev --port-forward → auth on 3000, habits on 3001
 ```
 
-Skaffold uses the `infra/k8s/overlays/local` kustomize overlay. Service ports forward to the same host ports as Mode 1, so the SPA configuration (`VITE_API_URL`) doesn't need to change.
+Skaffold uses the `infra/k8s/overlays/local` kustomize overlay. Service ports forward to the same host ports as Mode 1, so the SPA configuration (`VITE_AUTH_API_URL` / `VITE_HABITS_API_URL`) doesn't need to change.
 
 ## Deployment to AWS
 

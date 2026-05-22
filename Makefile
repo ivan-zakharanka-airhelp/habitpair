@@ -98,7 +98,7 @@ aws-deploy-habits:               ## Build + push image + rollout habits-api on A
 aws-deploy-web:                  ## Build SPA + sync to S3 + invalidate CloudFront.
 	$(eval BUCKET := $(shell cd infra/terraform && terraform output -raw frontend_bucket_name))
 	$(eval DIST_ID := $(shell cd infra/terraform && terraform output -raw frontend_distribution_id))
-	VITE_API_URL=https://api.habitpair.com/api npm run build -w @habitpair/web
+	VITE_AUTH_API_URL=https://api.habitpair.com/api VITE_HABITS_API_URL=https://api.habitpair.com/api npm run build -w @habitpair/web
 	aws s3 sync apps/web/dist/ s3://$(BUCKET)/ \
 		--delete \
 		--exclude "index.html" \
