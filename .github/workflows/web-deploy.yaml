@@ -1,52 +1,33 @@
-name: web
+name: web / deploy
 
 on:
-  pull_request:
-    paths:
-      - 'apps/web/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/web-ci.yaml'
-  push:
+  workflow_run:
+    workflows: ["web / test"]
+    types: [completed]
     branches: [main]
-    paths:
-      - 'apps/web/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/web-ci.yaml'
+  workflow_dispatch:
 
 concurrency:
-  group: web-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: web-deploy-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - run: npm run lint -w @habitpair/web
-      - run: npm run typecheck -w @habitpair/web
-      - run: npm run test -w @habitpair/web
-
   build-and-deploy:
-    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Manual dispatch always runs. workflow_run fires on ANY conclusion (success/failure/cancelled),
+    # so we must explicitly require success — otherwise a failed test would still deploy.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     env:
       AWS_REGION: eu-west-1
-      # Build-time API URLs baked into the bundle. The /api suffix is required —
-      # Traefik's `api-strip` middleware routes only PathPrefix(`/api`). Both
-      # services live behind the same ingress in prod, so both vars get the
-      # same value; locally they point to different ports.
-      VITE_AUTH_API_URL: https://api.habitpair.com/api
-      VITE_HABITS_API_URL: https://api.habitpair.com/api
+      # Build-time API URL baked into the bundle. The /api suffix is required —
+      # Traefik's `api-strip` middleware routes only PathPrefix(`/api`).
+      VITE_API_URL: https://api.habitpair.com/api
     steps:
+      # On workflow_run, github.sha is the default-branch HEAD at event-creation time,
+      # not the commit tests passed on. Pin to the upstream run's head_sha to be safe.
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
