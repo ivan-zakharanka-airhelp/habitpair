@@ -1,52 +1,156 @@
 # habitpair
 
-A habit-tracking app — full-stack learning project. The point isn't the app itself; it's exercising production patterns end-to-end at small scale: two NestJS services on k3s, Vite/React SPA on S3 + CloudFront, infra as code with Terraform, Traefik ingress with Let's Encrypt, per-service path-filtered CI/CD.
+A habit-tracking app — a full-stack learning project exercising production patterns end-to-end at small scale: two NestJS services on k3s, a Vite/React SPA on S3 + CloudFront, infra-as-code with Terraform, Traefik ingress with Let's Encrypt, per-service path-filtered CI/CD.
 
-**Learning goals:** full Kubernetes deployment lifecycle, CI/CD pipelines, Traefik ingress with TLS, kustomize overlays, S3+CloudFront SPA hosting, IAM/OIDC trust, Cloudflare DNS via Terraform, stateless service-to-service auth with JWT — exercised against a realistic application (auth, habits, OAuth eventually).
+Live at [habitpair.com](https://habitpair.com); APIs at [api.habitpair.com/api/auth/health](https://api.habitpair.com/api/auth/health) and [api.habitpair.com/api/habits/health](https://api.habitpair.com/api/habits/health).
 
-Live at [habitpair.com](https://habitpair.com); APIs at [api.habitpair.com/api/auth](https://api.habitpair.com/api/auth/health) and [api.habitpair.com/api/habits](https://api.habitpair.com/api/habits/health). See [docs/Architecture.md](docs/Architecture.md) for the design and [docs/Infra.md](docs/Infra.md) for the infra notes.
+## How it works
 
-## Stack
+Two NestJS services — `auth-api` and `habits-api` — backed by one RDS PostgreSQL with two logical databases (`auth`, `habits`), one per service. A Vite/React SPA consumes both APIs through a shared ingress prefix (`/api/auth/...` and `/api/habits/...`).
 
-- **Backend:** Node.js 22 + TypeScript 5.x + NestJS 11. Two services: `auth-api`, `habits-api`.
-- **Frontend:** Vite + React 18 + TanStack Router/Query + Tailwind v4
-- **Data:** PostgreSQL 16 + Prisma 6. One RDS instance, two logical databases (`auth`, `habits`) — one per service.
-- **Auth:** HS256 JWT signed by `auth-api`, verified locally by `habits-api` via a shared K8s secret (no inter-service HTTP).
-- **Infra:** Docker, k3s (prod on AWS EC2), k3d (local K8s), Skaffold, kustomize, Terraform
-- **CDN/DNS:** AWS S3 + CloudFront for the SPA, Cloudflare for DNS, Let's Encrypt for the API cert
-- **CI/CD:** GitHub Actions, path-filtered per service (`auth-api`, `habits-api`, `web`, `infra`)
+In production: a single AWS EC2 `t4g.small` (~$12/mo) running k3s with Traefik ingress + Let's Encrypt; RDS `db.t4g.micro` (~$13/mo); the SPA served from S3 behind CloudFront. Locally: same NestJS apps and same kustomize manifests, against either Docker Compose Postgres or a k3d cluster.
 
-## Prerequisites
+## Local development
 
-- Node.js 22 (see `.nvmrc`)
-- Docker and Docker Compose (Docker Desktop or Colima on macOS)
-- kubectl (for K8s deployment)
-- k3d (optional, for local K8s testing)
-- Skaffold (optional, for local K8s dev loop)
+Two modes — pick one.
 
-## Quick Start
+### Mode 1 — Local dev (recommended, fastest feedback)
+
+NestJS apps run directly on the host, Postgres runs in Docker Compose. File changes hot-reload instantly — no container rebuilds.
+
+**Prerequisites:**
+
+- Node.js 22 (see [`.nvmrc`](.nvmrc))
+- Docker + Docker Compose (Docker Desktop or Colima on macOS)
+- npm (ships with Node)
+
+**Env files:** `make setup` copies `apps/web/.env.example` → `apps/web/.env` automatically. The two services read their `.env.example` directly if `.env` is missing — both default to local Postgres on port 5434 with the same dev `JWT_SECRET`. You only need to edit them to override defaults.
 
 ```bash
-# First-time setup (installs deps, starts Postgres with `auth` + `habits` DBs,
-# generates Prisma clients, copies apps/web/.env.example → apps/web/.env)
-make setup
-
-# Daily development (Postgres + auth-api + habits-api + Vite SPA, all in foreground)
-make up
-
-# Stop everything
-make down
+make setup     # one-time: install deps, start Postgres, generate Prisma clients, run migrations
+make up        # daily: Postgres + auth-api + habits-api + Vite SPA, all in one foreground process
+make down      # stop containers
 ```
 
-- Auth API: `http://localhost:3000` (health at [`/auth/health`](http://localhost:3000/auth/health))
-- Habits API: `http://localhost:3001` (health at [`/habits/health`](http://localhost:3001/habits/health) — `/habits` itself requires a Bearer JWT)
-- Web SPA: `http://localhost:5173`
+**Ports:**
 
-Each service is reachable at `/<service-prefix>/...` — that's NestJS `setGlobalPrefix` matching the path Traefik routes on. Same shape locally and in prod.
+| Service | URL |
+|---|---|
+| auth-api | http://localhost:3000 (health at `/auth/health`) |
+| habits-api | http://localhost:3001 (health at `/habits/health`) |
+| web SPA | http://localhost:5173 |
+| Postgres | localhost:5434 (user `dev`, pass `dev`, DBs `auth` + `habits`) |
 
-## Available Commands
+### Mode 2 — Local Kubernetes via k3d (optional)
 
-Run `make help` to see all commands.
+For testing the K8s manifests themselves — ingress routes, probes, resource limits, anything that only shows up under K8s. Skaffold rebuilds + redeploys both services on file change.
+
+**Additional prerequisites on top of Mode 1:**
+
+- [kubectl](https://kubernetes.io/docs/tasks/tools/)
+- [k3d](https://k3d.io)
+- [Skaffold](https://skaffold.dev)
+
+```bash
+make k8s-setup   # one-time: creates k3d cluster named "habitpair" (ingress on 8080/8443)
+make k8s         # daily: skaffold dev --port-forward → auth on 3000, habits on 3001
+```
+
+Skaffold uses the `infra/k8s/overlays/local` kustomize overlay. Service ports forward to the same host ports as Mode 1, so the SPA configuration (`VITE_API_URL`) doesn't need to change.
+
+## Deployment to AWS
+
+Two stages: provision infra once, then deploy app images on every release.
+
+### Prerequisites
+
+- AWS CLI with `AWS_PROFILE=development` configured for SSO (run `aws sso login --profile development` if the session expired)
+- Terraform >= 1.6
+- kubectl
+- Docker with arm64 builder (production runs on Graviton)
+- SSH keypair at `~/.ssh/aws_learning_ed25519` (+ `.pub`) — Terraform imports the public half to EC2
+- Cloudflare API token with **`Zone:DNS:Edit`** on `habitpair.com` — create at https://dash.cloudflare.com/profile/api-tokens
+- The AirHelp `development` AWS account, which has the pre-existing VPC + subnets Terraform expects
+
+### One-time setup
+
+1. **Copy the Terraform vars template:**
+
+   ```bash
+   cp infra/terraform/terraform.tfvars.example infra/terraform/terraform.tfvars
+   ```
+
+   The only **required** value is `cloudflare_api_token`. Everything else (`region`, `owner_email`, `project_name`, `ssh_public_key_path`, …) has a working default in [`variables.tf`](infra/terraform/variables.tf) — uncomment and override only if you need to.
+
+2. **Export credentials:**
+
+   ```bash
+   export AWS_PROFILE=development
+   export TF_VAR_cloudflare_api_token=<your-cloudflare-token>
+   ```
+
+   `TF_VAR_*` env vars override anything in `terraform.tfvars`, so the token never has to land in a file.
+
+3. **Provision everything with one command:**
+
+   ```bash
+   make aws-up
+   ```
+
+   This runs `terraform apply` followed by [`infra/scripts/aws-bootstrap.sh`](infra/scripts/aws-bootstrap.sh), which:
+   - Creates EC2 + Elastic IP + security groups + RDS + S3 + CloudFront + ACM cert + Cloudflare DNS
+   - Waits for cloud-init to signal k3s readiness
+   - Merges the cluster's kubeconfig into `~/.kube/config` as context `aws-k3s`
+   - SSHes to EC2 to create the `habits` database alongside the default `auth`
+   - Creates K8s Secrets (`db-credentials`, `habits-db-credentials`, `auth-jwt-secret`)
+   - Applies the `infra/k8s/overlays/aws` kustomize overlay
+
+4. **Configure GitHub Actions secrets** (required for CI deploys to work). In **Settings → Secrets and variables → Actions** of the repo, add these four secrets manually:
+
+   | Name | Source |
+   |---|---|
+   | `GHCR_PAT` | Personal Access Token with `write:packages` (push images to GHCR) |
+   | `AWS_ACCESS_KEY_ID` | Your AWS SSO short-lived credentials |
+   | `AWS_SECRET_ACCESS_KEY` | Your AWS SSO short-lived credentials |
+   | `AWS_SESSION_TOKEN` | Your AWS SSO short-lived credentials |
+
+   The remaining values (`SERVER_HOST`, `SERVER_SSH_KEY`, `WEB_BUCKET_NAME`, `WEB_DISTRIBUTION_ID`) are written automatically by `make aws-up` via the `gh` CLI.
+
+5. **Make the GHCR packages public.** After the first image push, two packages appear at `ghcr.io/<owner>/habitpair/auth-api` and `ghcr.io/<owner>/habitpair/habits-api`. Open each in GitHub → **Package settings → Change visibility → Public**. k3s on the EC2 instance pulls anonymously, so private packages cause `ImagePullBackOff`.
+
+### Deploy app images
+
+Once `make aws-up` is green, deploy services:
+
+```bash
+make aws-deploy           # all three (auth + habits + web)
+make aws-deploy-auth      # auth-api only (docker build → GHCR → kubectl rollout)
+make aws-deploy-habits    # habits-api only
+make aws-deploy-web       # SPA only (vite build → S3 sync → CloudFront invalidation)
+```
+
+Or merge to `main` and let GitHub Actions handle it (workflows are path-filtered — only the touched service redeploys).
+
+### Status, SSH, teardown
+
+```bash
+make aws-status   # terraform outputs + pod status
+make aws-ssh      # SSH into the EC2 instance
+make aws-down     # destroys everything (prompts for confirmation; deletes RDS data)
+```
+
+### Common gotchas
+
+- **`Error: failed to create resource: …` from Cloudflare provider** — `TF_VAR_cloudflare_api_token` not exported, or the token lacks `Zone:DNS:Edit`.
+- **`UnauthorizedOperation` from AWS** — SSO session expired. Run `aws sso login --profile development`.
+- **Bootstrap hangs on `kubectl get nodes`** — your public IP changed since the security group was created. Re-run `make aws-up`; Terraform picks up the new IP via `checkip.amazonaws.com`.
+- **`/api/auth/health` returns 404 right after `aws-up`** — Let's Encrypt cert still issuing. Wait ~60s; check `kubectl --context aws-k3s logs -n kube-system -l app.kubernetes.io/name=traefik` if it persists.
+
+Deeper Terraform reference (failure modes, OIDC migration, remote-state migration, teardown verification) lives in [`infra/terraform/README.md`](infra/terraform/README.md).
+
+## Command reference
+
+Run `make help` to see all targets. Summary:
 
 **Local dev**
 
@@ -81,86 +185,44 @@ Run `make help` to see all commands.
 | `make aws-ssh` | SSH into the current EC2 instance |
 | `make aws-down` | Destroy everything (prompts for confirmation) |
 
-## Project Structure
+## Adding a new service
 
-```
-apps/
-  auth-api/          - Auth service (NestJS, port 3000, global prefix /auth)
-    prisma/          - Own schema + migrations
-    src/
-      auth/          - (Eventually) login, JWT signing
-      health/
-      prisma/        - PrismaModule + PrismaService (per-service, no shared pkg)
-  habits-api/        - Habits service (NestJS, port 3001, global prefix /habits)
-    prisma/          - Own schema (Habit model) + migrations
-    src/
-      auth/          - JwtGuard (verifies HS256 with shared secret)
-      habits/        - HabitsController + HabitsService
-      health/
-      prisma/
-  web/               - SPA (Vite + React + TanStack Router/Query + Tailwind v4, port 5173)
-infra/
-  docker/
-    docker-compose.yaml    - Local Postgres
-    init-databases.sql     - Creates the `habits` DB alongside the default `auth`
-  k8s/
-    base/                  - Production-accurate K8s manifests (both services)
-    overlays/local/        - k3d-specific patches for local dev
-    overlays/aws/          - AWS k3s-specific patches
-  terraform/               - AWS + Cloudflare resources
-  scripts/                 - k3s/k3d setup + aws-bootstrap.sh
-.github/workflows/         - Per-service path-filtered CI/CD
-  auth-api-ci.yaml
-  habits-api-ci.yaml
-  web-ci.yaml
-  infra-ci.yaml
-```
-
-### Adding a new service
-
-1. Create `apps/<service-name>/` as a NestJS app (`@habitpair/<service-name>`) — mirror `apps/habits-api/` for structure (Prisma per service, JwtGuard if it serves authenticated users)
+1. Create `apps/<service-name>/` as a NestJS app (`@habitpair/<service-name>`) — mirror `apps/habits-api/` for structure (Prisma per service, `JwtGuard` if it serves authenticated users)
 2. Set `app.setGlobalPrefix('<service-name>')` in `main.ts` so its URLs become `/api/<service-name>/...`
-3. Add `prisma/schema.prisma` with `output = "../generated/prisma"` (avoids hoist conflicts) and create a new database for it in [`aws-bootstrap.sh`](infra/scripts/aws-bootstrap.sh) + [`infra/docker/init-databases.sql`](infra/docker/init-databases.sql)
-4. Add K8s manifests in `infra/k8s/base/`, register them in `kustomization.yaml`, add an ingress route ahead of the catch-all
-5. Add image mapping in `infra/k8s/overlays/aws/kustomization.yaml`
-6. Add a path-filtered workflow in `.github/workflows/<service-name>-ci.yaml`
-7. Add a Skaffold artifact + port-forward in `skaffold.yaml`
+3. Add `prisma/schema.prisma` with `output = "../generated/prisma"` (avoids hoist conflicts), then create a new database for it in [`aws-bootstrap.sh`](infra/scripts/aws-bootstrap.sh) + [`infra/docker/init-databases.sql`](infra/docker/init-databases.sql)
+4. Add K8s manifests in [`infra/k8s/base/`](infra/k8s/base/), register them in `kustomization.yaml`, add an ingress route ahead of the catch-all
+5. Add the image mapping in [`infra/k8s/overlays/aws/kustomization.yaml`](infra/k8s/overlays/aws/kustomization.yaml)
+6. Add a path-filtered workflow in [`.github/workflows/<service-name>-ci.yaml`](.github/workflows/)
+7. Add a Skaffold artifact + port-forward in [`skaffold.yaml`](skaffold.yaml)
 
-## Local Development
+## Tools we use (and why)
 
-By default, local development uses **Docker Compose** for Postgres while NestJS runs directly on the host. This gives the fastest feedback loop — file changes trigger instant reloads without rebuilding containers.
+Grouped by where they run.
 
-```bash
-make setup   # one-time
-make up      # daily: Postgres (Docker Compose) + both NestJS services + web in watch mode
-```
+### Shared across all environments
 
-If you want the full Kubernetes experience locally (test manifests, ingress routing, probes, resource limits), use **k3d** + **Skaffold** instead:
+| Tool | Purpose | Why this one |
+|---|---|---|
+| **make** | Single entry point for every workflow (`make up`, `make k8s`, `make aws-up`, …) | One command set instead of "remember which npm/docker/kubectl/terraform incantation goes where" |
+| **npm workspaces** | Monorepo for `apps/*` (auth-api, habits-api, web) | Built into npm, no extra tooling; each service is still independently buildable |
+| **NestJS 11** | Backend framework for both services | Module system + DI; bundled `terminus` (health probes) module fits K8s probes cleanly |
+| **Prisma 6** | ORM + migrations, **per service** | Type-safe queries; `output` path keeps each service's generated client isolated (no hoist conflicts) |
+| **Vite + React 18** | Frontend SPA | Fast dev server, static output → trivial to host on S3 + CloudFront |
+| **kustomize** | K8s manifests with base + overlays (`local/`, `aws/`) | Same base manifests in dev and prod; only env-specific patches differ |
 
-```bash
-make k8s-setup   # one-time: creates a local k3d cluster
-make k8s         # builds both service images, deploys to k3d, port-forwards auth → 3000, habits → 3001
-```
+### Local development only
 
-k3d runs k3s inside Docker so the local cluster behaves the same way as production — same Traefik ingress, same health probes, same resource constraints.
+| Tool | Purpose | Why this one |
+|---|---|---|
+| **Docker Compose** | Local Postgres in dev | Reproducible DB without polluting the host; one `pgdata` volume across both DBs |
+| **k3d** | Local Kubernetes cluster (k3s in Docker) | Same Traefik + ingress behavior as prod, runnable on a MacBook |
+| **Skaffold** | Watch-build-deploy loop for k3d | Auto-rebuilds + redeploys on file changes; one config drives both services |
 
-**Auth flow locally:** auth-api signs JWTs with `JWT_SECRET` from `.env`; habits-api verifies with the same secret. The same key must be in both `.env` files. K8s injects it via the `auth-jwt-secret` Secret.
+### Production / deployment only
 
-**Port conflicts:** Postgres uses 5434, auth-api 3000, habits-api 3001, web 5173. If something else holds those, free them or change them in the relevant `.env`/`docker-compose.yaml`.
-
-## Deployment
-
-Four independent pipelines, each triggered only when its own files change:
-
-- **`apps/auth-api/**`** → [auth-api-ci.yaml](.github/workflows/auth-api-ci.yaml) — tests on PR; on merge to main, builds arm64 Docker image, pushes to GHCR, SSHes to EC2, `kubectl set image deployment/auth-api`.
-- **`apps/habits-api/**`** → [habits-api-ci.yaml](.github/workflows/habits-api-ci.yaml) — same pattern for habits-api. Path-scoped, so it doesn't fire on auth changes and vice versa.
-- **`apps/web/**`** → [web-ci.yaml](.github/workflows/web-ci.yaml) — lint/typecheck/vitest on PR; on merge to main, builds the SPA with `VITE_API_URL=https://api.habitpair.com/api`, syncs to S3, invalidates CloudFront.
-- **`infra/terraform/**`** → [infra-ci.yaml](.github/workflows/infra-ci.yaml) — `terraform fmt -check` + `validate` only. Plan/apply runs manually via `make aws-up` from a laptop until OIDC + remote state are in place.
-
-Production backend runs on a single AWS EC2 `t4g.small` (~$12/mo) with k3s + RDS PostgreSQL (~$13/mo). The SPA is served from S3 behind CloudFront at `https://habitpair.com`. RDS hosts both DBs (`auth`, `habits`) — see [docs/Architecture.md](docs/Architecture.md#data-topology) for why.
-
-See [infra/terraform/README.md](infra/terraform/README.md) for the one-time bootstrap (Cloudflare token, GitHub Variables/Secrets, etc.).
-
-```bash
-make aws-deploy   # manual full-stack deploy (alternative to merging to main)
-```
+| Tool | Purpose | Why this one |
+|---|---|---|
+| **Terraform** | AWS + Cloudflare infrastructure as code | One `make aws-up` provisions EC2, RDS, S3, CloudFront, ACM, DNS, IAM |
+| **k3s** | Kubernetes distribution on EC2 | Single binary (~512 MB RAM), CNCF-certified, Traefik bundled — fits a `t4g.small` |
+| **Traefik** (bundled with k3s) | Ingress + TLS | Automatic Let's Encrypt cert issuance; path-prefix routing per service |
+| **GitHub Actions** | CI/CD, path-filtered per service | A change to `apps/auth-api/**` only triggers auth-api's pipeline — others stay green |
