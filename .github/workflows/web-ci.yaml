@@ -51,15 +51,17 @@ jobs:
       - run: npm ci
       - run: npm run build -w @habitpair/web
 
-      # Long-lived access keys for an IAM user with S3 PutObject/DeleteObject
-      # on the frontend bucket + cloudfront:CreateInvalidation on the
-      # distribution. Created manually via the AWS console because the SSO
-      # role can't create IAM resources. Migrate to OIDC role-assume when
-      # an admin pre-provisions the OIDC provider + roles.
+      # TEMPORARY: using AWS IAM Identity Center (SSO) session credentials
+      # because the SSO role can't create IAM users either. These expire
+      # after ~12h — refresh all three secrets when CI starts failing with
+      # "security token included in the request is invalid".
+      # Replace with permanent IAM-user access keys (no session token) or
+      # OIDC role-assume once an admin can provision either.
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
       # Hashed assets — immutable for a year
