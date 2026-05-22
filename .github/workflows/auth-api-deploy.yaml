@@ -1,4 +1,4 @@
-name: Deploy
+name: auth-api-deploy
 on:
   push:
     branches: [main]
@@ -7,13 +7,13 @@ on:
       - 'packages/database/**'
       - 'package.json'
       - 'package-lock.json'
-      - '.github/workflows/deploy.yaml'
+      - '.github/workflows/auth-api-deploy.yaml'
   workflow_dispatch:
 
 # Don't cancel an in-flight deploy — half-rolled-out k8s deployments are
 # worse than waiting for the previous run to finish.
 concurrency:
-  group: backend-deploy
+  group: auth-api-deploy
   cancel-in-progress: false
 
 # Explicit permissions — GITHUB_TOKEN needs `packages: write` to push to GHCR.

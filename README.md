@@ -109,7 +109,7 @@ k3d runs k3s inside Docker, so the app behaves in local dev the same way it does
 
 Three independent pipelines, each triggered only when its own files change:
 
-- **`apps/auth-api/**`** → `deploy.yaml` builds a Docker image, pushes to GHCR, SSHes to EC2 and runs `kubectl set image`.
+- **`apps/auth-api/**`** → `auth-api-deploy.yaml` builds a Docker image, pushes to GHCR, SSHes to EC2 and runs `kubectl set image`.
 - **`apps/web/**`** → `web-ci.yaml` builds the SPA, syncs to S3, invalidates CloudFront.
 - **`infra/terraform/**`** → `infra-ci.yaml` posts a `terraform plan` on PR; `apply` runs on merge to `main` behind a manual approval gate.
 

@@ -1,4 +1,4 @@
-name: CI
+name: auth-api-ci
 on:
   pull_request:
     paths:
@@ -6,10 +6,10 @@ on:
       - 'packages/database/**'
       - 'package.json'
       - 'package-lock.json'
-      - '.github/workflows/ci.yaml'
+      - '.github/workflows/auth-api-ci.yaml'
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: auth-api-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
