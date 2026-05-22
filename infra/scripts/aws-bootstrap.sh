@@ -198,14 +198,13 @@ echo "  RDS:           $RDS_ENDPOINT:$RDS_PORT/$DB_NAME"
 echo "  SSH:           ssh -i $SSH_KEY ubuntu@$PUBLIC_IP"
 echo
 
-# Cloudflare reminder — emphasised when the EIP changed, soft note when it didn't.
+# Cloudflare A record for api.habitpair.com is managed by Terraform
+# (infra/terraform/dns.tf), so it tracks the EIP automatically.
 if [ -z "$OLD_PUBLIC_IP" ]; then
-  echo -e "${YELLOW}!${NC} First bootstrap on this host. Create Cloudflare A record:"
-  echo "      api.habitpair.com → $PUBLIC_IP   (proxy status: DNS only / grey cloud)"
+  echo "  Cloudflare A record for api.habitpair.com → $PUBLIC_IP (managed by Terraform)."
 elif [ "$OLD_PUBLIC_IP" != "$PUBLIC_IP" ]; then
-  echo -e "${YELLOW}!${NC} Public IP changed: $OLD_PUBLIC_IP → $PUBLIC_IP"
-  echo -e "${YELLOW}!${NC} Update the Cloudflare A record:"
-  echo "      api.habitpair.com → $PUBLIC_IP   (proxy status: DNS only / grey cloud)"
+  echo "  Public IP changed: $OLD_PUBLIC_IP → $PUBLIC_IP"
+  echo "  Cloudflare A record updated by Terraform — DNS may take up to 60s to propagate."
 else
   echo "  Cloudflare A record for api.habitpair.com → $PUBLIC_IP unchanged."
 fi

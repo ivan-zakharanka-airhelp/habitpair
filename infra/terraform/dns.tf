@@ -1,6 +1,8 @@
-# ── Cloudflare DNS for the SPA ──
-# The zone already exists at Cloudflare with `api.habitpair.com` as a manual
-# A record - we deliberately don't manage that one here.
+# ── Cloudflare DNS ──
+# The zone already exists at Cloudflare. We manage:
+#   - ACM validation CNAMEs (auto-renewed)
+#   - apex CNAME for the SPA via CloudFront
+#   - api.habitpair.com A record pointing at the current EC2 EIP
 
 data "cloudflare_zone" "main" {
   name = var.frontend_domain
@@ -35,5 +37,20 @@ resource "cloudflare_record" "frontend_apex" {
   type    = "CNAME"
   content = aws_cloudfront_distribution.frontend.domain_name
   ttl     = 1 # Cloudflare automatic
+  proxied = false
+}
+
+# api.habitpair.com → current EC2 EIP. The EIP rotates on every aws-up
+# cycle (terraform destroys and recreates it when user_data changes), so
+# letting Terraform manage this record avoids the manual "update the
+# Cloudflare A record" step. Short TTL minimises stale resolution across
+# cycles. proxied = false because Traefik on EC2 handles TLS via Let's
+# Encrypt directly; proxying would break the cert chain.
+resource "cloudflare_record" "api" {
+  zone_id = data.cloudflare_zone.main.id
+  name    = "api"
+  type    = "A"
+  content = aws_eip.main.public_ip
+  ttl     = 60
   proxied = false
 }
