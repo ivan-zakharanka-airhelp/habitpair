@@ -20,13 +20,13 @@ spec:
             - containerPort: 3000
           livenessProbe:
             httpGet:
-              path: /health
+              path: /auth/health
               port: 3000
             initialDelaySeconds: 10
             periodSeconds: 15
           readinessProbe:
             httpGet:
-              path: /health/ready
+              path: /auth/health/ready
               port: 3000
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -43,6 +43,12 @@ spec:
                 secretKeyRef:
                   name: db-credentials
                   key: url
+            # Shared with habits-api — auth-api signs with this, habits-api verifies.
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-jwt-secret
+                  key: secret
             # Origins allowed to call the API (CORS). For local dev,
             # main.ts defaults to http://localhost:5173 if unset.
             - name: CORS_ORIGINS

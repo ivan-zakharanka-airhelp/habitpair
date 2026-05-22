@@ -5,6 +5,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableShutdownHooks();
 
+  // All routes live under /auth so Traefik can route by path prefix at the
+  // gateway: api.habitpair.com/api/auth/* → strip /api → /auth/*. Keeps each
+  // service's URLs self-identifying (/api/auth/health vs /api/habits/health).
+  app.setGlobalPrefix('auth');
+
   const corsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:5173')
     .split(',')
     .map((o) => o.trim())

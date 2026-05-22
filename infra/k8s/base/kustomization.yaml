@@ -5,4 +5,6 @@ resources:
   - namespace.yaml
   - auth-api-deployment.yaml
   - auth-api-service.yaml
+  - habits-api-deployment.yaml
+  - habits-api-service.yaml
   - ingress.yaml

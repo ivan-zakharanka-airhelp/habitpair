@@ -1,0 +1,21 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// output is service-local so habits-api and auth-api can each generate
+// without overwriting each other in the hoisted root node_modules/.prisma/client
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+// userId is the JWT `sub` claim from auth-api — no FK across DBs by design.
+model Habit {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}

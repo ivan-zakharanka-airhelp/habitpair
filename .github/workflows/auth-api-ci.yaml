@@ -4,7 +4,6 @@ on:
   pull_request:
     paths:
       - 'apps/auth-api/**'
-      - 'packages/database/**'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/auth-api-ci.yaml'
@@ -12,7 +11,6 @@ on:
     branches: [main]
     paths:
       - 'apps/auth-api/**'
-      - 'packages/database/**'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/auth-api-ci.yaml'
@@ -58,10 +56,7 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma client
-        run: npm run generate -w @habitpair/database
-
-      - name: Build database package
-        run: npm run build -w @habitpair/database
+        run: npm run generate -w @habitpair/auth-api
 
       - name: Lint
         run: npm run lint -w @habitpair/auth-api
@@ -70,7 +65,7 @@ jobs:
         run: npm run build -w @habitpair/auth-api
 
       - name: Run migrations
-        run: npm run migrate:deploy -w @habitpair/database
+        run: npm run migrate:deploy -w @habitpair/auth-api
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test
 

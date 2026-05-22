@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: habits-api-service
+  namespace: habitpair
+spec:
+  selector:
+    app: habits-api
+  ports:
+    - port: 3000
+      targetPort: 3000

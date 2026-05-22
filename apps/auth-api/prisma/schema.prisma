@@ -1,0 +1,11 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// output is service-local so auth-api and habits-api can each generate
+// without overwriting each other in the hoisted root node_modules/.prisma/client
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}

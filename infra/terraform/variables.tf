@@ -77,9 +77,9 @@ variable "rds_engine_version" {
 }
 
 variable "db_name" {
-  description = "Initial database name created on RDS."
+  description = "Initial database name created on RDS (used by auth-api). habits-api gets its own `habits` database created by aws-bootstrap.sh."
   type        = string
-  default     = "auth_service"
+  default     = "auth"
 }
 
 variable "db_username" {

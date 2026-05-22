@@ -136,6 +136,50 @@ kubectl --context "$CONTEXT_NAME" create secret generic db-credentials \
   --dry-run=client -o yaml | kubectl --context "$CONTEXT_NAME" apply -f - >/dev/null
 ok "Secret applied (points at ${RDS_ENDPOINT})"
 
+# ── 6b. Ensure habits DB exists on RDS ──
+# RDS is in a private subnet (publicly_accessible = false), so we run psql from
+# inside the EC2, which has SG access. postgresql-client is installed on demand
+# (apt-get is idempotent; cloud-init doesn't include psql to keep boot fast).
+HABITS_DB_NAME="habits"
+step "Ensuring '$HABITS_DB_NAME' database exists on RDS"
+ssh -q -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i "$SSH_KEY" \
+  "ubuntu@$PUBLIC_IP" "PGPASSWORD='$DB_PASSWORD' bash -s" <<EOF
+set -e
+command -v psql >/dev/null 2>&1 || \
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq postgresql-client >/dev/null
+if ! psql -h '$RDS_ENDPOINT' -p '$RDS_PORT' -U '$DB_USER' -d postgres -tAc \
+       "SELECT 1 FROM pg_database WHERE datname='$HABITS_DB_NAME'" | grep -q 1; then
+  psql -h '$RDS_ENDPOINT' -p '$RDS_PORT' -U '$DB_USER' -d postgres -c \
+    "CREATE DATABASE $HABITS_DB_NAME"
+  echo "  Created database $HABITS_DB_NAME"
+else
+  echo "  Database $HABITS_DB_NAME already exists"
+fi
+EOF
+ok "$HABITS_DB_NAME ready"
+
+# ── 6c. habits-db-credentials Secret ──
+step "Creating habits-db-credentials secret"
+HABITS_DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${RDS_ENDPOINT}:${RDS_PORT}/${HABITS_DB_NAME}"
+kubectl --context "$CONTEXT_NAME" create secret generic habits-db-credentials \
+  --namespace "$NAMESPACE" \
+  --from-literal=url="$HABITS_DATABASE_URL" \
+  --dry-run=client -o yaml | kubectl --context "$CONTEXT_NAME" apply -f - >/dev/null
+ok "habits-db-credentials applied"
+
+# ── 6d. auth-jwt-secret Secret (preserve existing value across reruns) ──
+# Regenerating this on every bootstrap would invalidate all live sessions, so
+# we only create it the first time. To rotate, delete the secret and re-run.
+step "Ensuring auth-jwt-secret exists"
+if kubectl --context "$CONTEXT_NAME" get secret auth-jwt-secret -n "$NAMESPACE" >/dev/null 2>&1; then
+  ok "auth-jwt-secret already exists — preserving (delete it manually to rotate)"
+else
+  kubectl --context "$CONTEXT_NAME" create secret generic auth-jwt-secret \
+    --namespace "$NAMESPACE" \
+    --from-literal=secret="$(openssl rand -hex 32)" >/dev/null
+  ok "auth-jwt-secret created with a fresh 32-byte HS256 key"
+fi
+
 # ── 7. Apply Traefik HelmChartConfig + AWS overlay ──
 step "Applying Traefik config + AWS kustomize overlay"
 kubectl --context "$CONTEXT_NAME" apply -f "$PROJECT_ROOT/infra/k8s/traefik-config.yaml" >/dev/null
@@ -186,7 +230,8 @@ echo -e "${GREEN}═════════════════════
 echo
 echo "  Context:       $CONTEXT_NAME"
 echo "  Public IP:     $PUBLIC_IP"
-echo "  Health URL:    https://api.habitpair.com/api/health"
+echo "  Health URLs:   https://api.habitpair.com/api/auth/health"
+echo "                 https://api.habitpair.com/api/habits/health"
 echo "                 (cert provisioning takes ~60s on first request after a fresh cluster)"
 echo "  RDS:           $RDS_ENDPOINT:$RDS_PORT/$DB_NAME"
 echo "  SSH:           ssh -i $SSH_KEY ubuntu@$PUBLIC_IP"

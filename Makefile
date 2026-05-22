@@ -1,18 +1,18 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup install up web down db-up db-migrate db-studio build lint test test-e2e \
+.PHONY: help setup install up web down db-up db-migrate db-migrate-habits db-studio build lint test test-e2e \
         k8s-setup k8s deploy \
         aws-up aws-bootstrap aws-down aws-status aws-ssh \
-        aws-deploy aws-deploy-api aws-deploy-web aws-cleanup-manual
+        aws-deploy aws-deploy-auth aws-deploy-habits aws-deploy-web aws-cleanup-manual
 
 # ── First-time setup ──
 
 setup: install db-up db-migrate  ## First-time project setup (one command)
 	@if [ ! -f apps/web/.env ] && [ -f apps/web/.env.example ]; then cp apps/web/.env.example apps/web/.env; fi
 
-install:                         ## Install all workspace deps + generate Prisma + build database package
+install:                         ## Install all workspace deps + generate Prisma clients (per service)
 	npm install
-	npm run generate -w @habitpair/database
-	npm run build -w @habitpair/database
+	npm run generate -w @habitpair/auth-api
+	npm run generate -w @habitpair/habits-api
 
 # ── Local development (no K8s, fastest feedback loop) ──
 
@@ -25,20 +25,23 @@ web:                             ## Run only the web SPA (no DB, no api)
 down:                            ## Stop local services
 	docker compose -f infra/docker/docker-compose.yaml down
 
-db-up:                           ## Start Postgres container
+db-up:                           ## Start Postgres container (creates habitpair + habits_service DBs)
 	docker compose -f infra/docker/docker-compose.yaml up -d
 
-db-migrate:                      ## Run Prisma migrations
-	npm run migrate -w @habitpair/database
+db-migrate:                      ## Run Prisma migrations for auth-api
+	npm run migrate -w @habitpair/auth-api
 
-db-studio:                       ## Open Prisma Studio (DB GUI)
-	npm run studio -w @habitpair/database
+db-migrate-habits:               ## Run Prisma migrations for habits-api
+	npm run migrate -w @habitpair/habits-api
+
+db-studio:                       ## Open Prisma Studio for auth-api (set service via -w to switch)
+	npm run studio -w @habitpair/auth-api
 
 # ── Build ──
 
-build:                           ## Build all packages and apps
-	npm run build -w @habitpair/database
+build:                           ## Build all apps
 	npm run build -w @habitpair/auth-api
+	npm run build -w @habitpair/habits-api
 
 # ── K8s local development (test K8s behavior on MacBook) ──
 
@@ -71,9 +74,9 @@ aws-status:                      ## Show Terraform outputs + pod status.
 aws-ssh:                         ## SSH to the current EC2 instance.
 	ssh -i ~/.ssh/aws_learning_ed25519 ubuntu@$$(cd infra/terraform && terraform output -raw public_ip)
 
-aws-deploy: aws-deploy-api aws-deploy-web  ## Deploy backend + frontend to AWS.
+aws-deploy: aws-deploy-auth aws-deploy-habits aws-deploy-web  ## Deploy both backends + frontend to AWS.
 
-aws-deploy-api:                  ## Build + push image + rollout auth-api on AWS k3s.
+aws-deploy-auth:                 ## Build + push image + rollout auth-api on AWS k3s.
 	$(eval IMAGE := ghcr.io/ivan-zakharanka-airhelp/habitpair/auth-api:manual-$(shell date +%Y%m%d-%H%M%S))
 	docker build --platform linux/arm64 -t $(IMAGE) -f apps/auth-api/Dockerfile .
 	docker push $(IMAGE)
@@ -83,6 +86,14 @@ aws-deploy-api:                  ## Build + push image + rollout auth-api on AWS
 	kubectl --context aws-k3s apply -k infra/k8s/overlays/aws
 	kubectl --context aws-k3s set image -n habitpair deployment/auth-api auth-api=$(IMAGE)
 	kubectl --context aws-k3s rollout status -n habitpair deployment/auth-api --timeout=120s
+
+aws-deploy-habits:               ## Build + push image + rollout habits-api on AWS k3s.
+	$(eval IMAGE := ghcr.io/ivan-zakharanka-airhelp/habitpair/habits-api:manual-$(shell date +%Y%m%d-%H%M%S))
+	docker build --platform linux/arm64 -t $(IMAGE) -f apps/habits-api/Dockerfile .
+	docker push $(IMAGE)
+	kubectl --context aws-k3s apply -k infra/k8s/overlays/aws
+	kubectl --context aws-k3s set image -n habitpair deployment/habits-api habits-api=$(IMAGE)
+	kubectl --context aws-k3s rollout status -n habitpair deployment/habits-api --timeout=120s
 
 aws-deploy-web:                  ## Build SPA + sync to S3 + invalidate CloudFront.
 	$(eval BUCKET := $(shell cd infra/terraform && terraform output -raw frontend_bucket_name))
@@ -108,12 +119,15 @@ deploy:                          ## Build, push, deploy via Skaffold (alternativ
 
 lint:                            ## Lint all code
 	npm run lint -w @habitpair/auth-api
+	npm run lint -w @habitpair/habits-api
 
 test:                            ## Run unit tests
 	npm test -w @habitpair/auth-api
+	npm test -w @habitpair/habits-api
 
 test-e2e:                        ## Run e2e tests
 	npm run test:e2e -w @habitpair/auth-api
+	npm run test:e2e -w @habitpair/habits-api
 
 # ── Help ──
 

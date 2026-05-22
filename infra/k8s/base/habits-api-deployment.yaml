@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: habits-api
+  namespace: habitpair
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: habits-api
+  template:
+    metadata:
+      labels:
+        app: habits-api
+    spec:
+      containers:
+        - name: habits-api
+          image: habits-api:latest
+          ports:
+            - containerPort: 3000
+          livenessProbe:
+            httpGet:
+              path: /habits/health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /habits/health/ready
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "384Mi"
+              cpu: "500m"
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: habits-db-credentials
+                  key: url
+            # Shared with auth-api — both services HS256-verify against this secret.
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-jwt-secret
+                  key: secret
+            - name: CORS_ORIGINS
+              value: https://habitpair.com

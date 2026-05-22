@@ -19,13 +19,13 @@ describe('Health (e2e)', () => {
     await app.close();
   });
 
-  it('GET /health — liveness', () => {
-    return request(app.getHttpServer()).get('/health').expect(200).expect({ status: 'ok' });
+  it('GET /auth/health — liveness', () => {
+    return request(app.getHttpServer()).get('/auth/health').expect(200).expect({ status: 'ok' });
   });
 
-  it('GET /health/ready — readiness', () => {
+  it('GET /auth/health/ready — readiness', () => {
     return request(app.getHttpServer())
-      .get('/health/ready')
+      .get('/auth/health/ready')
       .expect(200)
       .expect((res) => {
         expect(res.body.status).toBe('ok');
