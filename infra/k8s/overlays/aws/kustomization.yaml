@@ -14,7 +14,7 @@ patches:
 
 # Image mapping. The `newTag` below is just a default / last-known-good marker.
 # At deploy time the tag is overridden:
-#   - CI:    `kubectl set image deployment/auth-api auth-api=...:$SHA` (see auth-api-deploy.yaml)
+#   - CI:    `kubectl set image deployment/auth-api auth-api=...:$SHA` (see auth-api-ci.yaml deploy job)
 #   - Manual: `kustomize edit set image auth-api=...:<tag>` then apply
 images:
   - name: auth-api
