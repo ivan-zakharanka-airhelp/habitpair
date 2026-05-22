@@ -20,17 +20,27 @@ permissions:
   security-events: write
 
 jobs:
-  deploy:
+  build:
     # Manual dispatch always runs. workflow_run fires on ANY conclusion (success/failure/cancelled),
     # so we must explicitly require success — otherwise a failed test would still deploy.
+    # The guard lives on `build` only; `scan` and `deploy` skip transitively via `needs:`.
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
     steps:
       # On workflow_run, github.sha is the default-branch HEAD at event-creation time,
       # not the commit tests passed on. Pin to the upstream run's head_sha to be safe.
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      # Consolidate the head_sha-or-fallback expression here once; downstream jobs
+      # consume needs.build.outputs.image.
+      - id: meta
+        run: |
+          TAG="${{ github.event.workflow_run.head_sha || github.sha }}"
+          echo "image=ghcr.io/${{ github.repository }}/auth-api:${TAG}" >> "$GITHUB_OUTPUT"
 
       # QEMU lets the amd64 GitHub runner build for arm64 via binfmt emulation.
       # Needed because our EC2 is t4g (Graviton/ARM64).
@@ -52,16 +62,20 @@ jobs:
           file: apps/auth-api/Dockerfile
           platforms: linux/arm64        # must match EC2 architecture (t4g = Graviton)
           push: true
-          tags: ghcr.io/${{ github.repository }}/auth-api:${{ github.event.workflow_run.head_sha || github.sha }}
+          tags: ${{ steps.meta.outputs.image }}
           cache-from: type=gha          # speed up future builds via GHA cache
           cache-to: type=gha,mode=max
 
+  scan:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
       # exit-code: '0' = report-only on initial rollout. Flip to '1' in a follow-up PR
       # once existing HIGH/CRITICAL findings in the node:22-alpine base have been triaged.
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ghcr.io/${{ github.repository }}/auth-api:${{ github.event.workflow_run.head_sha || github.sha }}
+          image-ref: ${{ needs.build.outputs.image }}
           severity: HIGH,CRITICAL
           exit-code: '0'
           format: sarif
@@ -74,6 +88,10 @@ jobs:
           sarif_file: trivy-results.sarif
           category: trivy-auth-api
 
+  deploy:
+    needs: [build, scan]
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to k3s
         uses: appleboy/ssh-action@v1
         with:
@@ -85,6 +103,6 @@ jobs:
           script: |
             export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
             kubectl set image deployment/auth-api \
-              auth-api=ghcr.io/${{ github.repository }}/auth-api:${{ github.event.workflow_run.head_sha || github.sha }} \
+              auth-api=${{ needs.build.outputs.image }} \
               -n habitpair
             kubectl rollout status deployment/auth-api -n habitpair --timeout=120s
