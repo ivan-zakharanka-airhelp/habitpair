@@ -22,10 +22,12 @@ concurrency:
   # half-rolled-out k8s deployments are worse than waiting.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# GITHUB_TOKEN needs `packages: write` to push to GHCR.
+# GITHUB_TOKEN needs `packages: write` to push to GHCR
+# and `security-events: write` to upload Trivy SARIF results to the Security tab.
 permissions:
   contents: read
   packages: write
+  security-events: write
 
 jobs:
   test:
@@ -104,6 +106,24 @@ jobs:
           tags: ghcr.io/${{ github.repository }}/habits-api:${{ github.sha }}
           cache-from: type=gha          # speed up future builds via GHA cache
           cache-to: type=gha,mode=max
+
+      # exit-code: '0' = report-only on initial rollout. Flip to '1' in a follow-up PR
+      # once existing HIGH/CRITICAL findings in the node:22-alpine base have been triaged.
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ghcr.io/${{ github.repository }}/habits-api:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          exit-code: '0'
+          format: sarif
+          output: trivy-results.sarif
+
+      - name: Upload Trivy results to Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-habits-api
 
       - name: Deploy to k3s
         uses: appleboy/ssh-action@v1
