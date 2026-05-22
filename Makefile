@@ -83,7 +83,7 @@ aws-deploy-api:                  ## Build + push image + rollout auth-api on AWS
 aws-deploy-web:                  ## Build SPA + sync to S3 + invalidate CloudFront.
 	$(eval BUCKET := $(shell cd infra/terraform && terraform output -raw frontend_bucket_name))
 	$(eval DIST_ID := $(shell cd infra/terraform && terraform output -raw frontend_distribution_id))
-	VITE_API_URL=https://api.habitpair.com npm run build -w @habitpair/web
+	VITE_API_URL=https://api.habitpair.com/api npm run build -w @habitpair/web
 	aws s3 sync apps/web/dist/ s3://$(BUCKET)/ \
 		--delete \
 		--exclude "index.html" \

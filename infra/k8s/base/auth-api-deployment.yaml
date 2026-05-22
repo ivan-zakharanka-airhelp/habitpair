@@ -43,3 +43,7 @@ spec:
                 secretKeyRef:
                   name: db-credentials
                   key: url
+            # Origins allowed to call the API (CORS). For local dev,
+            # main.ts defaults to http://localhost:5173 if unset.
+            - name: CORS_ORIGINS
+              value: https://habitpair.com
