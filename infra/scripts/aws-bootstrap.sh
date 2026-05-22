@@ -187,8 +187,8 @@ kubectl --context "$CONTEXT_NAME" apply -k "$PROJECT_ROOT/infra/k8s/overlays/aws
 ok "Manifests applied"
 
 # ── 7b. Sync GitHub Actions secrets + variables ──
-# Secrets:   SERVER_HOST + SERVER_SSH_KEY  → auth-api-ci.yaml deploy job (SSH to EC2)
-# Variables: WEB_BUCKET_NAME + WEB_DISTRIBUTION_ID → web-ci.yaml deploy job (S3 + CF)
+# Secrets:   SERVER_HOST + SERVER_SSH_KEY  → auth-api-deploy.yaml + habits-api-deploy.yaml (SSH to EC2)
+# Variables: WEB_BUCKET_NAME + WEB_DISTRIBUTION_ID → web-deploy.yaml (S3 + CF)
 # Silently skipped if gh CLI isn't installed / authenticated.
 step "Syncing GitHub Actions secrets + variables"
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then

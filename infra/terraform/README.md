@@ -116,7 +116,7 @@ All three should print empty tables.
 
 ### What happens after bootstrap
 
-- Pushes to `apps/web/**` on `main` → `web-ci.yaml` builds, syncs to S3, invalidates CloudFront
+- Pushes to `apps/web/**` on `main` → `web-test.yaml` runs lint/typecheck/vitest, then `web-deploy.yaml` (gated via `workflow_run`) builds, syncs to S3, invalidates CloudFront
 - PRs touching `infra/terraform/**` → `infra-ci.yaml` runs `terraform fmt -check`, `init -backend=false`, and `validate` (lint-only, no plan/apply)
 - All `terraform apply` runs from a developer's laptop via `make aws-up` until OIDC + remote state are in place
 
@@ -128,7 +128,7 @@ The plan called for GitHub OIDC + two scoped IAM roles instead of access keys. T
 2. Rename `oidc.tf.disabled` → `oidc.tf`.
 3. Restore the OIDC outputs in `outputs.tf` (currently removed — see the comment in that file).
 4. `terraform apply`.
-5. Swap `web-ci.yaml`'s access-key step back to `role-to-assume: ${{ vars.AWS_WEB_DEPLOY_ROLE_ARN }}` with `permissions: id-token: write`.
+5. Swap `web-deploy.yaml`'s access-key step back to `role-to-assume: ${{ vars.AWS_WEB_DEPLOY_ROLE_ARN }}` with `permissions: id-token: write`.
 6. Restore the gated `plan` + `apply` jobs in `infra-ci.yaml` (was lint-only after OIDC was disabled).
 
 ### Deferred: Terraform state on S3

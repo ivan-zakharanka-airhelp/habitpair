@@ -1,26 +1,16 @@
-name: habits-api
+name: habits-api / deploy
 
 on:
-  pull_request:
-    paths:
-      - 'apps/habits-api/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/habits-api-ci.yaml'
-  push:
+  workflow_run:
+    workflows: ["habits-api / test"]
+    types: [completed]
     branches: [main]
-    paths:
-      - 'apps/habits-api/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/habits-api-ci.yaml'
   workflow_dispatch:
 
 concurrency:
-  group: habits-api-${{ github.ref }}
-  # PRs cancel in-progress (latest push wins). Main pushes don't —
-  # half-rolled-out k8s deployments are worse than waiting.
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: habits-api-deploy-${{ github.ref }}
+  # Main pushes don't cancel — half-rolled-out k8s deployments are worse than waiting.
+  cancel-in-progress: false
 
 # GITHUB_TOKEN needs `packages: write` to push to GHCR
 # and `security-events: write` to upload Trivy SARIF results to the Security tab.
@@ -30,58 +20,17 @@ permissions:
   security-events: write
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: test
-        ports:
-          - "5432:5432"
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma client
-        run: npm run generate -w @habitpair/habits-api
-
-      - name: Lint
-        run: npm run lint -w @habitpair/habits-api
-
-      - name: Build habits-api
-        run: npm run build -w @habitpair/habits-api
-
-      - name: Run migrations
-        run: npm run migrate:deploy -w @habitpair/habits-api
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test
-
-      - name: Test
-        run: npm test -w @habitpair/habits-api
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test
-
   deploy:
-    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Manual dispatch always runs. workflow_run fires on ANY conclusion (success/failure/cancelled),
+    # so we must explicitly require success — otherwise a failed test would still deploy.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
+      # On workflow_run, github.sha is the default-branch HEAD at event-creation time,
+      # not the commit tests passed on. Pin to the upstream run's head_sha to be safe.
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       # QEMU lets the amd64 GitHub runner build for arm64 via binfmt emulation.
       # Needed because our EC2 is t4g (Graviton/ARM64).
@@ -103,16 +52,16 @@ jobs:
           file: apps/habits-api/Dockerfile
           platforms: linux/arm64        # must match EC2 architecture (t4g = Graviton)
           push: true
-          tags: ghcr.io/${{ github.repository }}/habits-api:${{ github.sha }}
+          tags: ghcr.io/${{ github.repository }}/habits-api:${{ github.event.workflow_run.head_sha || github.sha }}
           cache-from: type=gha          # speed up future builds via GHA cache
           cache-to: type=gha,mode=max
 
       # exit-code: '0' = report-only on initial rollout. Flip to '1' in a follow-up PR
       # once existing HIGH/CRITICAL findings in the node:22-alpine base have been triaged.
       - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@0.24.0
         with:
-          image-ref: ghcr.io/${{ github.repository }}/habits-api:${{ github.sha }}
+          image-ref: ghcr.io/${{ github.repository }}/habits-api:${{ github.event.workflow_run.head_sha || github.sha }}
           severity: HIGH,CRITICAL
           exit-code: '0'
           format: sarif
@@ -136,6 +85,6 @@ jobs:
           script: |
             export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
             kubectl set image deployment/habits-api \
-              habits-api=ghcr.io/${{ github.repository }}/habits-api:${{ github.sha }} \
+              habits-api=ghcr.io/${{ github.repository }}/habits-api:${{ github.event.workflow_run.head_sha || github.sha }} \
               -n habitpair
             kubectl rollout status deployment/habits-api -n habitpair --timeout=120s

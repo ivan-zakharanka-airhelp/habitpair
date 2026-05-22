@@ -1,0 +1,70 @@
+name: auth-api / test
+
+on:
+  pull_request:
+    paths:
+      - 'apps/auth-api/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/auth-api-test.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/auth-api/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/auth-api-test.yaml'
+  workflow_dispatch:
+
+concurrency:
+  group: auth-api-test-${{ github.ref }}
+  # PRs cancel in-progress (latest push wins). Main pushes don't —
+  # we want the run that gates deploy via workflow_run to finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run generate -w @habitpair/auth-api
+
+      - name: Lint
+        run: npm run lint -w @habitpair/auth-api
+
+      - name: Build auth-api
+        run: npm run build -w @habitpair/auth-api
+
+      - name: Run migrations
+        run: npm run migrate:deploy -w @habitpair/auth-api
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+
+      - name: Test
+        run: npm test -w @habitpair/auth-api
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
