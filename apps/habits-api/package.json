@@ -40,8 +40,8 @@
     "@nestjs/testing": "^11.1.23",
     "@types/express": "^5.0.6",
     "@types/jest": "^29.5.0",
-    "@types/node": "^25.9.1",
-    "@types/supertest": "^7.2.0",
+    "@types/node": "^22.0.0",
+    "@types/supertest": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.59.4",
     "@typescript-eslint/parser": "^8.59.4",
     "eslint": "^9.0.0",
@@ -54,7 +54,7 @@
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.11",
     "ts-loader": "^9.5.7",
-    "typescript": "^6.0.3",
+    "typescript": "^5.8.0",
     "typescript-eslint": "^8.59.4"
   },
   "jest": {
