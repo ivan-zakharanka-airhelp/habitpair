@@ -4,174 +4,181 @@ assessed_at: 2026-05-25
 agent_readiness: ready-with-compensation
 context_type: brownfield
 stack_components:
-  language: TypeScript 5.7-5.8 (strict)
-  framework: NestJS 11 (APIs) + React 18 + TanStack Router (web)
-  build_tool: Vite 7 (web) / nest build (APIs)
-  test_runner: Jest 29 (APIs) + Vitest 4 (web)
-  package_manager: npm (workspaces)
+  language: TypeScript
+  framework: React 19.2 + TanStack Router (frontend), NestJS 11 (backends)
+  build_tool: Vite 8 (frontend), nest-cli (backends)
+  test_runner: Vitest 4 (frontend), Jest 29 (backends)
+  package_manager: npm workspaces
   ci_provider: GitHub Actions
-  deployment_target: AWS k3s via Terraform (APIs, GHCR images) + S3 + CloudFront (web); local via Skaffold + k3d
+  deployment_target: Docker + Skaffold + k8s on AWS (Terraform-managed)
 gates_passed: 4
 gates_failed: 0
 ---
 
 ## Stack Components
 
-**Monorepo shape.** npm workspaces with two backend services (`apps/auth-api`, `apps/habits-api`) and a single-page web client (`apps/web`). The root `package.json` orchestrates dev across the three workspaces via `concurrently`. The `packages/*` glob is declared in workspaces but currently empty — no shared package exists.
+**Repository shape.** habitpair is a single-repo monorepo using npm workspaces (`apps/*` + `packages/*`, though `packages/` is declared in `package.json:6` but has no contents on disk yet). The Node engine is pinned to `>=22` across all three apps. Local dev is orchestrated by `concurrently` running the three workspaces side by side (`package.json:10`).
 
-**Language.** TypeScript 5.7 (web) and 5.8 (APIs). Both API tsconfigs and the web tsconfig set `strict: true`; the web config additionally enables `noUnusedLocals`, `noUnusedParameters`, `verbatimModuleSyntax`, and `isolatedModules`. Node engine pinned to `>=22` in every workspace and `.nvmrc = 22`.
+**Frontend — `apps/web`.** TypeScript `~6.0.2` with `strict: true`, `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`, and `verbatimModuleSyntax: true` (`apps/web/tsconfig.app.json:19-23`). React 19.2 with React Compiler 1.0 wired through `@rolldown/plugin-babel` in `apps/web/vite.config.ts:12`. Routing is TanStack Router 1.170 with file-based discovery and auto code splitting (`apps/web/vite.config.ts:10`), producing the generated `apps/web/src/routeTree.gen.ts` consumed by `apps/web/src/router.tsx:2`. Data fetching is TanStack Query 5. Styling is Tailwind CSS 4 via `@tailwindcss/vite`. Build is Vite 8, tests are Vitest 4, lint is ESLint 10 + typescript-eslint + Prettier (`apps/web/eslint.config.js`).
 
-**Backend framework.** NestJS 11 (`@nestjs/common`, `@nestjs/core`, `@nestjs/platform-express`, `@nestjs/config`, `@nestjs/terminus`). Decorator-based modules + DI; `habits-api` additionally pulls `@nestjs/jwt`. Both services follow the standard NestJS layout (`*.module.ts` + `*.controller.ts` + `*.service.ts` siblings under `src/`).
+**Backends — `apps/auth-api` and `apps/habits-api`.** Both are NestJS 11 services on TypeScript `~5.8` with `strict: true`, decorator metadata, and CommonJS module output (`apps/auth-api/tsconfig.json:14`, `apps/habits-api/tsconfig.json`). Both ship with `@nestjs/config`, `@nestjs/terminus` for health checks, and Prisma 6 as the ORM (each app has its own `prisma/` directory and `generated/` client output). `apps/habits-api` additionally pulls in `@nestjs/jwt` for token verification. Tests use Jest 29 + ts-jest + supertest, with a NestJS-standard `jest` block in each `package.json`. Lint is ESLint 9 + typescript-eslint + Prettier. The minimal `apps/auth-api/src/app.module.ts:1-15` shows the canonical NestJS module composition (`ConfigModule.forRoot({ isGlobal: true })`, `PrismaModule`, `HealthModule`).
 
-**ORM.** Prisma 6 per service. Each service's `schema.prisma` outputs the generated client to a service-local `apps/<svc>/generated/prisma/` path (custom `generator client output`) so the two services don't collide in the hoisted `node_modules/.prisma/client`. PostgreSQL 16 in Docker for local dev (`infra/docker/docker-compose.yaml`).
+**Build, deployment, and infrastructure.** Each backend has its own `Dockerfile`; local dev pulls images via `infra/docker/docker-compose.yaml`. Production deployment is Skaffold-driven into k8s manifests under `infra/k8s/`. All AWS infrastructure (EC2, RDS, ACM, DNS, security groups, frontend bucket, SSH key) is Terraform-managed under `infra/terraform/`. CI/CD is GitHub Actions: per-app `*-test.yaml` and `*-deploy.yaml` workflows, plus `codeql.yml`, `gitleaks.yml`, and `infra-ci.yaml`.
 
-**Frontend framework.** React 18 with TanStack Router (file-based, `apps/web/src/routes/__root.tsx` + `index.tsx`, generated tree at `routeTree.gen.ts`) and TanStack React Query for data fetching. Routing wired through `TanStackRouterVite({ target: 'react', autoCodeSplitting: true })` in `vite.config.ts`. Styling via Tailwind 4 (`@tailwindcss/vite`).
-
-**Build / bundler.** Vite 7 for the web SPA. NestJS CLI's `nest build` (tsc-based) for the two APIs.
-
-**Test runner.** Jest 29 + ts-jest for both APIs (with a separate `test/jest-e2e.json` config); Vitest 4 for the web. supertest 7 for API e2e. None of the apps have committed test files beyond the `--passWithNoTests` guard.
-
-**Linter & formatter.** ESLint 9 (flat config, `eslint.config.mjs`) + typescript-eslint 8 + Prettier 3 + eslint-config-prettier across all three workspaces. Auth-api ESLint config warns on `no-explicit-any` and ignores `_`-prefixed unused args.
-
-**CI/CD.** GitHub Actions with per-app workflows: `auth-api-test.yaml`, `habits-api-test.yaml`, `web-test.yaml` (PR + main push, path-filtered), matching `*-deploy.yaml` workflows, plus `codeql.yml`, `gitleaks.yml`, `infra-ci.yaml`. API test workflows spin up Postgres 16 as a service container and run `prisma migrate deploy` before `npm test`.
-
-**Deployment.** Two targets:
-- APIs → AWS k3s on EC2, provisioned via Terraform (`infra/terraform/`), images pushed to GHCR (`ghcr.io/ivan-zakharanka-airhelp/habitpair/...`), rolled out with `kubectl set image`. Manifests under `infra/k8s/overlays/aws` (kustomize).
-- Web → S3 bucket fronted by CloudFront; `index.html` set `no-cache`, assets `immutable`.
-- Local k8s loop available via `skaffold dev --port-forward` against a k3d cluster.
-
-**Instruction files.** A root `CLAUDE.md` exists but is scoped to the 10xDevs Module 1 lesson narrative (talks about `/10x-tech-stack-selector`, `/10x-bootstrapper`, etc.). It carries **no project-level coding conventions** — no description of the multi-service architecture, the JWT contract between the two APIs, the per-service Prisma output trick, the monorepo layout rules, or the deployment paths. No `AGENTS.md` and no `.cursor/rules` directory.
+**Instruction files.** `CLAUDE.md` is present at repo root but its content is exclusively the 10xDevs Lesson 3 / bootstrapper scaffolding guide — it carries no project conventions about how to add a new route, where shared types live, how DTOs are validated, or how the React Compiler interacts with manual memoization. There is no `AGENTS.md`, no `.cursor/rules`, no `.github/copilot-instructions.md`.
 
 ## Quality Gate Assessment
 
 | Component                       | Typed | Convention | Training Data | Documented | Verdict |
 |---------------------------------|-------|------------|---------------|------------|---------|
-| Language (TypeScript, strict)   |  ✓    |  —         |  —            |  —         | pass    |
-| Backend (NestJS 11)             |  —    |  ✓         |  ✓            |  ✓         | pass    |
-| ORM (Prisma 6)                  |  —    |  ✓         |  ✓            |  ✓         | pass    |
-| Frontend (React 18)             |  —    |  ~         |  ✓            |  ✓         | partial |
-| Router (TanStack Router)        |  —    |  ✓         |  ~            |  ✓         | partial |
-| Build / bundler (Vite 7)        |  —    |  ✓         |  ✓            |  ✓         | pass    |
-| Test runner — APIs (Jest 29)    |  —    |  —         |  ✓            |  ✓         | pass    |
-| Test runner — web (Vitest 4)    |  —    |  —         |  ✓            |  ✓         | pass    |
+| TypeScript (language)           | ✓     | —          | —             | —          | pass    |
+| React 19 + TanStack Router      | —     | ✓          | ✓             | ✓          | pass    |
+| NestJS 11                       | —     | ✓          | ✓             | ✓          | pass    |
+| Vite 8 (build)                  | —     | ✓          | ✓             | ✓          | pass    |
+| Vitest 4 (test, frontend)       | —     | ✓          | ✓             | ✓          | pass    |
+| Jest 29 (test, backends)        | —     | ✓          | ✓             | ✓          | pass    |
+| Prisma 6 (ORM)                  | ✓     | ✓          | ✓             | ✓          | pass    |
+| Tailwind CSS 4                  | —     | ✓          | ~             | ✓          | pass-w/note |
+| React Compiler 1.0              | —     | ✓          | ~             | ✓          | pass-w/note |
 
-Legend: ✓ = pass, ✗ = fail, ~ = partial, — = not applicable
+Legend: ✓ = pass, ✗ = fail, ~ = partial (covered by compensation below), — = not applicable.
 
-Overall: **four criteria met across the stack**, with two partials that are mitigated by compensation rather than blockers.
+### Gate details
 
-### Gate Details
+**Type safety.** TypeScript with `strict: true` everywhere. Frontend additionally enforces `noUnusedLocals`, `noUnusedParameters`, and `verbatimModuleSyntax: true` — agents will get immediate feedback on dead imports and ambiguous type-vs-value imports. Prisma adds generated typed clients on the backend (the `generated/` directory in each API). Evidence: `apps/web/tsconfig.app.json:19`, `apps/auth-api/tsconfig.json:14`, both `apps/*-api/prisma/` directories.
 
-**Typed — pass.** TypeScript with `strict: true` enforced in every workspace (`apps/auth-api/tsconfig.json:15`, `apps/habits-api/tsconfig.json` same shape, `apps/web/tsconfig.json:15`). Prisma generates fully-typed clients per service (`schema.prisma` declares `generator client { provider = "prisma-client-js"; output = "../generated/prisma" }`). NestJS decorator metadata + DI means handler/service contracts are explicit in source. The web tsconfig adds `verbatimModuleSyntax` and `isolatedModules`, the strictest practical config. No `any`-leaking surfaces detected; ESLint warns on `no-explicit-any` (`apps/auth-api/eslint.config.mjs:17`).
+**Convention strength.** NestJS is one of the most opinionated Node frameworks shipping (module → controller → service → provider, decorator-driven DI, file naming by suffix `*.module.ts` / `*.controller.ts` / `*.service.ts`, `nest-cli.json` driving builds). TanStack Router supplies the equivalent for the frontend via file-based routing — every route lives as a file under `apps/web/src/routes/` and the router-plugin regenerates `routeTree.gen.ts` on save (`apps/web/vite.config.ts:10`). Prisma's schema-first, single-source-of-truth model is itself a strong convention. Evidence: `apps/auth-api/src/app.module.ts:1-15` (canonical NestJS module shape), `apps/web/eslint.config.js:11` (the generated routeTree is explicitly ignored, confirming the convention), `nest-cli.json` present in both backends.
 
-**Convention-based — pass for backend, partial for frontend.**
-- *NestJS* is convention-driven by definition: modules + controllers + services + DI. `apps/auth-api/src/app.module.ts`, `apps/auth-api/src/health/health.module.ts` + `health.controller.ts` follow the canonical pattern, and `nest-cli.json` plus the `dist/`-out build is conventional NestJS.
-- *Prisma* enforces `prisma/schema.prisma` + `prisma/migrations/` + a single client generator — strong convention.
-- *TanStack Router* enforces file-based routes (`apps/web/src/routes/__root.tsx` + `index.tsx`), with `routeTree.gen.ts` committed and regenerated by the Vite plugin — strong convention for routing.
-- *React app shape outside routes*: weak. There is a `src/lib/` directory but no documented rule for where features, queries, mutations, hooks, or components live. The monorepo is small enough that this is not biting today, but it is the soft spot.
+**Training-data coverage.** Every primary framework choice (React, NestJS, Vite, Vitest, Jest, Prisma, TanStack Router, TanStack Query) is squarely in the popular-JS/TS bucket. Two components sit on recent majors where the agent's default idiom lean is toward the prior major:
+- **Tailwind CSS 4** introduced the CSS-first config (`@import "tailwindcss"` in a CSS file) and the `@tailwindcss/vite` plugin in place of the v3 PostCSS pipeline. Most training-data examples are still v3. Agents will reach for `tailwind.config.js` files and `@tailwind base/components/utilities` directives unless steered. The compensation section below pins the v4 patterns.
+- **React Compiler 1.0** changes the meaning of `useMemo` / `useCallback` / `memo()` — the compiler covers most cases the prior idiom hand-rolled. Untreated, the agent will continue to wrap callbacks and values defensively, producing redundant code. The compensation section pins the rule.
 
-**Popular in training data — pass overall, partial on the router (assessed within JS/TS family).** NestJS, React, Prisma, Vite, Vitest, and Jest are all top-tier within JS/TS. TanStack Router went 1.0 relatively recently and has materially less corpus than React Router or Next.js routing — the agent has internalized TanStack Query much more deeply than TanStack Router. Not a fail (it is mainstream within the TanStack family the agent knows), but worth steering with examples.
-
-**Well-documented — pass.** Every framework in the stack ships current, versioned docs: docs.nestjs.com, react.dev, tanstack.com/router, tanstack.com/query, prisma.io/docs, vite.dev, vitest.dev, jestjs.io.
+**Documentation quality.** Every component has current, versioned official docs at a canonical URL (react.dev, tanstack.com, docs.nestjs.com, vitejs.dev, vitest.dev, jestjs.io, prisma.io, tailwindcss.com). No stack component depends on community wikis or out-of-sync blog posts.
 
 ## Gaps & Compensation
 
-The stack passes all four criteria when scored component-by-component, so the gaps that follow are not gate failures — they are *integration-level* conventions the framework can't enforce on its own. In a multi-app monorepo with two NestJS services + a SPA + custom infra, the load-bearing knowledge lives between the components, not inside any one of them. The agent needs an instruction file that names those joins explicitly.
+No gate fully fails. Two soft-gap pockets and several **convention gaps the framework leaves to the project** warrant concrete instruction-file entries before agent-assisted work scales. Compensation is concrete and limited — not heavy.
 
-### Gap 1 — Cross-service contracts are undocumented
+### Soft gaps (training-data drift on recent majors)
 
-`auth-api` issues credentials; `habits-api` consumes JWTs (`@nestjs/jwt` is in habits-api but not auth-api). How tokens are signed, what claims they carry, which secret/key the two services share, how rotation works — none of this is captured in code that the agent can read top-down. Today an agent reading `habits-api/src` would have to reverse-engineer the contract from the JWT middleware.
+1. **Tailwind v4 vs v3.** Agents will default to v3 patterns (config-as-JS, PostCSS, `@tailwind` directives, named utility classes like `bg-opacity-50`). v4 has CSS-first config, the dedicated `@tailwindcss/vite` plugin, and renamed utilities. Compensation: pin the v4 patterns in `CLAUDE.md` (see entry T-1 below).
+2. **React Compiler 1.0 memo semantics.** Agents will reach for `useMemo` / `useCallback` / `memo()` for cases the compiler now covers. Compensation: a one-paragraph rule in `CLAUDE.md` naming when manual memoization is still required (deps used outside the component scope, refs into imperative APIs, etc.) and when to trust the compiler (default).
 
-### Gap 2 — Per-service Prisma client output trick is non-obvious
+### Project conventions the framework leaves open
 
-Each `schema.prisma` writes its generated client to `apps/<svc>/generated/prisma/` rather than the default `node_modules/.prisma/client` location, because the hoisted root would let one service overwrite the other. An agent unfamiliar with this trick may "fix" it back to defaults and break the build.
-
-### Gap 3 — Web app shape outside routes is by convention only
-
-TanStack Router governs the `routes/` directory; the rest of `apps/web/src/` (`lib/`, future `components/`, `features/`, `hooks/`, etc.) has no enforced layout. Today the app is minimal so the gap is not paying friction; once a third route lands, an undocumented layout will diverge per-PR.
-
-### Gap 4 — TanStack Router idioms aren't framework-popular yet
-
-The agent knows React Router and Next.js routing far better than TanStack Router. Without examples in an instruction file, completions will tend to drift toward React Router idioms (`useNavigate` from `react-router-dom`, declarative `<Route>` trees, etc.) rather than TanStack Router's `createFileRoute`, `Route.useLoaderData`, `beforeLoad`, etc.
-
-### Gap 5 — CLAUDE.md is lesson-scoped, not project-scoped
-
-The root `CLAUDE.md` is currently the 10xDevs Module 1 narrative — it tells the agent how to use `/10x-tech-stack-selector`, not how to navigate or extend `habitpair`. Either CLAUDE.md needs a project-conventions section appended below the lesson content, or the project conventions should land in `AGENTS.md` (the lesson content can stay in CLAUDE.md without interference).
+3. **Frontend code organization beyond routes.** TanStack Router dictates where routes live; nothing tells the agent where components, hooks, API clients, or types go. Today `apps/web/src/` has only `lib/`, `routes/`, `main.tsx`, `router.tsx`, `styles.css` — no `components/`, no `hooks/`. The first feature work will set the precedent silently unless documented now. Compensation: name the folder layout explicitly (entry F-1 below).
+4. **Generated file no-touch rule.** `apps/web/src/routeTree.gen.ts` is regenerated by the router-plugin on save. ESLint already ignores it (`apps/web/eslint.config.js:11`), but no human- or agent-facing rule says "never hand-edit this." Compensation: one line in `CLAUDE.md` (entry F-2).
+5. **Backend conventions NestJS leaves to the project.** NestJS supplies the module/controller/service skeleton but the project picks where DTOs live, how request validation is wired (`class-validator` + `ValidationPipe`, Zod, hand-rolled), how Prisma is accessed (PrismaService injection vs. direct client), and how cross-cutting errors are surfaced. None of the current source documents these choices. Compensation: a `## Backends` section in `CLAUDE.md` (entry B-1).
+6. **Shared types between `auth-api` and `habits-api`.** `packages/*` is declared as a workspace glob in `package.json:6` but the directory is empty. The habits-api validates JWTs that the auth-api issues — any shared shape (token payload, error envelope, user identity) currently has nowhere to live. Compensation: decide and document where shared types go (entry M-1).
+7. **No AGENTS.md.** Other agent tooling reads `AGENTS.md` rather than `CLAUDE.md`. Compensation: create a thin `AGENTS.md` that delegates to `CLAUDE.md`, or duplicate the load-bearing sections.
 
 ### Recommended Instruction File Additions
 
-Below are ready-to-paste blocks for `AGENTS.md` (or appended to `CLAUDE.md` below the lesson scaffolding). Each one directly closes a gap above.
+Ready-to-paste blocks for `CLAUDE.md` (or `AGENTS.md`). Drop these in below the current 10xDevs scaffolding content.
+
+---
+
+**Entry T-1 — Tailwind CSS v4 idioms**
 
 ```markdown
-## Architecture — services & boundaries
+## Styling — Tailwind CSS v4
 
-habitpair is an npm-workspaces monorepo with three apps:
+This project uses Tailwind CSS v4, not v3. The differences matter:
 
-- `apps/auth-api` (NestJS 11) — owns user accounts, signup, sign-in, and JWT issuance. Database: `habitpair` (PostgreSQL).
-- `apps/habits-api` (NestJS 11) — owns habits, daily marks, and habit-level statistics. Database: `habits_service` (PostgreSQL). Consumes JWTs issued by `auth-api` (`@nestjs/jwt` verifier).
-- `apps/web` (React 18 + Vite + TanStack Router) — single SPA, talks to both APIs via `VITE_AUTH_API_URL` and `VITE_HABITS_API_URL`. No SSR.
+- Config lives in CSS, not JS. There is no `tailwind.config.js`. Theme tokens, custom utilities, and content paths are declared via `@theme`, `@utility`, and `@source` blocks inside `apps/web/src/styles.css`.
+- The entry point is `@import "tailwindcss";` at the top of `apps/web/src/styles.css`. Do NOT use `@tailwind base; @tailwind components; @tailwind utilities;` — that is v3 syntax.
+- The Vite plugin `@tailwindcss/vite` replaces the v3 PostCSS pipeline. Do not add `postcss.config.*` for Tailwind.
+- Opacity utilities use the slash syntax: `bg-black/50`, not `bg-opacity-50`. Several v3 utilities were renamed; check tailwindcss.com/docs before reaching for a v3 name.
+```
 
-The two APIs do NOT call each other. Both validate the same JWT signed by `auth-api`; the shared secret/key is supplied via env. Adding a feature that crosses services means adding a route to whichever service owns the data — never an in-process call from one Nest app to the other.
+**Entry T-2 — React Compiler 1.0 memo semantics**
 
-## Architecture — Prisma per service
+```markdown
+## React Compiler — memo, useMemo, useCallback
 
-Each service has its own `schema.prisma` and its own database. Client output is set to `output = "../generated/prisma"` so the two services do not collide in the hoisted `node_modules/.prisma/client`. Do not "fix" the output path back to defaults — the per-service path is intentional. Imports look like `import { PrismaClient } from '../../generated/prisma'`, not `@prisma/client`.
+React Compiler 1.0 is enabled in `apps/web/vite.config.ts`. It auto-memoizes components, hooks, and derived values, so manual wrappers are usually redundant.
 
-When adding a new Prisma model: `cd apps/<svc>` (or `npm run migrate -w @habitpair/<svc>`) and run `prisma migrate dev --name <change>`. Never write SQL migrations by hand.
+- Do NOT add `useMemo`, `useCallback`, or `React.memo` defensively. Write the straightforward version first and let the compiler optimize it.
+- Manual memoization is still needed when: (a) a value or callback is consumed outside React's reactivity (a `useEffect` cleanup that holds an imperative handle, a ref into a non-React API, an event listener attached to `window`); (b) the value is the dependency of a `useEffect` whose stability is load-bearing for an external subscription.
+- If you find yourself reaching for `useMemo`, pause and check whether the compiler already handles it. The codebase prefers the un-memoized form.
+```
 
-## Backend conventions — NestJS
+**Entry F-1 — Frontend code organization**
 
-Each feature is its own module folder under `apps/<svc>/src/<feature>/`, containing at minimum:
+```markdown
+## Frontend layout — apps/web/src
 
-- `<feature>.module.ts` — `@Module({ imports, controllers, providers, exports })`
-- `<feature>.controller.ts` — HTTP surface; decorate routes with `@Get/@Post/...`
-- `<feature>.service.ts` — business logic; constructor-inject `PrismaService` and other services
+- Routes: `apps/web/src/routes/` only. File-based. TanStack Router auto-discovers and regenerates `routeTree.gen.ts` on save.
+- UI components: `apps/web/src/components/` — feature-agnostic UI primitives. PascalCase filenames.
+- Feature-specific components: colocated under `apps/web/src/routes/<route>/` next to the route file that owns them, not in `components/`.
+- Hooks: `apps/web/src/hooks/`. Filename matches the hook (`useFoo.ts` exports `useFoo`).
+- API clients and data-layer helpers: `apps/web/src/lib/`. TanStack Query queryOptions live here, keyed by entity.
+- Shared types not tied to a single feature: `apps/web/src/types/`.
+- Styles: `apps/web/src/styles.css` is the single Tailwind entry point. Component-level CSS modules are not used.
+```
 
-Register the new module in `apps/<svc>/src/app.module.ts` under `imports`. Configuration goes through `@nestjs/config` (`ConfigService.get(...)`), never `process.env` directly.
+**Entry F-2 — Generated files (do not edit)**
 
-## Frontend conventions — web app layout
+```markdown
+## Generated files (do not hand-edit)
 
-- `apps/web/src/routes/` — TanStack Router file-based routes. The route tree (`routeTree.gen.ts`) is auto-generated by `TanStackRouterVite`; do not hand-edit it.
-- `apps/web/src/lib/` — shared utilities, API clients, and query/mutation factories.
-- New screens land as a route file under `src/routes/`. Use `createFileRoute('/<path>')({ component: ... })`; data dependencies go in `loader` or `beforeLoad`. Auth gates go in `beforeLoad` on a layout route, not per-leaf-route.
-- Data fetching: TanStack React Query. Hooks live in `src/lib/` (or a future `src/features/<feature>/`), shaped as `useXxxQuery` and `useXxxMutation`.
-- Styling: Tailwind 4 utility classes inline in JSX. No CSS modules, no styled-components.
+The following files are regenerated by tooling. Hand-edits are lost on the next build:
 
-## Frontend conventions — TanStack Router (not React Router)
+- `apps/web/src/routeTree.gen.ts` — TanStack Router. Regenerated by the `@tanstack/router-plugin/vite` plugin on save and on build.
+- `apps/auth-api/generated/` and `apps/habits-api/generated/` — Prisma client output. Regenerated by `npm run generate -w @habitpair/auth-api` (and equivalent for habits-api).
 
-This project uses `@tanstack/react-router`, NOT `react-router-dom`. The agent's default React Router instincts do not apply. Cheat-sheet:
+To change a route, add or rename a file under `apps/web/src/routes/`. To change a database type, edit the corresponding `prisma/schema.prisma` and run `generate`.
+```
 
-- Navigation hook: `useNavigate()` from `@tanstack/react-router` (returns a function), or `<Link to="/path">` from the same package.
-- Reading route params: `Route.useParams()` (where `Route` is the value returned by `createFileRoute`), NOT `useParams()` from React Router.
-- Reading route data: `Route.useLoaderData()`.
-- Auth gate / redirect: throw `redirect({ to: '/sign-in' })` from `beforeLoad`, not via `<Navigate>`.
-- Type-safe links: prefer `to: '/foo'` (Router infers the route map) over string concatenation.
+**Entry B-1 — Backend conventions (NestJS + Prisma)**
 
-When in doubt, check `apps/web/src/routes/__root.tsx` for the canonical pattern in this codebase, then the TanStack Router docs at tanstack.com/router.
+```markdown
+## Backends — apps/auth-api and apps/habits-api
 
-## Dev loop
+Both services are NestJS 11 with Prisma 6. Module composition follows the canonical NestJS shape: each feature has its own folder (`feature.module.ts`, `feature.controller.ts`, `feature.service.ts`, `feature.dto.ts`).
 
-- Full stack locally: `make up` (Postgres + both APIs + web via concurrently).
-- DB only: `make db-up`. New migrations: `make db-migrate` (auth-api) or `make db-migrate-habits`.
-- Web only: `make web` (no API, no DB).
-- Tests: `make test` (unit), `make test-e2e` (e2e). Both APIs use Jest + supertest; web uses Vitest.
-- Lint: `make lint`. The repo runs ESLint 9 flat-config + Prettier; no editor-magic required.
+- DTOs live alongside the controller as `<feature>.dto.ts`. Use `class-validator` decorators on DTO fields; mount `ValidationPipe({ whitelist: true, transform: true })` globally in `main.ts`.
+- Prisma access: inject `PrismaService` (provided by `PrismaModule`) into a feature service; do NOT import `PrismaClient` directly outside `PrismaModule`.
+- Health checks: each service exposes `/health` via `@nestjs/terminus` (see `apps/auth-api/src/health/`). Add new checks there, not as one-off routes.
+- Configuration: `@nestjs/config` with `isGlobal: true` (see `apps/auth-api/src/app.module.ts`). Read env via `ConfigService.get<T>(key)` with a typed schema; never `process.env` in a controller or service.
+- JWT (habits-api): `@nestjs/jwt` is used to verify tokens issued by auth-api. Token verification belongs in a NestJS guard, not inline in a controller.
+```
+
+**Entry M-1 — Monorepo shared types**
+
+```markdown
+## Monorepo conventions — shared code
+
+- Workspace shape: `apps/*` (deployables) and `packages/*` (shared libraries). The `packages/` workspace is declared but currently empty.
+- Shared types between `apps/auth-api` and `apps/habits-api` (token payload, error envelopes, user identity) live in `packages/shared-types/` as a published-internally workspace package, consumed via `import type { ... } from '@habitpair/shared-types'`.
+- Anything cross-cutting that is not just a type (a helper, a constant, a schema) gets its own `packages/<name>/` workspace, never a relative import across `apps/*` boundaries.
+- Do not deep-import from another app: an `apps/habits-api` file MUST NOT `import` from `apps/auth-api/src/...`. Lift shared code to `packages/*` instead.
+```
+
+**Entry M-2 — Common scripts**
+
+```markdown
+## Workspace scripts — common operations
+
+Run from the repo root unless noted.
+
+- All three services in dev: `npm run dev`
+- One service only: `npm run dev:auth` | `npm run dev:habits` | `npm run dev:web`
+- Build a single app: `npm run build -w @habitpair/web` (or `@habitpair/auth-api`, `@habitpair/habits-api`)
+- Type check (frontend): `npm run typecheck -w @habitpair/web`
+- Lint a single app: `npm run lint -w @habitpair/<app>`
+- Test: `npm run test -w @habitpair/<app>` — Vitest for web, Jest for the backends
+- Prisma migrations (per backend): `npm run migrate -w @habitpair/auth-api`
+- Regenerate Prisma client: `npm run generate -w @habitpair/auth-api`
 ```
 
 ## Summary
 
-habitpair's stack is agent-friendly across every meaningful axis — typed end-to-end, convention-based on its load-bearing components (NestJS for both APIs, file-based TanStack routing for the web, Prisma for both DBs), built on mainstream JS/TS choices the agent has internalized, and documented by versioned official docs at every layer.
+**Verdict: ready-with-compensation.** The stack passes all four agent-friendly criteria — type safety is strong everywhere, both frontend and backend frameworks are opinionated, every component is squarely popular within the JS/TS family, and official documentation is current and versioned. The label "with compensation" reflects two real friction sources that are not gate failures but will show up on the first few feature passes if not pinned:
 
-**Key strengths**
-- TypeScript `strict: true` everywhere, with the web workspace adding the harder bolt-ons (`noUnusedLocals`, `verbatimModuleSyntax`).
-- NestJS + Prisma + TanStack Router each ship the kind of opinionated structure the agent can navigate without per-PR explanation.
-- CI is per-app, path-filtered, and runs real migrations against a real Postgres container — close to how the code actually runs.
-- Deployment is reproducible (Terraform-managed) rather than click-ops.
+1. **Recent-major drift.** Tailwind v4 and React Compiler 1.0 changed idioms that the agent's default lean still pattern-matches to v3 / pre-compiler. Entries T-1 and T-2 above pin the current behavior.
+2. **Convention gaps the framework leaves open.** TanStack Router and NestJS each cover the load-bearing convention (routing, modules), but the project's choices about where components live, where shared types go, and how DTOs are validated have not been written down. Entries F-1, B-1, M-1 lock the patterns the next feature will silently establish.
 
-**Key gaps (all compensable via instruction-file additions, not stack changes)**
-- The two-service JWT contract isn't documented anywhere the agent can read top-down.
-- The per-service Prisma client output path is a non-obvious trick that an agent could "fix" back to defaults and break the build.
-- Web app layout outside `routes/` is convention-by-intuition rather than written rule.
-- TanStack Router has thinner training-data than React Router, so the agent's defaults skew toward the wrong library without examples.
-- The root `CLAUDE.md` currently carries only the 10xDevs lesson narrative — no project-coding context lives anywhere on disk yet.
+**Strengths to lean on.** TypeScript `strict` everywhere with extra lint flags on the frontend. NestJS + Prisma is a well-trodden, doc-rich, convention-heavy backend stack. TanStack Router's file-based discovery + ESLint already ignoring `routeTree.gen.ts` means the generated-file boundary is mechanically enforced. CI is comprehensive (per-app test, deploy, CodeQL, gitleaks, infra-ci).
 
-**Recommended next step.** Run `/10x-health-check` to verify the stack's current health against the gaps identified above. Before that, paste the recommended `AGENTS.md` blocks (or append them under a `## Project context` heading in `CLAUDE.md`) so the agent reads conventions every conversation, not just when an explicit prompt remembers to mention them.
+**Recommended next step.** Run `/10x-health-check` next. It will pick up this assessment as input and focus health checks on the gaps identified above (dependency recency on the bleeding-edge majors, security audit, missing test coverage on the just-scaffolded `apps/web`).
