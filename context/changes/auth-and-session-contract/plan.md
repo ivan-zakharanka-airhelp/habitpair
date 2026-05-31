@@ -348,22 +348,22 @@ Wire auth state into TanStack Router context, gate protected routes with `before
 - [x] 3.3 Lint passes (`npm run lint -w @habitpair/web`) — cc38b22
 
 #### Manual
-- [x] 3.4 Token store survives a manual reload when seeded with a valid refresh token
+- [x] 3.4 Token store survives a manual reload when seeded with a valid refresh token — fa39f24
 
 ### Phase 4: Frontend auth UX + route gating
 
 #### Automated
-- [x] 4.1 Typecheck passes (`npm run typecheck -w @habitpair/web`)
-- [x] 4.2 Component tests pass — form submit + inline error (`npm run test -w @habitpair/web`)
-- [x] 4.3 Production build succeeds, route tree generates (`npm run build -w @habitpair/web`)
-- [x] 4.4 Lint passes (`npm run lint -w @habitpair/web`)
+- [x] 4.1 Typecheck passes (`npm run typecheck -w @habitpair/web`) — fa39f24
+- [x] 4.2 Component tests pass — form submit + inline error (`npm run test -w @habitpair/web`) — fa39f24
+- [x] 4.3 Production build succeeds, route tree generates (`npm run build -w @habitpair/web`) — fa39f24
+- [x] 4.4 Lint passes (`npm run lint -w @habitpair/web`) — fa39f24
 
 #### Manual
-- [x] 4.5 Register → auto-signed-in → gated home shows email
-- [x] 4.6 Reload → still signed in (boot exchange)
-- [x] 4.7 Sign out → redirect to `/login`; `localStorage` refresh cleared
-- [x] 4.8 Sign in again with same credentials → back on home
-- [x] 4.9 Bad credentials → inline "Invalid email or password", no crash
-- [x] 4.10 Visiting `/` while signed out → redirected to `/login`
-- [x] 4.11 Two accounts isolated — `GET /habits` returns only the signed-in user's list
-- [x] 4.12 Forms fully operable via keyboard (Tab / Enter)
+- [x] 4.5 Register → auto-signed-in → gated home shows email — fa39f24
+- [x] 4.6 Reload → still signed in (boot exchange) — fa39f24
+- [x] 4.7 Sign out → redirect to `/login`; `localStorage` refresh cleared — fa39f24
+- [x] 4.8 Sign in again with same credentials → back on home — fa39f24
+- [x] 4.9 Bad credentials → inline "Invalid email or password", no crash — fa39f24
+- [x] 4.10 Visiting `/` while signed out → redirected to `/login` — fa39f24
+- [x] 4.11 Two accounts isolated — `GET /habits` returns only the signed-in user's list — fa39f24
+- [x] 4.12 Forms fully operable via keyboard (Tab / Enter) — fa39f24
