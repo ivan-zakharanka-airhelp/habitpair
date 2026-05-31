@@ -84,7 +84,7 @@ aws-deploy-auth:                 ## Build + push image + rollout auth-api on AWS
 	# kustomize resets the image to its placeholder (manual-1), so we set the real
 	# tag immediately after to avoid an ImagePullBackOff window.
 	kubectl --context aws-k3s apply -k infra/k8s/overlays/aws
-	kubectl --context aws-k3s set image -n habitpair deployment/auth-api auth-api=$(IMAGE)
+	kubectl --context aws-k3s set image -n habitpair deployment/auth-api auth-api=$(IMAGE) migrate=$(IMAGE)
 	kubectl --context aws-k3s rollout status -n habitpair deployment/auth-api --timeout=120s
 
 aws-deploy-habits:               ## Build + push image + rollout habits-api on AWS k3s.
@@ -92,7 +92,7 @@ aws-deploy-habits:               ## Build + push image + rollout habits-api on A
 	docker build --platform linux/arm64 -t $(IMAGE) -f apps/habits-api/Dockerfile .
 	docker push $(IMAGE)
 	kubectl --context aws-k3s apply -k infra/k8s/overlays/aws
-	kubectl --context aws-k3s set image -n habitpair deployment/habits-api habits-api=$(IMAGE)
+	kubectl --context aws-k3s set image -n habitpair deployment/habits-api habits-api=$(IMAGE) migrate=$(IMAGE)
 	kubectl --context aws-k3s rollout status -n habitpair deployment/habits-api --timeout=120s
 
 aws-deploy-web:                  ## Build SPA + sync to S3 + invalidate CloudFront.

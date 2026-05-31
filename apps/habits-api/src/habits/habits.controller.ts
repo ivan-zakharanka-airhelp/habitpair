@@ -1,6 +1,7 @@
-import { BadRequestException, Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtGuard } from '../auth/jwt.guard';
 import { AuthenticatedRequest } from '../auth/jwt-payload';
+import { CreateHabitDto } from './dto/create-habit.dto';
 import { HabitsService } from './habits.service';
 
 // Global prefix `habits` is set in main.ts → this controller serves /habits
@@ -16,9 +17,7 @@ export class HabitsController {
   }
 
   @Post()
-  create(@Req() req: AuthenticatedRequest, @Body() body: { title?: string }) {
-    const title = body?.title?.trim();
-    if (!title) throw new BadRequestException('title is required');
-    return this.habitsService.create(req.user.sub, title);
+  create(@Req() req: AuthenticatedRequest, @Body() dto: CreateHabitDto) {
+    return this.habitsService.create(req.user.sub, dto.title);
   }
 }

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
@@ -9,13 +9,18 @@ import { HabitsModule } from './habits/habits.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      // .env wins when present (local/prod-injected); .env.example is the
+      // committed fallback so getOrThrow('JWT_SECRET') resolves under Jest/CI
+      // and local runs without a backend .env. Must match auth-api's secret.
+      envFilePath: ['.env', '.env.example'],
     }),
-    JwtModule.register({
+    JwtModule.registerAsync({
       global: true,
-      // Same secret as auth-api uses to sign — see deployment env var JWT_SECRET.
-      // Dev fallback keeps e2e tests runnable without env setup.
-      secret: process.env.JWT_SECRET ?? 'unsafe-dev-only-secret',
-      signOptions: { algorithm: 'HS256' },
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.getOrThrow<string>('JWT_SECRET'),
+        signOptions: { algorithm: 'HS256' },
+      }),
     }),
     PrismaModule,
     HealthModule,

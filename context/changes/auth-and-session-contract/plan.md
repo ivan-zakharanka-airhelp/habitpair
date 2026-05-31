@@ -69,8 +69,8 @@ Stand up the full token issuer in auth-api: dependencies, data model + first mig
 **File**: `apps/auth-api/prisma/schema.prisma`
 **Intent**: Add the `User` and `RefreshToken` models. Email is the unique login identity (stored lowercased); refresh tokens are stored as hashes for server-side revocation/rotation.
 **Contract**: Two models on the existing `db`/`generator`:
-- `User { id String @id @default(cuid()); email String @unique; passwordHash String; createdAt DateTime @default(now()); updatedAt DateTime @updatedAt; refreshTokens RefreshToken[] }`
-- `RefreshToken { id String @id @default(cuid()); userId String; tokenHash String @unique; expiresAt DateTime; createdAt DateTime @default(now()); user User @relation(fields: [userId], references: [id], onDelete: Cascade); @@index([userId]) }`
+- `User { id String @id @default(uuid(7)); email String @unique; passwordHash String; createdAt DateTime @default(now()); updatedAt DateTime @updatedAt; refreshTokens RefreshToken[] }`
+- `RefreshToken { id String @id @default(uuid(7)); userId String; tokenHash String @unique; expiresAt DateTime; createdAt DateTime @default(now()); user User @relation(fields: [userId], references: [id], onDelete: Cascade); @@index([userId]) }`
 `tokenHash` holds the SHA-256 hex of the opaque refresh token, never the token itself.
 
 #### 3. First migration
@@ -314,56 +314,56 @@ Wire auth state into TanStack Router context, gate protected routes with `before
 ### Phase 1: auth-api issuer
 
 #### Automated
-- [ ] 1.1 Root install succeeds and argon2 builds (`npm install`)
-- [ ] 1.2 Migration applies cleanly (`npm run migrate -w @habitpair/auth-api`)
-- [ ] 1.3 Prisma client generates (`npm run generate -w @habitpair/auth-api`)
-- [ ] 1.4 Unit tests pass — password, token, auth services (`npm test -w @habitpair/auth-api`)
-- [ ] 1.5 E2E lifecycle + negative cases pass (`npm run test:e2e -w @habitpair/auth-api`)
-- [ ] 1.6 Lint passes (`npm run lint -w @habitpair/auth-api`)
-- [ ] 1.7 auth-api arm64 image builds with argon2 (`docker build --platform linux/arm64 -f apps/auth-api/Dockerfile .`)
+- [x] 1.1 Root install succeeds and argon2 builds (`npm install`) — 91cf80b
+- [x] 1.2 Migration applies cleanly (`npm run migrate -w @habitpair/auth-api`) — 91cf80b
+- [x] 1.3 Prisma client generates (`npm run generate -w @habitpair/auth-api`) — 91cf80b
+- [x] 1.4 Unit tests pass — password, token, auth services (`npm test -w @habitpair/auth-api`) — 91cf80b
+- [x] 1.5 E2E lifecycle + negative cases pass (`npm run test:e2e -w @habitpair/auth-api`) — 91cf80b
+- [x] 1.6 Lint passes (`npm run lint -w @habitpair/auth-api`) — 91cf80b
+- [x] 1.7 auth-api arm64 image builds with argon2 (`docker build --platform linux/arm64 -f apps/auth-api/Dockerfile .`) — 91cf80b
 
 #### Manual
-- [ ] 1.8 `curl` register returns 201 with tokens + user; access token decodes to `{ sub }`
-- [ ] 1.9 Refresh rotates; replaying the old refresh token → 401
-- [ ] 1.10 Logout then refresh with that token → 401
+- [x] 1.8 `curl` register returns 201 with tokens + user; access token decodes to `{ sub }` — 91cf80b
+- [x] 1.9 Refresh rotates; replaying the old refresh token → 401 — 91cf80b
+- [x] 1.10 Logout then refresh with that token → 401 — 91cf80b
 
 ### Phase 2: habits-api verification alignment + shared validation
 
 #### Automated
-- [ ] 2.1 Root install succeeds (`npm install`)
-- [ ] 2.2 Builds/typechecks (`npm run build -w @habitpair/habits-api`)
-- [ ] 2.3 Guard + habits unit tests pass (`npm test -w @habitpair/habits-api`)
-- [ ] 2.4 E2E: empty title → 400; shared-secret token accepted (`npm run test:e2e -w @habitpair/habits-api`)
-- [ ] 2.5 Lint passes (`npm run lint -w @habitpair/habits-api`)
+- [x] 2.1 Root install succeeds (`npm install`) — 2910700
+- [x] 2.2 Builds/typechecks (`npm run build -w @habitpair/habits-api`) — 2910700
+- [x] 2.3 Guard + habits unit tests pass (`npm test -w @habitpair/habits-api`) — 2910700
+- [x] 2.4 E2E: empty title → 400; shared-secret token accepted (`npm run test:e2e -w @habitpair/habits-api`) — 2910700
+- [x] 2.5 Lint passes (`npm run lint -w @habitpair/habits-api`) — 2910700
 
 #### Manual
-- [ ] 2.6 auth-api login token accepted by habits-api `GET /habits` (200); wrong-secret token → 401
-- [ ] 2.7 `POST /habits` with `{}` returns 400, not 500
+- [x] 2.6 auth-api login token accepted by habits-api `GET /habits` (200); wrong-secret token → 401 — 2910700
+- [x] 2.7 `POST /habits` with `{}` returns 400, not 500 — 2910700
 
 ### Phase 3: Frontend auth plumbing
 
 #### Automated
-- [ ] 3.1 Typecheck passes (`npm run typecheck -w @habitpair/web`)
-- [ ] 3.2 Unit tests pass — single-flight refresh, storage persist/clear, 401-retry, failed-refresh clears + fires `onAuthCleared` (`npm run test -w @habitpair/web`)
-- [ ] 3.3 Lint passes (`npm run lint -w @habitpair/web`)
+- [x] 3.1 Typecheck passes (`npm run typecheck -w @habitpair/web`) — cc38b22
+- [x] 3.2 Unit tests pass — single-flight refresh, storage persist/clear, 401-retry, failed-refresh clears + fires `onAuthCleared` (`npm run test -w @habitpair/web`) — cc38b22
+- [x] 3.3 Lint passes (`npm run lint -w @habitpair/web`) — cc38b22
 
 #### Manual
-- [ ] 3.4 Token store survives a manual reload when seeded with a valid refresh token
+- [x] 3.4 Token store survives a manual reload when seeded with a valid refresh token — fa39f24
 
 ### Phase 4: Frontend auth UX + route gating
 
 #### Automated
-- [ ] 4.1 Typecheck passes (`npm run typecheck -w @habitpair/web`)
-- [ ] 4.2 Component tests pass — form submit + inline error (`npm run test -w @habitpair/web`)
-- [ ] 4.3 Production build succeeds, route tree generates (`npm run build -w @habitpair/web`)
-- [ ] 4.4 Lint passes (`npm run lint -w @habitpair/web`)
+- [x] 4.1 Typecheck passes (`npm run typecheck -w @habitpair/web`) — fa39f24
+- [x] 4.2 Component tests pass — form submit + inline error (`npm run test -w @habitpair/web`) — fa39f24
+- [x] 4.3 Production build succeeds, route tree generates (`npm run build -w @habitpair/web`) — fa39f24
+- [x] 4.4 Lint passes (`npm run lint -w @habitpair/web`) — fa39f24
 
 #### Manual
-- [ ] 4.5 Register → auto-signed-in → gated home shows email
-- [ ] 4.6 Reload → still signed in (boot exchange)
-- [ ] 4.7 Sign out → redirect to `/login`; `localStorage` refresh cleared
-- [ ] 4.8 Sign in again with same credentials → back on home
-- [ ] 4.9 Bad credentials → inline "Invalid email or password", no crash
-- [ ] 4.10 Visiting `/` while signed out → redirected to `/login`
-- [ ] 4.11 Two accounts isolated — `GET /habits` returns only the signed-in user's list
-- [ ] 4.12 Forms fully operable via keyboard (Tab / Enter)
+- [x] 4.5 Register → auto-signed-in → gated home shows email — fa39f24
+- [x] 4.6 Reload → still signed in (boot exchange) — fa39f24
+- [x] 4.7 Sign out → redirect to `/login`; `localStorage` refresh cleared — fa39f24
+- [x] 4.8 Sign in again with same credentials → back on home — fa39f24
+- [x] 4.9 Bad credentials → inline "Invalid email or password", no crash — fa39f24
+- [x] 4.10 Visiting `/` while signed out → redirected to `/login` — fa39f24
+- [x] 4.11 Two accounts isolated — `GET /habits` returns only the signed-in user's list — fa39f24
+- [x] 4.12 Forms fully operable via keyboard (Tab / Enter) — fa39f24

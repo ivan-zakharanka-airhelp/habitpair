@@ -68,3 +68,9 @@ jobs:
         run: npm test -w @habitpair/habits-api
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test
+
+      - name: E2E tests
+        run: npm run test:e2e -w @habitpair/habits-api
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          JWT_SECRET: ci-e2e-secret
