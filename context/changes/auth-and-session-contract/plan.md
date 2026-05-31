@@ -330,22 +330,22 @@ Wire auth state into TanStack Router context, gate protected routes with `before
 ### Phase 2: habits-api verification alignment + shared validation
 
 #### Automated
-- [x] 2.1 Root install succeeds (`npm install`)
-- [x] 2.2 Builds/typechecks (`npm run build -w @habitpair/habits-api`)
-- [x] 2.3 Guard + habits unit tests pass (`npm test -w @habitpair/habits-api`)
-- [x] 2.4 E2E: empty title → 400; shared-secret token accepted (`npm run test:e2e -w @habitpair/habits-api`)
-- [x] 2.5 Lint passes (`npm run lint -w @habitpair/habits-api`)
+- [x] 2.1 Root install succeeds (`npm install`) — 2910700
+- [x] 2.2 Builds/typechecks (`npm run build -w @habitpair/habits-api`) — 2910700
+- [x] 2.3 Guard + habits unit tests pass (`npm test -w @habitpair/habits-api`) — 2910700
+- [x] 2.4 E2E: empty title → 400; shared-secret token accepted (`npm run test:e2e -w @habitpair/habits-api`) — 2910700
+- [x] 2.5 Lint passes (`npm run lint -w @habitpair/habits-api`) — 2910700
 
 #### Manual
-- [x] 2.6 auth-api login token accepted by habits-api `GET /habits` (200); wrong-secret token → 401
-- [x] 2.7 `POST /habits` with `{}` returns 400, not 500
+- [x] 2.6 auth-api login token accepted by habits-api `GET /habits` (200); wrong-secret token → 401 — 2910700
+- [x] 2.7 `POST /habits` with `{}` returns 400, not 500 — 2910700
 
 ### Phase 3: Frontend auth plumbing
 
 #### Automated
-- [ ] 3.1 Typecheck passes (`npm run typecheck -w @habitpair/web`)
-- [ ] 3.2 Unit tests pass — single-flight refresh, storage persist/clear, 401-retry, failed-refresh clears + fires `onAuthCleared` (`npm run test -w @habitpair/web`)
-- [ ] 3.3 Lint passes (`npm run lint -w @habitpair/web`)
+- [x] 3.1 Typecheck passes (`npm run typecheck -w @habitpair/web`)
+- [x] 3.2 Unit tests pass — single-flight refresh, storage persist/clear, 401-retry, failed-refresh clears + fires `onAuthCleared` (`npm run test -w @habitpair/web`)
+- [x] 3.3 Lint passes (`npm run lint -w @habitpair/web`)
 
 #### Manual
 - [ ] 3.4 Token store survives a manual reload when seeded with a valid refresh token
