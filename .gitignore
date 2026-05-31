@@ -42,3 +42,5 @@ infra/terraform/*.tfplan
 
 # Debug logs
 npm-debug.log*
+
+.claude
