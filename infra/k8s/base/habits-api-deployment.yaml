@@ -13,6 +13,19 @@ spec:
       labels:
         app: habits-api
     spec:
+      # Applies pending Prisma migrations before the app starts. Shares the app
+      # image (same name → kustomize remaps it too); a failed migration fails pod
+      # init, so the rollout stops and the previous ReplicaSet keeps serving.
+      initContainers:
+        - name: migrate
+          image: habits-api:latest
+          command: ["npx", "prisma", "migrate", "deploy", "--schema=apps/habits-api/prisma/schema.prisma"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: habits-db-credentials
+                  key: url
       containers:
         - name: habits-api
           image: habits-api:latest

@@ -4,6 +4,11 @@
 FROM node:22-slim AS build
 WORKDIR /app
 
+# Prisma's engines dynamically link libssl. Without it, the install picks the
+# openssl-1.1.x engine and TLS to RDS (PG16 enforces SSL) fails. Install before
+# `npm ci` so the generated query engine matches the system openssl (3.0.x).
+RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
+
 COPY package.json package-lock.json ./
 COPY apps/auth-api/package.json ./apps/auth-api/
 RUN npm ci
@@ -15,6 +20,10 @@ RUN npm run build -w @habitpair/auth-api
 FROM node:22-slim AS production
 WORKDIR /app
 ENV NODE_ENV=production
+
+# Runtime libssl for Prisma's schema engine (migrate deploy, run as an
+# initContainer) and query engine; also selects the openssl-3.0.x engine here.
+RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
 COPY apps/auth-api/package.json ./apps/auth-api/

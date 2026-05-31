@@ -109,5 +109,6 @@ jobs:
             export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
             kubectl set image deployment/habits-api \
               habits-api=${{ needs.build.outputs.image }} \
+              migrate=${{ needs.build.outputs.image }} \
               -n habitpair
             kubectl rollout status deployment/habits-api -n habitpair --timeout=120s
