@@ -9,7 +9,7 @@ function LoginPage() {
   const navigate = useNavigate();
   return (
     <main>
-      <LoginForm onSuccess={() => navigate({ to: '/' })} />
+      <LoginForm onSuccess={() => navigate({ to: '/app' })} />
     </main>
   );
 }
