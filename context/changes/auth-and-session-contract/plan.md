@@ -34,7 +34,9 @@ A new visitor can register, is auto-signed-in, and lands in the (placeholder) au
 - **Email verification** — PRD defers; signup grants immediate access.
 - **OAuth / third-party / magic-link / passwordless** — PRD Non-Goals.
 - **"Sign out everywhere" / session-management UI** — sign-out revokes the current device only.
+- **Server-side revocation of the live access token** — sign-out deletes the refresh row and clears the client, so no new access tokens are minted, but the already-issued stateless access token stays valid until it expires (≤15m). "Signing out revokes that device's session" means this — not an instant server-side kill of the outstanding access token.
 - **Refresh-token reuse-detection chain revocation** — simple rotation (delete old, issue new); a presented-but-unknown refresh token just 401s.
+- **Multi-tab session sync** — the refresh token is in `localStorage` and rotates per use; two tabs of the same browser are not synced, so a background tab holding a rotated-away token will 401 and log out. Single-active-tab is the assumed usage at this scale (a `storage`-event sync is the future fix).
 - **Rate limiting / account lockout on sign-in** — noted as future hardening, not in F-01.
 - **Habit features** — Phase 4's signed-in home is a placeholder; the habit list is S-01.
 - **Asymmetric keys (RS256) / per-service secrets / httpOnly cookies / CORS credentials changes** — stays HS256 shared-secret + Bearer header per the existing architecture.
@@ -45,7 +47,7 @@ Backend-first, then frontend, in dependency order. Phase 1 builds the entire iss
 
 ## Critical Implementation Details
 
-- **Shared-secret consistency & load timing.** Both services must resolve the *same* HS256 secret, loaded via `JwtModule.registerAsync` + `ConfigService` rather than a bare `process.env` read at import time. If the secrets diverge (today habits-api's import-time fallback can win before `.env` loads), every authenticated request 401s and the symptom looks like a frontend bug. This is the linchpin of the whole change.
+- **Shared-secret consistency & load timing.** Both services must resolve the *same* HS256 secret, loaded via `JwtModule.registerAsync` + `ConfigService` rather than a bare `process.env` read at import time. If the secrets diverge (today habits-api's import-time fallback can win before `.env` loads), every authenticated request 401s and the symptom looks like a frontend bug. This is the linchpin of the whole change. Load the secret through `ConfigModule.forRoot({ envFilePath: ['.env', '.env.example'] })` so `getOrThrow('JWT_SECRET')` never throws under Jest/CI/local-without-`.env` (which is what the deleted dev fallback used to guarantee), while prod's injected env var still wins.
 - **Refresh single-flight.** When several gated requests 401 at once, they must share one in-flight `/auth/refresh` call. Because refresh rotates (the old token is deleted), parallel refreshes would invalidate each other and cascade to a forced logout. The access token lives in memory; the refresh token in `localStorage`.
 - **Boot rehydration ordering.** On app load the SPA exchanges the stored refresh token for a fresh access token. The router context must expose an "auth resolving" state during that exchange so `beforeLoad` does not bounce a returning, still-valid user to `/login` before it resolves.
 - **Two different hashes for two different secrets.** argon2id is for the password (low entropy, deliberately slow). Refresh tokens are high-entropy random; store a fast **SHA-256** hash of them — do not argon2-hash refresh tokens (per-request cost) and do not store them in plaintext.
@@ -113,7 +115,17 @@ Use Node `crypto` for the random bytes and SHA-256.
 #### 9. JWT + ValidationPipe wiring
 **File**: `apps/auth-api/src/app.module.ts`, `apps/auth-api/src/main.ts`
 **Intent**: Configure signing with a reliably-loaded secret and turn on global validation.
-**Contract**: In `app.module.ts` add `JwtModule.registerAsync({ global: true, inject: [ConfigService], useFactory: (c) => ({ secret: c.getOrThrow('JWT_SECRET'), signOptions: { algorithm: 'HS256' } }) })` and import `AuthModule`. In `main.ts` add `app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }))`.
+**Contract**: In `app.module.ts` add `JwtModule.registerAsync({ global: true, inject: [ConfigService], useFactory: (c) => ({ secret: c.getOrThrow('JWT_SECRET'), signOptions: { algorithm: 'HS256' } }) })` and import `AuthModule`. Also extend the existing `ConfigModule.forRoot` to `forRoot({ isGlobal: true, envFilePath: ['.env', '.env.example'] })` so `getOrThrow('JWT_SECRET')` resolves to the committed dev value under Jest/local runs that have no backend `.env`; prod's injected `JWT_SECRET` env var still takes precedence and the image does not ship `.env.example`. In `main.ts` add `app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }))`.
+
+#### 10. CI runs the e2e suite
+**File**: `.github/workflows/auth-api-test.yaml`
+**Intent**: Make the lifecycle e2e part of the CI safety net, not a local-only gate.
+**Contract**: After the existing `migrate:deploy` step, add a step running `npm run test:e2e -w @habitpair/auth-api` with env `DATABASE_URL` (the Postgres service, already present) and `JWT_SECRET` (any non-empty value). Today the workflow runs only `npm test` (jest `testRegex: .*\.spec\.ts$`, `rootDir: src`), so the register→login→refresh→logout lifecycle would otherwise never run in CI.
+
+#### 11. Dockerfile base for argon2 (arm64)
+**File**: `apps/auth-api/Dockerfile`
+**Intent**: Ensure argon2's native binding is present in the production `linux/arm64` image (Critical Implementation Detail #5), not just on the host.
+**Contract**: Switch the base from `node:22-alpine` (musl — argon2 has no musl prebuilt, so it would compile from source, but alpine ships no `python3`/`make`/`g++`) to `node:22-slim` (Debian/glibc, where argon2 ships prebuilt binaries → no compile) in **both** the `build` and `production` stages. habits-api adds no native deps, so its Dockerfile may stay on alpine (switch for parity only if desired).
 
 ### Success Criteria:
 
@@ -124,6 +136,7 @@ Use Node `crypto` for the random bytes and SHA-256.
 - Unit tests pass (password, token, auth services): `npm test -w @habitpair/auth-api`
 - E2E flow passes against real Postgres: `npm run test:e2e -w @habitpair/auth-api` (register → login → refresh rotates → logout; duplicate email → 409; bad credentials → 401; reuse of pre-rotation refresh token → 401)
 - Lint passes: `npm run lint -w @habitpair/auth-api`
+- auth-api production image builds for arm64 with argon2's native binding present: `docker build --platform linux/arm64 -f apps/auth-api/Dockerfile .` (from repo root — the Dockerfile's build context)
 
 #### Manual Verification:
 - `curl POST /auth/register` returns 201 with `accessToken`, `refreshToken`, and `user`; the access token decodes to `{ sub: <userId> }`
@@ -144,7 +157,7 @@ Make habits-api reliably verify auth-api-issued tokens (consistent secret loadin
 #### 1. Reliable secret loading
 **File**: `apps/habits-api/src/app.module.ts`
 **Intent**: Load the HS256 secret through `ConfigService` so it matches auth-api and isn't read before `.env` is loaded.
-**Contract**: Replace `JwtModule.register({ secret: process.env.JWT_SECRET ?? 'unsafe-dev-only-secret', ... })` with `JwtModule.registerAsync({ global: true, inject: [ConfigService], useFactory: (c) => ({ secret: c.getOrThrow('JWT_SECRET'), signOptions: { algorithm: 'HS256' } }) })`. No divergent dev fallback. [jwt.guard.ts](apps/habits-api/src/auth/jwt.guard.ts) is unchanged.
+**Contract**: Replace `JwtModule.register({ secret: process.env.JWT_SECRET ?? 'unsafe-dev-only-secret', ... })` with `JwtModule.registerAsync({ global: true, inject: [ConfigService], useFactory: (c) => ({ secret: c.getOrThrow('JWT_SECRET'), signOptions: { algorithm: 'HS256' } }) })`. No divergent dev fallback. Also extend `ConfigModule.forRoot` to `forRoot({ isGlobal: true, envFilePath: ['.env', '.env.example'] })` so `getOrThrow('JWT_SECRET')` resolves under Jest/CI (the workflows set only `DATABASE_URL`) and local runs without a backend `.env` — this takes over the deleted fallback's role of keeping e2e runnable without env setup; prod's injected env var still wins. [jwt.guard.ts](apps/habits-api/src/auth/jwt.guard.ts) is unchanged.
 
 #### 2. Validation dependencies + pipe
 **File**: `apps/habits-api/package.json` (+ root `npm install`), `apps/habits-api/src/main.ts`
@@ -155,6 +168,11 @@ Make habits-api reliably verify auth-api-issued tokens (consistent secret loadin
 **File**: `apps/habits-api/src/habits/dto/create-habit.dto.ts`, `apps/habits-api/src/habits/habits.controller.ts`
 **Intent**: Express the habit-title rule declaratively and remove the manual `if (!title)`.
 **Contract**: `CreateHabitDto { title: string }` with `@IsString() @IsNotEmpty()` (and `@Transform` trim, or trim in the service). Controller `create()` takes `@Body() dto: CreateHabitDto` and passes `dto.title`; delete the inline `BadRequestException`.
+
+#### 4. CI runs the e2e suite
+**File**: `.github/workflows/habits-api-test.yaml`
+**Intent**: Exercise the shared-secret token-accept path in CI, not just locally.
+**Contract**: After the existing `migrate:deploy` step, add a step running `npm run test:e2e -w @habitpair/habits-api` with env `DATABASE_URL` and `JWT_SECRET`. The workflow currently runs only `npm test`, so the "shared-secret token accepted / wrong-secret 401" check would otherwise never run in CI.
 
 ### Success Criteria:
 
@@ -217,9 +235,9 @@ Wire auth state into TanStack Router context, gate protected routes with `before
 ### Changes Required:
 
 #### 1. Router context + boot rehydration
-**File**: `apps/web/src/router.tsx`, `apps/web/src/main.tsx`
+**File**: `apps/web/src/routes/__root.tsx`, `apps/web/src/router.tsx`, `apps/web/src/main.tsx`
 **Intent**: Carry auth state into routing and resolve the stored session before gating decisions.
-**Contract**: `createRouter({ routeTree, context: { auth } })` where `auth` reflects `{ isAuthenticated, isResolving, user }` from `authStore` (subscribed). `main.tsx` calls `authStore.bootstrap()` (boot refresh exchange), wires `authStore.onAuthCleared = () => router.navigate({ to: '/login' })`, and renders a lightweight pending state while `isResolving`.
+**Contract**: Change `__root.tsx` from `createRootRoute({...})` to `createRootRouteWithContext<{ auth: AuthContext }>()({...})` so the context is typed and `beforeLoad({ context })` can read `context.auth` (without this, SC 4.1 typecheck fails). Define `AuthContext = { isAuthenticated: boolean; isResolving: boolean; user: User | null }`. In `router.tsx`, `createRouter({ routeTree, context: { auth: { isAuthenticated: false, isResolving: true, user: null } } })` (default boot context). In `main.tsx`, subscribe to `authStore`, pass the live value via `<RouterProvider router={router} context={{ auth }} />`, and call `router.invalidate()` on every `authStore` change so `beforeLoad` re-runs once the boot exchange resolves — otherwise the singleton router keeps its stale boot context and a returning, still-valid user is bounced to `/login` (the "Boot rehydration ordering" race). `main.tsx` also calls `authStore.bootstrap()` (boot refresh exchange), wires `authStore.onAuthCleared = () => router.navigate({ to: '/login' })`, and renders a lightweight pending state while `isResolving`.
 
 #### 2. Gated layout + guard
 **File**: `apps/web/src/routes/_authed.tsx` (pathless layout), move home to `apps/web/src/routes/_authed/index.tsx`
@@ -278,7 +296,7 @@ Wire auth state into TanStack Router context, gate protected routes with `before
 ## Migration Notes
 
 - auth-api's first migration creates `User` + `RefreshToken` in the `auth` database (already provisioned locally on port 5434 and in RDS by the bootstrap script). No data migration — greenfield.
-- habits-api schema is unchanged. In CI/prod, `migrate:deploy` runs auth-api's migration before tests/rollout (per the path-filtered workflow).
+- habits-api schema is unchanged. In CI/prod, `migrate:deploy` runs auth-api's migration before tests/rollout (per the path-filtered workflow). Both `*-test.yaml` workflows now run `test:e2e` after `migrate:deploy` (Phase 1 §10 / Phase 2 §4), so a broken migration or an auth-lifecycle regression fails CI rather than reaching prod.
 - No secret rotation: both services continue to read `JWT_SECRET` (local `.env`; K8s secret `auth-jwt-secret`).
 
 ## References
@@ -302,11 +320,12 @@ Wire auth state into TanStack Router context, gate protected routes with `before
 - [ ] 1.4 Unit tests pass — password, token, auth services (`npm test -w @habitpair/auth-api`)
 - [ ] 1.5 E2E lifecycle + negative cases pass (`npm run test:e2e -w @habitpair/auth-api`)
 - [ ] 1.6 Lint passes (`npm run lint -w @habitpair/auth-api`)
+- [ ] 1.7 auth-api arm64 image builds with argon2 (`docker build --platform linux/arm64 -f apps/auth-api/Dockerfile .`)
 
 #### Manual
-- [ ] 1.7 `curl` register returns 201 with tokens + user; access token decodes to `{ sub }`
-- [ ] 1.8 Refresh rotates; replaying the old refresh token → 401
-- [ ] 1.9 Logout then refresh with that token → 401
+- [ ] 1.8 `curl` register returns 201 with tokens + user; access token decodes to `{ sub }`
+- [ ] 1.9 Refresh rotates; replaying the old refresh token → 401
+- [ ] 1.10 Logout then refresh with that token → 401
 
 ### Phase 2: habits-api verification alignment + shared validation
 
@@ -342,7 +361,9 @@ Wire auth state into TanStack Router context, gate protected routes with `before
 #### Manual
 - [ ] 4.5 Register → auto-signed-in → gated home shows email
 - [ ] 4.6 Reload → still signed in (boot exchange)
-- [ ] 4.7 Sign out → redirect to `/login`; `localStorage` refresh cleared; `/` re-bounces to `/login`
-- [ ] 4.8 Sign in again → back on home; bad credentials → inline error, no crash
-- [ ] 4.9 Two accounts isolated — `GET /habits` returns only the signed-in user's list
-- [ ] 4.10 Forms fully operable via keyboard (Tab / Enter)
+- [ ] 4.7 Sign out → redirect to `/login`; `localStorage` refresh cleared
+- [ ] 4.8 Sign in again with same credentials → back on home
+- [ ] 4.9 Bad credentials → inline "Invalid email or password", no crash
+- [ ] 4.10 Visiting `/` while signed out → redirected to `/login`
+- [ ] 4.11 Two accounts isolated — `GET /habits` returns only the signed-in user's list
+- [ ] 4.12 Forms fully operable via keyboard (Tab / Enter)
