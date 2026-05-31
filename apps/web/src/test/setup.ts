@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import { beforeEach, vi } from 'vitest';
 
 // Minimal in-memory localStorage for the node test environment. A fresh

@@ -343,27 +343,27 @@ Wire auth state into TanStack Router context, gate protected routes with `before
 ### Phase 3: Frontend auth plumbing
 
 #### Automated
-- [x] 3.1 Typecheck passes (`npm run typecheck -w @habitpair/web`)
-- [x] 3.2 Unit tests pass — single-flight refresh, storage persist/clear, 401-retry, failed-refresh clears + fires `onAuthCleared` (`npm run test -w @habitpair/web`)
-- [x] 3.3 Lint passes (`npm run lint -w @habitpair/web`)
+- [x] 3.1 Typecheck passes (`npm run typecheck -w @habitpair/web`) — cc38b22
+- [x] 3.2 Unit tests pass — single-flight refresh, storage persist/clear, 401-retry, failed-refresh clears + fires `onAuthCleared` (`npm run test -w @habitpair/web`) — cc38b22
+- [x] 3.3 Lint passes (`npm run lint -w @habitpair/web`) — cc38b22
 
 #### Manual
-- [ ] 3.4 Token store survives a manual reload when seeded with a valid refresh token
+- [x] 3.4 Token store survives a manual reload when seeded with a valid refresh token
 
 ### Phase 4: Frontend auth UX + route gating
 
 #### Automated
-- [ ] 4.1 Typecheck passes (`npm run typecheck -w @habitpair/web`)
-- [ ] 4.2 Component tests pass — form submit + inline error (`npm run test -w @habitpair/web`)
-- [ ] 4.3 Production build succeeds, route tree generates (`npm run build -w @habitpair/web`)
-- [ ] 4.4 Lint passes (`npm run lint -w @habitpair/web`)
+- [x] 4.1 Typecheck passes (`npm run typecheck -w @habitpair/web`)
+- [x] 4.2 Component tests pass — form submit + inline error (`npm run test -w @habitpair/web`)
+- [x] 4.3 Production build succeeds, route tree generates (`npm run build -w @habitpair/web`)
+- [x] 4.4 Lint passes (`npm run lint -w @habitpair/web`)
 
 #### Manual
-- [ ] 4.5 Register → auto-signed-in → gated home shows email
-- [ ] 4.6 Reload → still signed in (boot exchange)
-- [ ] 4.7 Sign out → redirect to `/login`; `localStorage` refresh cleared
-- [ ] 4.8 Sign in again with same credentials → back on home
-- [ ] 4.9 Bad credentials → inline "Invalid email or password", no crash
-- [ ] 4.10 Visiting `/` while signed out → redirected to `/login`
-- [ ] 4.11 Two accounts isolated — `GET /habits` returns only the signed-in user's list
-- [ ] 4.12 Forms fully operable via keyboard (Tab / Enter)
+- [x] 4.5 Register → auto-signed-in → gated home shows email
+- [x] 4.6 Reload → still signed in (boot exchange)
+- [x] 4.7 Sign out → redirect to `/login`; `localStorage` refresh cleared
+- [x] 4.8 Sign in again with same credentials → back on home
+- [x] 4.9 Bad credentials → inline "Invalid email or password", no crash
+- [x] 4.10 Visiting `/` while signed out → redirected to `/login`
+- [x] 4.11 Two accounts isolated — `GET /habits` returns only the signed-in user's list
+- [x] 4.12 Forms fully operable via keyboard (Tab / Enter)
