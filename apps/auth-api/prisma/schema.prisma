@@ -11,7 +11,7 @@ generator client {
 }
 
 model User {
-  id           String   @id @default(cuid())
+  id           String   @id @default(uuid(7))
   email        String   @unique
   passwordHash String
   createdAt    DateTime @default(now())
@@ -23,7 +23,7 @@ model User {
 // tokenHash is the SHA-256 hex of the opaque refresh token, never the token
 // itself — high-entropy tokens need only a fast hash for revocation/rotation.
 model RefreshToken {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid(7))
   userId    String
   tokenHash String   @unique
   expiresAt DateTime

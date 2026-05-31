@@ -69,8 +69,8 @@ Stand up the full token issuer in auth-api: dependencies, data model + first mig
 **File**: `apps/auth-api/prisma/schema.prisma`
 **Intent**: Add the `User` and `RefreshToken` models. Email is the unique login identity (stored lowercased); refresh tokens are stored as hashes for server-side revocation/rotation.
 **Contract**: Two models on the existing `db`/`generator`:
-- `User { id String @id @default(cuid()); email String @unique; passwordHash String; createdAt DateTime @default(now()); updatedAt DateTime @updatedAt; refreshTokens RefreshToken[] }`
-- `RefreshToken { id String @id @default(cuid()); userId String; tokenHash String @unique; expiresAt DateTime; createdAt DateTime @default(now()); user User @relation(fields: [userId], references: [id], onDelete: Cascade); @@index([userId]) }`
+- `User { id String @id @default(uuid(7)); email String @unique; passwordHash String; createdAt DateTime @default(now()); updatedAt DateTime @updatedAt; refreshTokens RefreshToken[] }`
+- `RefreshToken { id String @id @default(uuid(7)); userId String; tokenHash String @unique; expiresAt DateTime; createdAt DateTime @default(now()); user User @relation(fields: [userId], references: [id], onDelete: Cascade); @@index([userId]) }`
 `tokenHash` holds the SHA-256 hex of the opaque refresh token, never the token itself.
 
 #### 3. First migration
@@ -314,18 +314,18 @@ Wire auth state into TanStack Router context, gate protected routes with `before
 ### Phase 1: auth-api issuer
 
 #### Automated
-- [x] 1.1 Root install succeeds and argon2 builds (`npm install`)
-- [x] 1.2 Migration applies cleanly (`npm run migrate -w @habitpair/auth-api`)
-- [x] 1.3 Prisma client generates (`npm run generate -w @habitpair/auth-api`)
-- [x] 1.4 Unit tests pass — password, token, auth services (`npm test -w @habitpair/auth-api`)
-- [x] 1.5 E2E lifecycle + negative cases pass (`npm run test:e2e -w @habitpair/auth-api`)
-- [x] 1.6 Lint passes (`npm run lint -w @habitpair/auth-api`)
-- [x] 1.7 auth-api arm64 image builds with argon2 (`docker build --platform linux/arm64 -f apps/auth-api/Dockerfile .`)
+- [x] 1.1 Root install succeeds and argon2 builds (`npm install`) — 91cf80b
+- [x] 1.2 Migration applies cleanly (`npm run migrate -w @habitpair/auth-api`) — 91cf80b
+- [x] 1.3 Prisma client generates (`npm run generate -w @habitpair/auth-api`) — 91cf80b
+- [x] 1.4 Unit tests pass — password, token, auth services (`npm test -w @habitpair/auth-api`) — 91cf80b
+- [x] 1.5 E2E lifecycle + negative cases pass (`npm run test:e2e -w @habitpair/auth-api`) — 91cf80b
+- [x] 1.6 Lint passes (`npm run lint -w @habitpair/auth-api`) — 91cf80b
+- [x] 1.7 auth-api arm64 image builds with argon2 (`docker build --platform linux/arm64 -f apps/auth-api/Dockerfile .`) — 91cf80b
 
 #### Manual
-- [x] 1.8 `curl` register returns 201 with tokens + user; access token decodes to `{ sub }`
-- [x] 1.9 Refresh rotates; replaying the old refresh token → 401
-- [x] 1.10 Logout then refresh with that token → 401
+- [x] 1.8 `curl` register returns 201 with tokens + user; access token decodes to `{ sub }` — 91cf80b
+- [x] 1.9 Refresh rotates; replaying the old refresh token → 401 — 91cf80b
+- [x] 1.10 Logout then refresh with that token → 401 — 91cf80b
 
 ### Phase 2: habits-api verification alignment + shared validation
 
