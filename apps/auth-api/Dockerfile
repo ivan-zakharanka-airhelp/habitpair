@@ -1,5 +1,7 @@
 # Build context: repo root (habitpair/)
-FROM node:22-alpine AS build
+# node:22-slim (Debian/glibc), not alpine (musl): argon2 ships prebuilt glibc
+# binaries, so `npm ci` needs no python3/make/g++ toolchain to compile it.
+FROM node:22-slim AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -10,7 +12,7 @@ COPY apps/auth-api/ ./apps/auth-api/
 RUN npm run generate -w @habitpair/auth-api
 RUN npm run build -w @habitpair/auth-api
 
-FROM node:22-alpine AS production
+FROM node:22-slim AS production
 WORKDIR /app
 ENV NODE_ENV=production
 

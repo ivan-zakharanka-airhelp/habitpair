@@ -314,18 +314,18 @@ Wire auth state into TanStack Router context, gate protected routes with `before
 ### Phase 1: auth-api issuer
 
 #### Automated
-- [ ] 1.1 Root install succeeds and argon2 builds (`npm install`)
-- [ ] 1.2 Migration applies cleanly (`npm run migrate -w @habitpair/auth-api`)
-- [ ] 1.3 Prisma client generates (`npm run generate -w @habitpair/auth-api`)
-- [ ] 1.4 Unit tests pass — password, token, auth services (`npm test -w @habitpair/auth-api`)
-- [ ] 1.5 E2E lifecycle + negative cases pass (`npm run test:e2e -w @habitpair/auth-api`)
-- [ ] 1.6 Lint passes (`npm run lint -w @habitpair/auth-api`)
-- [ ] 1.7 auth-api arm64 image builds with argon2 (`docker build --platform linux/arm64 -f apps/auth-api/Dockerfile .`)
+- [x] 1.1 Root install succeeds and argon2 builds (`npm install`)
+- [x] 1.2 Migration applies cleanly (`npm run migrate -w @habitpair/auth-api`)
+- [x] 1.3 Prisma client generates (`npm run generate -w @habitpair/auth-api`)
+- [x] 1.4 Unit tests pass — password, token, auth services (`npm test -w @habitpair/auth-api`)
+- [x] 1.5 E2E lifecycle + negative cases pass (`npm run test:e2e -w @habitpair/auth-api`)
+- [x] 1.6 Lint passes (`npm run lint -w @habitpair/auth-api`)
+- [x] 1.7 auth-api arm64 image builds with argon2 (`docker build --platform linux/arm64 -f apps/auth-api/Dockerfile .`)
 
 #### Manual
-- [ ] 1.8 `curl` register returns 201 with tokens + user; access token decodes to `{ sub }`
-- [ ] 1.9 Refresh rotates; replaying the old refresh token → 401
-- [ ] 1.10 Logout then refresh with that token → 401
+- [x] 1.8 `curl` register returns 201 with tokens + user; access token decodes to `{ sub }`
+- [x] 1.9 Refresh rotates; replaying the old refresh token → 401
+- [x] 1.10 Logout then refresh with that token → 401
 
 ### Phase 2: habits-api verification alignment + shared validation
 

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
 
 describe('Health (e2e)', () => {
@@ -12,6 +12,8 @@ describe('Health (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    // Mirror main.ts so e2e exercises the real /auth-prefixed routes.
+    app.setGlobalPrefix('auth');
     await app.init();
   });
 
@@ -20,7 +22,12 @@ describe('Health (e2e)', () => {
   });
 
   it('GET /auth/health — liveness', () => {
-    return request(app.getHttpServer()).get('/auth/health').expect(200).expect({ status: 'ok' });
+    return request(app.getHttpServer())
+      .get('/auth/health')
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.status).toBe('ok');
+      });
   });
 
   it('GET /auth/health/ready — readiness', () => {

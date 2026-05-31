@@ -9,3 +9,27 @@ generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
+}
+
+// tokenHash is the SHA-256 hex of the opaque refresh token, never the token
+// itself — high-entropy tokens need only a fast hash for revocation/rotation.
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
