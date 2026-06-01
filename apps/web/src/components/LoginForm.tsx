@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useLogin } from '../lib/auth';
 
@@ -56,7 +57,7 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         Sign in
       </button>
       <p className="text-sm">
-        No account? <a href="/register">Create one</a>
+        No account? <Link to="/register">Create one</Link>
       </p>
     </form>
   );

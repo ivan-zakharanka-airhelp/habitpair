@@ -13,7 +13,7 @@ describe('AuthService', () => {
   };
   let service: AuthService;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     prisma = { user: { create: jest.fn(), findUnique: jest.fn() } };
     password = { hash: jest.fn().mockResolvedValue('hashed'), verify: jest.fn() };
     tokens = {
@@ -23,6 +23,7 @@ describe('AuthService', () => {
       revoke: jest.fn().mockResolvedValue(undefined),
     };
     service = new AuthService(prisma as never, password as never, tokens as never);
+    await service.onModuleInit();
   });
 
   it('register lowercases the email, hashes the password, and returns tokens + user', async () => {
@@ -51,12 +52,13 @@ describe('AuthService', () => {
     );
   });
 
-  it('login throws a generic 401 when the email is unknown (no enumeration, no verify call)', async () => {
+  it('login throws a generic 401 when the email is unknown, still running a verify (constant-time, no enumeration)', async () => {
     prisma.user.findUnique.mockResolvedValue(null);
+    password.verify.mockResolvedValue(false);
     await expect(service.login('missing@b.com', 'password123')).rejects.toMatchObject({
       message: 'Invalid email or password',
     });
-    expect(password.verify).not.toHaveBeenCalled();
+    expect(password.verify).toHaveBeenCalled();
   });
 
   it('login throws the same generic 401 on a wrong password', async () => {

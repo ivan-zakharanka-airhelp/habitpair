@@ -13,6 +13,7 @@ describe('TokenService', () => {
     signOptions: { algorithm: 'HS256' },
   });
   let prisma: {
+    $transaction: jest.Mock;
     refreshToken: {
       create: jest.Mock;
       findUnique: jest.Mock;
@@ -24,6 +25,7 @@ describe('TokenService', () => {
 
   beforeEach(() => {
     prisma = {
+      $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
       refreshToken: {
         create: jest.fn().mockResolvedValue({}),
         findUnique: jest.fn(),

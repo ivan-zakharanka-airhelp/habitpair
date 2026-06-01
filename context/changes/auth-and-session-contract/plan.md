@@ -307,6 +307,10 @@ Wire auth state into TanStack Router context, gate protected routes with `before
 - Isolation pattern: [apps/habits-api/src/habits/habits.service.ts](apps/habits-api/src/habits/habits.service.ts)
 - SPA API client: [apps/web/src/lib/apiClient.ts](apps/web/src/lib/apiClient.ts)
 
+## Addenda (post-implementation)
+
+- **2026-06-01 — Public landing added; gated home moved `/` → `/app` (commit 2f65999).** Phase 4 §2 planned the gated signed-in home at `/` (`routes/_authed/index.tsx`). The implementation instead made `/` a **public** landing page ([routes/index.tsx](apps/web/src/routes/index.tsx)), relocated the gated home to `/app` ([routes/_authed/app.tsx](apps/web/src/routes/_authed/app.tsx)), and added a [Navbar](apps/web/src/components/Navbar.tsx). The `_authed` pathless-layout gate ([routes/_authed.tsx](apps/web/src/routes/_authed.tsx)) is unchanged and still redirects unauthenticated users to `/login`; `/app` nests under it, so protected content stays protected. **Consequence for Progress 4.10** ("Visiting `/` while signed out → redirected to `/login`"): no longer holds by design — `/` is intentionally public. The equivalent gate now applies to `/app` (visiting `/app` while signed out → `/login`), exercised by the `_authed` guard. Login/register redirect to `/app` on success.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.

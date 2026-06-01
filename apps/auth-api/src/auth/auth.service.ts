@@ -1,4 +1,5 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, OnModuleInit, UnauthorizedException } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { Prisma } from '../../generated/prisma';
 import { PrismaService } from '../prisma/prisma.service';
 import { PasswordService } from './password.service';
@@ -11,12 +12,20 @@ export interface AuthResult {
 }
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleInit {
+  // Precomputed at boot so the no-such-user login path runs the same argon2
+  // verify cost as a wrong-password path — closes the timing enumeration oracle.
+  private dummyPasswordHash!: string;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly password: PasswordService,
     private readonly tokens: TokenService,
   ) {}
+
+  async onModuleInit(): Promise<void> {
+    this.dummyPasswordHash = await this.password.hash(randomBytes(16).toString('hex'));
+  }
 
   async register(email: string, password: string): Promise<AuthResult> {
     const passwordHash = await this.password.hash(password);
@@ -35,9 +44,12 @@ export class AuthService {
 
   async login(email: string, password: string): Promise<AuthResult> {
     const user = await this.prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-    // Generic message + no early-out branch difference: never reveal whether the
-    // email exists (no account enumeration).
-    if (!user || !(await this.password.verify(user.passwordHash, password))) {
+    // Always run a verify (against a dummy hash when the user is missing) so the
+    // response time and message are identical whether or not the email exists —
+    // no account enumeration via error text or timing.
+    const passwordHash = user?.passwordHash ?? this.dummyPasswordHash;
+    const valid = await this.password.verify(passwordHash, password);
+    if (!user || !valid) {
       throw new UnauthorizedException('Invalid email or password');
     }
     return this.issueFor(user);
