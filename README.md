@@ -192,8 +192,9 @@ Run `make help` to see all targets. Summary:
 3. Add `prisma/schema.prisma` with `output = "../generated/prisma"` (avoids hoist conflicts), then create a new database for it in [`aws-bootstrap.sh`](infra/scripts/aws-bootstrap.sh) + [`infra/docker/init-databases.sql`](infra/docker/init-databases.sql)
 4. Add K8s manifests in [`infra/k8s/base/`](infra/k8s/base/), register them in `kustomization.yaml`, add an ingress route ahead of the catch-all
 5. Add the image mapping in [`infra/k8s/overlays/aws/kustomization.yaml`](infra/k8s/overlays/aws/kustomization.yaml)
-6. Add a path-filtered workflow in [`.github/workflows/<service-name>-ci.yaml`](.github/workflows/)
-7. Add a Skaffold artifact + port-forward in [`skaffold.yaml`](skaffold.yaml)
+6. Add a migration Job manifest in [`infra/k8s/jobs/<service-name>-migrate.yaml`](infra/k8s/jobs/) (mirror an existing one — `__IMAGE__` placeholder, its own DB secret). Migrations run as a Job before the app rolls out, never inside the app pod — see [`infra/scripts/k8s-migrate.sh`](infra/scripts/k8s-migrate.sh)
+7. Add a path-filtered workflow in [`.github/workflows/<service-name>-ci.yaml`](.github/workflows/) — the deploy job `scp`s the Job manifest + `k8s-migrate.sh` to the host and runs them before `kubectl set image` (copy the auth-api/habits-api deploy workflow), and add an `aws-deploy-<service-name>` target in the [Makefile](Makefile)
+8. Add a Skaffold artifact + port-forward in [`skaffold.yaml`](skaffold.yaml)
 
 ## Tools we use (and why)
 

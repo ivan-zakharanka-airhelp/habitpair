@@ -8,20 +8,38 @@ Applied against the single-node k3s cluster running on the `ivan-sandbox` EC2 in
 - Skips `base/ingress.yaml` — production ingress needs a real domain + Let's Encrypt TLS, not yet set up
 - Rewrites the image name from the `auth-api` placeholder (used by local k3d/Skaffold) to the GHCR path
 
+## Migrations
+
+DB migrations are **not** in this overlay. They run as a one-shot `Job`
+([`infra/k8s/jobs/`](../../jobs/)) via [`infra/scripts/k8s-migrate.sh`](../../../scripts/k8s-migrate.sh)
+**before** the Deployment is rolled out — the Job migrates with the exact image
+about to serve, and the deploy aborts (old pods keep serving) if it fails.
+`make aws-deploy-*` and the deploy workflows do this automatically.
+
 ## Deploy
 
 ### CI / automated (on merge to main)
 
-[`auth-api-deploy.yaml`](../../../../.github/workflows/auth-api-deploy.yaml) uses `kubectl set image` with the git SHA. It bypasses this kustomization's `newTag` at runtime — that's intentional and fine. No file changes needed in git.
+[`auth-api-deploy.yaml`](../../../../.github/workflows/auth-api-deploy.yaml) runs the
+migration Job, then uses `kubectl set image` with the git SHA. It bypasses this
+kustomization's `newTag` at runtime — that's intentional and fine. No file changes needed in git.
 
 ### Manual (for testing or hotfix)
 
-Build + push an image first:
+Prefer `make aws-deploy-auth` / `make aws-deploy-habits` — they build, push,
+migrate, and roll out in the right order. The steps below are the manual
+equivalent. Build + push an image first:
 
 ```bash
 IMAGE=ghcr.io/ivan-zakharanka-airhelp/habitpair/auth-api:manual-N
 docker build --platform linux/arm64 -t $IMAGE -f apps/auth-api/Dockerfile .
 docker push $IMAGE
+```
+
+Migrate with that image and wait for it before rolling out the app:
+
+```bash
+KUBECTL_CONTEXT=aws-k3s bash infra/scripts/k8s-migrate.sh auth-api $IMAGE
 ```
 
 Then update the overlay and apply. Two options:

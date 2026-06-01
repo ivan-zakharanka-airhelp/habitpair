@@ -1,0 +1,40 @@
+# Runs `prisma migrate deploy` against the auth DB to completion, ONCE, before
+# the auth-api Deployment is rolled out to the matching image. This is the
+# release step — not part of the app pod (see the comment in
+# base/auth-api-deployment.yaml for why per-pod migration is wrong).
+#
+# `__IMAGE__` is substituted with the just-built image by infra/scripts/k8s-migrate.sh
+# so the schema is migrated by the exact code about to serve. NOT part of any
+# kustomization: a Job's pod template is immutable, so it's delete-then-applied
+# per release rather than reconciled.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: auth-api-migrate
+  namespace: habitpair
+spec:
+  # A failed migration shouldn't be retried blindly — surface it and stop.
+  backoffLimit: 1
+  # Auto-reap the finished Job/pod so a manual `kubectl apply` doesn't collide
+  # with a leftover. The deploy script also deletes-before-create as a backstop.
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: __IMAGE__
+          command: ["npx", "prisma", "migrate", "deploy", "--schema=apps/auth-api/prisma/schema.prisma"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: url
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"

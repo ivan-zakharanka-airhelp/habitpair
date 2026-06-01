@@ -21,8 +21,9 @@ FROM node:22-slim AS production
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Runtime libssl for Prisma's schema engine (migrate deploy, run as an
-# initContainer) and query engine; also selects the openssl-3.0.x engine here.
+# Runtime libssl for Prisma's schema engine (the migration Job runs
+# `migrate deploy` from this same image) and query engine; also selects the
+# openssl-3.0.x engine here.
 RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./

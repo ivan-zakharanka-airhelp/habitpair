@@ -19,8 +19,9 @@ FROM node:22-alpine AS production
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Runtime libssl for Prisma's schema engine (migrate deploy, run as an
-# initContainer) and query engine; also selects the openssl-3.0.x engine here.
+# Runtime libssl for Prisma's schema engine (the migration Job runs
+# `migrate deploy` from this same image) and query engine; also selects the
+# openssl-3.0.x engine here.
 RUN apk add --no-cache openssl
 
 COPY package.json package-lock.json ./
