@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { authApi, habitsApi } from './apiClient';
-import { authStore } from './authStore';
+import { authStore } from '../lib/authStore';
 import type { AuthResponse } from '../types/auth';
 
 const REFRESH_TOKEN_KEY = 'habitpair.refreshToken';

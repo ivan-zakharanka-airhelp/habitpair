@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { useRegister } from '../lib/auth';
+import { useRegister } from '../hooks/useRegister';
 
 export function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
   const register = useRegister();

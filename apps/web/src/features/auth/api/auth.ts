@@ -1,7 +1,6 @@
-import { useMutation } from '@tanstack/react-query';
-import { authApi } from './apiClient';
-import { authStore } from './authStore';
-import type { AuthResponse, Credentials } from '../types/auth';
+import { authApi } from '../../../shared/api/apiClient';
+import type { AuthResponse } from '../../../shared/types/auth';
+import type { Credentials } from '../types';
 
 async function errorMessage(response: Response): Promise<string> {
   try {
@@ -47,30 +46,4 @@ export async function logoutRequest(refreshToken: string): Promise<void> {
   } catch {
     // Ignore — the client clears its session regardless.
   }
-}
-
-export function useRegister() {
-  return useMutation({
-    mutationFn: registerRequest,
-    onSuccess: (data) => authStore.setSession(data),
-  });
-}
-
-export function useLogin() {
-  return useMutation({
-    mutationFn: loginRequest,
-    onSuccess: (data) => authStore.setSession(data),
-  });
-}
-
-export function useLogout() {
-  return useMutation({
-    mutationFn: async (): Promise<void> => {
-      const refreshToken = authStore.getRefreshToken();
-      if (refreshToken) {
-        await logoutRequest(refreshToken);
-      }
-    },
-    onSuccess: () => authStore.clear(),
-  });
 }

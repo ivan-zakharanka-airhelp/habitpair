@@ -1,4 +1,4 @@
-import { authStore } from './authStore';
+import { authStore } from '../lib/authStore';
 
 const authBaseUrl = import.meta.env.VITE_AUTH_API_URL;
 if (!authBaseUrl) {

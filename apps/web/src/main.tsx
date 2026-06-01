@@ -3,8 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { router } from './router';
-import { queryClient } from './lib/queryClient';
-import { authStore } from './lib/authStore';
+import { queryClient } from './shared/api/queryClient';
+import { authStore } from './shared/lib/authStore';
 import './styles.css';
 
 const rootElement = document.getElementById('root');

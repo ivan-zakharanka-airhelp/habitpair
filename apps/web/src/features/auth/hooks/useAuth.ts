@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
-import { authStore } from '../lib/authStore';
-import { useLogout } from '../lib/auth';
-import type { User } from '../types/auth';
+import { authStore } from '../../../shared/lib/authStore';
+import { useLogout } from './useLogout';
+import type { User } from '../../../shared/types/auth';
 
 export interface UseAuth {
   isAuthenticated: boolean;
