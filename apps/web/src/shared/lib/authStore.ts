@@ -1,4 +1,4 @@
-import { authApi } from './apiClient';
+import { authApi } from '../api/apiClient';
 import type { AuthResponse, User } from '../types/auth';
 
 const REFRESH_TOKEN_KEY = 'habitpair.refreshToken';

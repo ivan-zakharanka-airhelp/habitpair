@@ -34,4 +34,19 @@ export default defineConfig([
       '@typescript-eslint/no-explicit-any': 'warn',
     },
   },
+  {
+    // Boundary files where react-refresh's component-export hygiene can't be
+    // satisfied and adds no value:
+    //  - src/main.tsx — the app entry point has no exports (it calls
+    //    createRoot) but defines a local <App>, hitting the "file has no
+    //    exports" case.
+    //  - src/routes/** — route files pair `export const Route` (a non-component)
+    //    with a local route component; with no component export the rule flags
+    //    the local component regardless of `allowExportNames`. Route HMR is
+    //    handled by the TanStack Router plugin.
+    files: ['src/main.tsx', 'src/routes/**/*.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ]);

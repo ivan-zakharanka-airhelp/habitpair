@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../features/auth/hooks/useAuth';
 
 export const Route = createFileRoute('/')({
   component: LandingPage,

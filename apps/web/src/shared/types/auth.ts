@@ -9,11 +9,6 @@ export interface AuthResponse {
   user: User;
 }
 
-export interface Credentials {
-  email: string;
-  password: string;
-}
-
 // Auth slice of the TanStack Router context. `isResolving` is true during the
 // boot refresh exchange so guards don't bounce a returning user before the
 // stored session resolves.

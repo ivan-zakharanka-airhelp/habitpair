@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { useLogin } from '../lib/auth';
+import { useLogin } from '../hooks/useLogin';
 
 export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const login = useLogin();

@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../../features/auth/hooks/useAuth';
 
 export function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();

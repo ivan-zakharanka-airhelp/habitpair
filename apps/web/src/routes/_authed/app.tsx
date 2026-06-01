@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../features/auth/hooks/useAuth';
 
 export const Route = createFileRoute('/_authed/app')({
   component: App,

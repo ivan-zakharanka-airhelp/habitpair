@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RegisterForm } from './RegisterForm';
-import { authStore } from '../lib/authStore';
+import { authStore } from '../../../shared/lib/authStore';
 
 // These tests exercise form behavior, not navigation; stub Link to a plain
 // anchor so the component renders without a full router context.
