@@ -13,19 +13,10 @@ spec:
       labels:
         app: auth-api
     spec:
-      # Applies pending Prisma migrations before the app starts. Shares the app
-      # image (same name → kustomize remaps it too); a failed migration fails pod
-      # init, so the rollout stops and the previous ReplicaSet keeps serving.
-      initContainers:
-        - name: migrate
-          image: auth-api:latest
-          command: ["npx", "prisma", "migrate", "deploy", "--schema=apps/auth-api/prisma/schema.prisma"]
-          env:
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: db-credentials
-                  key: url
+      # Migrations are NOT run here. They run as a one-shot Kubernetes Job
+      # (infra/k8s/jobs/auth-api-migrate.yaml) before this Deployment is rolled
+      # out — see infra/scripts/k8s-migrate.sh. Running them per-pod would race
+      # once replicas > 1 and re-run on every pod restart.
       containers:
         - name: auth-api
           image: auth-api:latest

@@ -76,23 +76,27 @@ aws-ssh:                         ## SSH to the current EC2 instance.
 
 aws-deploy: aws-deploy-auth aws-deploy-habits aws-deploy-web  ## Deploy both backends + frontend to AWS.
 
-aws-deploy-auth:                 ## Build + push image + rollout auth-api on AWS k3s.
+aws-deploy-auth:                 ## Build + push image + migrate + rollout auth-api on AWS k3s.
 	$(eval IMAGE := ghcr.io/ivan-zakharanka-airhelp/habitpair/auth-api:manual-$(shell date +%Y%m%d-%H%M%S))
 	docker build --platform linux/arm64 -t $(IMAGE) -f apps/auth-api/Dockerfile .
 	docker push $(IMAGE)
-	# Apply manifests first in case env/routes/middlewares changed since last deploy.
+	# Migrate the DB with the new image and wait for it BEFORE rolling out the app.
+	# Aborts the deploy if the migration fails, leaving the old pods serving.
+	KUBECTL_CONTEXT=aws-k3s bash infra/scripts/k8s-migrate.sh auth-api $(IMAGE)
+	# Apply manifests in case env/routes/middlewares changed since last deploy.
 	# kustomize resets the image to its placeholder (manual-1), so we set the real
 	# tag immediately after to avoid an ImagePullBackOff window.
 	kubectl --context aws-k3s apply -k infra/k8s/overlays/aws
-	kubectl --context aws-k3s set image -n habitpair deployment/auth-api auth-api=$(IMAGE) migrate=$(IMAGE)
+	kubectl --context aws-k3s set image -n habitpair deployment/auth-api auth-api=$(IMAGE)
 	kubectl --context aws-k3s rollout status -n habitpair deployment/auth-api --timeout=120s
 
-aws-deploy-habits:               ## Build + push image + rollout habits-api on AWS k3s.
+aws-deploy-habits:               ## Build + push image + migrate + rollout habits-api on AWS k3s.
 	$(eval IMAGE := ghcr.io/ivan-zakharanka-airhelp/habitpair/habits-api:manual-$(shell date +%Y%m%d-%H%M%S))
 	docker build --platform linux/arm64 -t $(IMAGE) -f apps/habits-api/Dockerfile .
 	docker push $(IMAGE)
+	KUBECTL_CONTEXT=aws-k3s bash infra/scripts/k8s-migrate.sh habits-api $(IMAGE)
 	kubectl --context aws-k3s apply -k infra/k8s/overlays/aws
-	kubectl --context aws-k3s set image -n habitpair deployment/habits-api habits-api=$(IMAGE) migrate=$(IMAGE)
+	kubectl --context aws-k3s set image -n habitpair deployment/habits-api habits-api=$(IMAGE)
 	kubectl --context aws-k3s rollout status -n habitpair deployment/habits-api --timeout=120s
 
 aws-deploy-web:                  ## Build SPA + sync to S3 + invalidate CloudFront.
