@@ -44,6 +44,3 @@ The codebase is fully migrated to this layout; `auth` is the worked example to c
 
 **Dependency direction:** `shared/*` must never import from `features/*`. Session types that shared infra (`authStore`, `apiClient`) depends on therefore live in `shared/types/`, while feature-only input types (`Credentials`) live in the feature. Routes and `main.tsx` may import from both layers.
 
-### ESLint exemptions
-
-`react-refresh/only-export-components` is turned **off** for two boundary files in [eslint.config.js](eslint.config.js): `src/main.tsx` (the entry point has no exports — it just calls `createRoot`) and `src/routes/**` (each route pairs a non-component `export const Route` with a local route component). The rule can't be satisfied for these without fighting the framework, and HMR for both is handled by the Vite / TanStack Router plugins — so **don't "fix" the warnings by splitting route components into separate files.** The rule stays active everywhere real components live (`features/`, `shared/`).
