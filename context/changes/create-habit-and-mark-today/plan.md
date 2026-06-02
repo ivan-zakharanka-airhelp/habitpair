@@ -404,15 +404,15 @@ Squash strategy (Phase 1): the old init migration is deleted and replaced by a s
 
 #### Automated
 
-- [x] 4.1 Frontend typecheck passes
-- [x] 4.2 Lint passes
-- [x] 4.3 Build passes
-- [x] 4.4 Existing Vitest suite stays green
+- [x] 4.1 Frontend typecheck passes — e454199
+- [x] 4.2 Lint passes — e454199
+- [x] 4.3 Build passes — e454199
+- [x] 4.4 Existing Vitest suite stays green — e454199
 
 #### Manual
 
-- [x] 4.5 Activation flow: register → /app → create daily → toggle (<300 ms) → reload persists
-- [x] 4.6 Weekly habit (target 2): toggle today → "1 of 2 this week"
-- [x] 4.7 Positive/negative habits render in separate modality groups
-- [x] 4.8 Failed mark request rolls back the optimistic state
-- [x] 4.9 Keyboard-only: create form + toggle reachable and activatable
+- [x] 4.5 Activation flow: register → /app → create daily → toggle (<300 ms) → reload persists — e454199
+- [x] 4.6 Weekly habit (target 2): toggle today → "1 of 2 this week" — e454199
+- [x] 4.7 Positive/negative habits render in separate modality groups — e454199
+- [x] 4.8 Failed mark request rolls back the optimistic state — e454199
+- [x] 4.9 Keyboard-only: create form + toggle reachable and activatable — e454199

@@ -1,7 +1,7 @@
 ---
 change_id: create-habit-and-mark-today
 title: Create habit and mark today
-status: implementing
+status: implemented
 created: 2026-06-02
 updated: 2026-06-02
 archived_at: null
