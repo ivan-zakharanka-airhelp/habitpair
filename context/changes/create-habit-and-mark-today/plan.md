@@ -365,40 +365,40 @@ Squash strategy (Phase 1): the old init migration is deleted and replaced by a s
 
 #### Automated
 
-- [x] 1.1 Fresh migration applies cleanly against a reset DB
-- [x] 1.2 Prisma client regenerates
-- [x] 1.3 Backend compiles (build/typecheck)
+- [x] 1.1 Fresh migration applies cleanly against a reset DB — 17aa9cf
+- [x] 1.2 Prisma client regenerates — 17aa9cf
+- [x] 1.3 Backend compiles (build/typecheck) — 17aa9cf
 
 #### Manual
 
-- [x] 1.4 Prisma Studio shows Habit + Mark with enums and (habitId, date) unique; mock `title` gone
+- [x] 1.4 Prisma Studio shows Habit + Mark with enums and (habitId, date) unique; mock `title` gone — 17aa9cf
 
 ### Phase 2: habits-api — create habit + list with current-period progress
 
 #### Automated
 
-- [x] 2.1 Unit tests pass (`habits.service`)
-- [x] 2.2 Lint passes
-- [x] 2.3 Build/typecheck passes
+- [x] 2.1 Unit tests pass (`habits.service`) — 17aa9cf
+- [x] 2.2 Lint passes — 17aa9cf
+- [x] 2.3 Build/typecheck passes — 17aa9cf
 
 #### Manual
 
-- [x] 2.4 curl: POST creates daily + weekly habits; GET returns them with correct todayStatus/currentPeriod
-- [x] 2.5 Weekly habit with no marks shows completedCount 0; weekly create without targetCount is rejected 400
+- [x] 2.4 curl: POST creates daily + weekly habits; GET returns them with correct todayStatus/currentPeriod — 17aa9cf
+- [x] 2.5 Weekly habit with no marks shows completedCount 0; weekly create without targetCount is rejected 400 — 17aa9cf
 
 ### Phase 3: habits-api — mark / unmark today
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass (`marks.service`)
-- [ ] 3.2 Full backend suite passes
-- [ ] 3.3 Lint + build pass
+- [x] 3.1 Unit tests pass (`marks.service`)
+- [x] 3.2 Full backend suite passes
+- [x] 3.3 Lint + build pass
 
 #### Manual
 
-- [ ] 3.4 curl: PUT mark today → GET shows COMPLETED + incremented count
-- [ ] 3.5 curl: DELETE clears it (todayStatus null)
-- [ ] 3.6 PUT against another user's habit returns 404
+- [x] 3.4 curl: PUT mark today → GET shows COMPLETED + incremented count
+- [x] 3.5 curl: DELETE clears it (todayStatus null)
+- [x] 3.6 PUT against another user's habit returns 404
 
 ### Phase 4: web — habits feature on /app
 

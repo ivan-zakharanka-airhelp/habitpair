@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
 import { HabitsModule } from './habits/habits.module';
+import { MarksModule } from './marks/marks.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { HabitsModule } from './habits/habits.module';
     PrismaModule,
     HealthModule,
     HabitsModule,
+    MarksModule,
   ],
 })
 export class AppModule {}
