@@ -78,7 +78,7 @@ describe('Habits API (e2e)', () => {
 
   it('GET /habits with a shared-secret token → 200 and an array', () => {
     return request(app.getHttpServer())
-      .get('/habits')
+      .get('/habits?today=2026-06-02')
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(200)
       .expect((res) => {
@@ -94,30 +94,30 @@ describe('Habits API (e2e)', () => {
       .expect(400);
   });
 
-  it('POST /habits with a whitespace-only title → 400 (trimmed to empty)', () => {
+  it('POST /habits with a whitespace-only name → 400 (trimmed to empty)', () => {
     return request(app.getHttpServer())
       .post('/habits')
       .set('Authorization', `Bearer ${tokenA}`)
-      .send({ title: '   ' })
+      .send({ name: '   ', modality: 'POSITIVE', frequency: 'DAILY' })
       .expect(400);
   });
 
-  it('creates a habit, trims the title, and isolates it to the owning user', async () => {
+  it('creates a habit, trims the name, and isolates it to the owning user', async () => {
     const created = await request(app.getHttpServer())
       .post('/habits')
       .set('Authorization', `Bearer ${tokenA}`)
-      .send({ title: '  read daily  ' })
+      .send({ name: '  read daily  ', modality: 'POSITIVE', frequency: 'DAILY' })
       .expect(201);
-    expect(created.body.title).toBe('read daily');
+    expect(created.body.name).toBe('read daily');
 
     const mine = await request(app.getHttpServer())
-      .get('/habits')
+      .get('/habits?today=2026-06-02')
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(200);
-    expect(mine.body.map((h: { title: string }) => h.title)).toContain('read daily');
+    expect(mine.body.map((h: { name: string }) => h.name)).toContain('read daily');
 
     const theirs = await request(app.getHttpServer())
-      .get('/habits')
+      .get('/habits?today=2026-06-02')
       .set('Authorization', `Bearer ${tokenB}`)
       .expect(200);
     expect(theirs.body).toHaveLength(0);
