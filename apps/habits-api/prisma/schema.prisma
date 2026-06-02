@@ -10,12 +10,46 @@ generator client {
   output   = "../generated/prisma"
 }
 
+enum HabitModality {
+  POSITIVE
+  NEGATIVE
+}
+
+enum HabitFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum MarkStatus {
+  COMPLETED
+  MISSED
+}
+
 // userId is the JWT `sub` claim from auth-api — no FK across DBs by design.
 model Habit {
-  id        String   @id @default(cuid())
-  userId    String
-  title     String
-  createdAt DateTime @default(now())
+  id          String         @id @default(uuid(7))
+  userId      String
+  name        String
+  modality    HabitModality
+  frequency   HabitFrequency
+  targetCount Int? // null = daily implicit 1
+  createdAt   DateTime       @default(now())
+  marks       Mark[]
 
   @@index([userId])
+}
+
+// One row per (habit, day); absence = unmarked. `date` is a local calendar
+// date supplied by the client, stored as @db.Date (UTC midnight) — never a
+// UTC instant. See period.ts for the parse/format rules.
+model Mark {
+  id        String     @id @default(uuid(7))
+  habitId   String
+  date      DateTime   @db.Date
+  status    MarkStatus
+  createdAt DateTime   @default(now())
+  habit     Habit      @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
 }
