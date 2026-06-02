@@ -390,29 +390,29 @@ Squash strategy (Phase 1): the old init migration is deleted and replaced by a s
 
 #### Automated
 
-- [x] 3.1 Unit tests pass (`marks.service`)
-- [x] 3.2 Full backend suite passes
-- [x] 3.3 Lint + build pass
+- [x] 3.1 Unit tests pass (`marks.service`) — 7d4d23e
+- [x] 3.2 Full backend suite passes — 7d4d23e
+- [x] 3.3 Lint + build pass — 7d4d23e
 
 #### Manual
 
-- [x] 3.4 curl: PUT mark today → GET shows COMPLETED + incremented count
-- [x] 3.5 curl: DELETE clears it (todayStatus null)
-- [x] 3.6 PUT against another user's habit returns 404
+- [x] 3.4 curl: PUT mark today → GET shows COMPLETED + incremented count — 7d4d23e
+- [x] 3.5 curl: DELETE clears it (todayStatus null) — 7d4d23e
+- [x] 3.6 PUT against another user's habit returns 404 — 7d4d23e
 
 ### Phase 4: web — habits feature on /app
 
 #### Automated
 
-- [ ] 4.1 Frontend typecheck passes
-- [ ] 4.2 Lint passes
-- [ ] 4.3 Build passes
-- [ ] 4.4 Existing Vitest suite stays green
+- [x] 4.1 Frontend typecheck passes
+- [x] 4.2 Lint passes
+- [x] 4.3 Build passes
+- [x] 4.4 Existing Vitest suite stays green
 
 #### Manual
 
-- [ ] 4.5 Activation flow: register → /app → create daily → toggle (<300 ms) → reload persists
-- [ ] 4.6 Weekly habit (target 2): toggle today → "1 of 2 this week"
-- [ ] 4.7 Positive/negative habits render in separate modality groups
-- [ ] 4.8 Failed mark request rolls back the optimistic state
-- [ ] 4.9 Keyboard-only: create form + toggle reachable and activatable
+- [x] 4.5 Activation flow: register → /app → create daily → toggle (<300 ms) → reload persists
+- [x] 4.6 Weekly habit (target 2): toggle today → "1 of 2 this week"
+- [x] 4.7 Positive/negative habits render in separate modality groups
+- [x] 4.8 Failed mark request rolls back the optimistic state
+- [x] 4.9 Keyboard-only: create form + toggle reachable and activatable
