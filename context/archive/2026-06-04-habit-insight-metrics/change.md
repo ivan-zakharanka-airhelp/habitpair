@@ -1,10 +1,10 @@
 ---
 change_id: habit-insight-metrics
 title: Habit insight metrics
-status: impl_reviewed
+status: archived
 created: 2026-06-04
 updated: 2026-06-04
-archived_at: null
+archived_at: 2026-06-04T13:32:39Z
 ---
 
 ## Notes

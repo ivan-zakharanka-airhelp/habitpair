@@ -3,7 +3,7 @@ project: habitpair
 version: 1
 status: draft
 created: 2026-05-28
-updated: 2026-05-28
+updated: 2026-06-04
 prd_version: 1
 main_goal: low-complexity
 top_blocker: time
@@ -32,7 +32,7 @@ This is the *north star* — the smallest end-to-end slice whose successful deli
 | F-01  | auth-and-session-contract   | (foundation) email+password auth issues + verifies tokens; SPA gates routes       | —             | FR-001, FR-002, FR-003                | done     |
 | S-01  | create-habit-and-mark-today | create first habit + mark today + see it on the modality-grouped list (≤ ~1 min)  | F-01          | US-01, US-02, FR-004, FR-005, FR-006, FR-009 | done     |
 | S-02  | habit-calendar-and-backfill | open a habit's detail, see the monthly calendar, change any past day retroactively | S-01          | US-03, FR-010, FR-011, FR-012         | done     |
-| S-03  | habit-insight-metrics       | see current streak, rolling consistency %, adaptive ratio, and top-10 best streaks     | S-02          | US-03, FR-013, FR-014, FR-015, FR-016 | proposed |
+| S-03  | habit-insight-metrics       | see current streak, rolling consistency %, adaptive ratio, and top-10 best streaks     | S-02          | US-03, FR-013, FR-014, FR-015, FR-016 | done     |
 | S-04  | edit-and-delete-habit       | edit a habit's name, modality, and target count, and delete it with a brief undo  | S-03          | FR-007, FR-008                        | proposed |
 
 ## Baseline
@@ -101,7 +101,7 @@ Foundations below assume these are present and do NOT re-scaffold them. **Per th
 - **Unknowns:**
   - Visual treatment of the secondary best-streaks view — **resolved (S-03):** a collapsed disclosure expanding to a proportional bar chart (full-width bars, labelled above) ordered longest-first, with the active streak highlighted in place or pinned below (with a "to crack the top 10" nudge) when it doesn't rank. Owner: design. Block: no.
 - **Risk:** The heaviest slice — it implements the frequency-aware period-success + streak + rolling-window engine from `## Business Logic`, including the timezone/DST boundary robustness NFR (a corrupted streak from a DST transition is a defect). Retroactive marks from S-02 must recompute correctly across affected ranges. The top-10 best-streaks view (FR-015) raises the bar further: it requires enumerating *every* historical streak run with its date span, not just the single maximum — a superset of the current-streak computation.
-- **Status:** proposed
+- **Status:** done
 
 ### S-04: Edit and delete a habit
 
@@ -146,4 +146,4 @@ Foundations below assume these are present and do NOT re-scaffold them. **Per th
 
 ## Done
 
-(Empty on first generation. `/10x-archive` appends an entry here — and flips the matching item's `Status` to `done` — when a change whose `Change ID` matches a roadmap item is archived. Do NOT pre-populate.)
+- **S-03: user can see, on a habit's detail page, the current streak, a rolling-window consistency percentage (30 days / 8 weeks / 6 months by frequency), an adaptive early-phase ratio that transitions to a percentage after 14 days of tracking, and — in a secondary, non-prominent view — the top 10 longest streaks ever achieved, each shown with its start date, end date, and length in days, ordered by length (longest first; ties broken toward recency), with the active streak highlighted in place or pinned below the leaderboard when it doesn't rank.** — Archived 2026-06-04 → `context/archive/2026-06-04-habit-insight-metrics/`. Lesson: —.
