@@ -286,14 +286,14 @@ No schema change. The `onDelete: Cascade` on `Mark.habit` already exists; deleti
 
 #### Automated
 
-- [x] 3.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
-- [x] 3.2 Lint passes: `npm run lint -w @habitpair/web`
-- [x] 3.3 Frontend tests pass: `npm run test -w @habitpair/web`
+- [x] 3.1 Typecheck passes: `npm run typecheck -w @habitpair/web` — 87e6bdf
+- [x] 3.2 Lint passes: `npm run lint -w @habitpair/web` — 87e6bdf
+- [x] 3.3 Frontend tests pass: `npm run test -w @habitpair/web` — 87e6bdf
 
 #### Manual
 
-- [x] 3.4 Edit name + Save updates header and `/app` list
-- [x] 3.5 Changing modality moves the habit between Building/Breaking groups
-- [x] 3.6 Cancel discards edits; header reverts
-- [x] 3.7 Delete → confirm → navigates to `/app`, habit gone; Esc/Cancel aborts
-- [x] 3.8 Empty name on edit is blocked
+- [x] 3.4 Edit name + Save updates header and `/app` list — 87e6bdf
+- [x] 3.5 Changing modality moves the habit between Building/Breaking groups — 87e6bdf
+- [x] 3.6 Cancel discards edits; header reverts — 87e6bdf
+- [x] 3.7 Delete → confirm → navigates to `/app`, habit gone; Esc/Cancel aborts — 87e6bdf
+- [x] 3.8 Empty name on edit is blocked — 87e6bdf
