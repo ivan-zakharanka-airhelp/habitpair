@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { HabitFrequency, MarkStatus } from '../../generated/prisma';
+import { HabitFrequency, HabitModality, MarkStatus } from '../../generated/prisma';
 import { CreateHabitDto } from './dto/create-habit.dto';
+import { UpdateHabitDto } from './dto/update-habit.dto';
 import {
   closedPeriodFailures,
   computedMissedDates,
@@ -159,5 +160,32 @@ export class HabitsService {
       today: todayDate,
       marks,
     });
+  }
+
+  // Edits only name/modality. frequency/targetCount stay immutable — the DTO
+  // omits them, so a body carrying them is rejected by forbidNonWhitelisted
+  // before reaching here. An empty body is a no-op that returns the habit as-is.
+  async update(userId: string, habitId: string, dto: UpdateHabitDto) {
+    await this.assertOwned(userId, habitId);
+    const data: { name?: string; modality?: HabitModality } = {};
+    if (dto.name !== undefined) data.name = dto.name;
+    if (dto.modality !== undefined) data.modality = dto.modality;
+    return this.prisma.habit.update({ where: { id: habitId }, data });
+  }
+
+  // Hard delete; the Mark.habit relation's onDelete: Cascade removes its marks
+  // transactionally in the DB, so there is no orphan cleanup to do here.
+  async remove(userId: string, habitId: string): Promise<void> {
+    await this.assertOwned(userId, habitId);
+    await this.prisma.habit.delete({ where: { id: habitId } });
+  }
+
+  // 404 (not 403) on a miss so a habit's existence is not leaked across users.
+  private async assertOwned(userId: string, habitId: string): Promise<void> {
+    const habit = await this.prisma.habit.findFirst({
+      where: { id: habitId, userId },
+      select: { id: true },
+    });
+    if (!habit) throw new NotFoundException('Habit not found');
   }
 }

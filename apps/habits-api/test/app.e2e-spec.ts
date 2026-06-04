@@ -393,4 +393,153 @@ describe('Habits API (e2e)', () => {
       expect(res.body.bestStreaks).toEqual([]);
     });
   });
+
+  describe('PATCH /habits/:habitId', () => {
+    const createHabit = (token: string, body: Record<string, unknown>) =>
+      request(app.getHttpServer())
+        .post('/habits')
+        .set('Authorization', `Bearer ${token}`)
+        .send(body)
+        .expect(201)
+        .then((res) => res.body.id as string);
+
+    it('updates name and modality and returns the updated row (frequency unchanged)', async () => {
+      const id = await createHabit(tokenA, {
+        name: 'edit me',
+        modality: 'POSITIVE',
+        frequency: 'DAILY',
+      });
+
+      const res = await request(app.getHttpServer())
+        .patch(`/habits/${id}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send({ name: 'edited', modality: 'NEGATIVE' })
+        .expect(200);
+
+      expect(res.body.name).toBe('edited');
+      expect(res.body.modality).toBe('NEGATIVE');
+      expect(res.body.frequency).toBe('DAILY');
+    });
+
+    it('trims the name on edit', async () => {
+      const id = await createHabit(tokenA, {
+        name: 'pre-trim',
+        modality: 'POSITIVE',
+        frequency: 'DAILY',
+      });
+
+      const res = await request(app.getHttpServer())
+        .patch(`/habits/${id}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send({ name: '  trimmed  ' })
+        .expect(200);
+
+      expect(res.body.name).toBe('trimmed');
+    });
+
+    it('rejects an attempt to change frequency (forbidNonWhitelisted) with 400', async () => {
+      const id = await createHabit(tokenA, {
+        name: 'immutable freq',
+        modality: 'POSITIVE',
+        frequency: 'DAILY',
+      });
+
+      await request(app.getHttpServer())
+        .patch(`/habits/${id}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send({ frequency: 'WEEKLY' })
+        .expect(400);
+    });
+
+    it('rejects an attempt to change targetCount with 400', async () => {
+      const id = await createHabit(tokenA, {
+        name: 'immutable target',
+        modality: 'POSITIVE',
+        frequency: 'WEEKLY',
+        targetCount: 2,
+      });
+
+      await request(app.getHttpServer())
+        .patch(`/habits/${id}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send({ targetCount: 5 })
+        .expect(400);
+    });
+
+    it('rejects a whitespace-only name with 400 (trimmed to empty)', async () => {
+      const id = await createHabit(tokenA, {
+        name: 'ws name',
+        modality: 'POSITIVE',
+        frequency: 'DAILY',
+      });
+
+      await request(app.getHttpServer())
+        .patch(`/habits/${id}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send({ name: '   ' })
+        .expect(400);
+    });
+
+    it('404s when the caller does not own the habit', async () => {
+      const id = await createHabit(tokenA, {
+        name: 'a-only patch',
+        modality: 'POSITIVE',
+        frequency: 'DAILY',
+      });
+
+      await request(app.getHttpServer())
+        .patch(`/habits/${id}`)
+        .set('Authorization', `Bearer ${tokenB}`)
+        .send({ name: 'hijack' })
+        .expect(404);
+    });
+  });
+
+  describe('DELETE /habits/:habitId', () => {
+    const createHabit = (token: string, body: Record<string, unknown>) =>
+      request(app.getHttpServer())
+        .post('/habits')
+        .set('Authorization', `Bearer ${token}`)
+        .send(body)
+        .expect(201)
+        .then((res) => res.body.id as string);
+
+    it('hard-deletes an owned habit (204) and removes it from the list', async () => {
+      const id = await createHabit(tokenA, {
+        name: 'delete me',
+        modality: 'POSITIVE',
+        frequency: 'DAILY',
+      });
+
+      await request(app.getHttpServer())
+        .delete(`/habits/${id}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .expect(204);
+
+      const after = await request(app.getHttpServer())
+        .get('/habits?today=2026-06-02')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .expect(200);
+      expect(after.body.map((h: { id: string }) => h.id)).not.toContain(id);
+    });
+
+    it('404s when the caller does not own the habit, leaving it intact for the owner', async () => {
+      const id = await createHabit(tokenA, {
+        name: 'a-only delete',
+        modality: 'POSITIVE',
+        frequency: 'DAILY',
+      });
+
+      await request(app.getHttpServer())
+        .delete(`/habits/${id}`)
+        .set('Authorization', `Bearer ${tokenB}`)
+        .expect(404);
+
+      const mine = await request(app.getHttpServer())
+        .get('/habits?today=2026-06-02')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .expect(200);
+      expect(mine.body.map((h: { id: string }) => h.id)).toContain(id);
+    });
+  });
 });

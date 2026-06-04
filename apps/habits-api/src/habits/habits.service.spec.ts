@@ -30,7 +30,13 @@ function habit(overrides: Partial<HabitRow> = {}): HabitRow {
 
 describe('HabitsService', () => {
   const prismaMock = {
-    habit: { findMany: jest.fn(), create: jest.fn(), findFirst: jest.fn() },
+    habit: {
+      findMany: jest.fn(),
+      create: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
     mark: { findUnique: jest.fn(), count: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
   };
   let service: HabitsService;
@@ -279,6 +285,69 @@ describe('HabitsService', () => {
       expect(res.marks).toEqual({});
       expect(res.computedMissedDates).toEqual([]);
       expect(res.failedPeriods).toEqual([]);
+    });
+  });
+
+  describe('update', () => {
+    it('applies name and modality for an owned habit, scoped by id+userId', async () => {
+      prismaMock.habit.findFirst.mockResolvedValue({ id: 'h1' });
+      prismaMock.habit.update.mockResolvedValue(
+        habit({ name: 'Run', modality: HabitModality.NEGATIVE }),
+      );
+
+      await service.update('u1', 'h1', { name: 'Run', modality: HabitModality.NEGATIVE });
+
+      expect(prismaMock.habit.findFirst).toHaveBeenCalledWith({
+        where: { id: 'h1', userId: 'u1' },
+        select: { id: true },
+      });
+      expect(prismaMock.habit.update).toHaveBeenCalledWith({
+        where: { id: 'h1' },
+        data: { name: 'Run', modality: HabitModality.NEGATIVE },
+      });
+    });
+
+    it('applies only the provided field (name-only leaves modality untouched)', async () => {
+      prismaMock.habit.findFirst.mockResolvedValue({ id: 'h1' });
+      prismaMock.habit.update.mockResolvedValue(habit({ name: 'Run' }));
+
+      await service.update('u1', 'h1', { name: 'Run' });
+
+      expect(prismaMock.habit.update).toHaveBeenCalledWith({
+        where: { id: 'h1' },
+        data: { name: 'Run' },
+      });
+    });
+
+    it('throws NotFound (not 403) when the habit is not owned by the caller', async () => {
+      prismaMock.habit.findFirst.mockResolvedValue(null);
+
+      await expect(service.update('intruder', 'h1', { name: 'Run' })).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(prismaMock.habit.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('remove', () => {
+    it('deletes an owned habit, scoped by id+userId (marks cascade in the DB)', async () => {
+      prismaMock.habit.findFirst.mockResolvedValue({ id: 'h1' });
+      prismaMock.habit.delete.mockResolvedValue(habit());
+
+      await service.remove('u1', 'h1');
+
+      expect(prismaMock.habit.findFirst).toHaveBeenCalledWith({
+        where: { id: 'h1', userId: 'u1' },
+        select: { id: true },
+      });
+      expect(prismaMock.habit.delete).toHaveBeenCalledWith({ where: { id: 'h1' } });
+    });
+
+    it('throws NotFound (not 403) when the habit is not owned by the caller', async () => {
+      prismaMock.habit.findFirst.mockResolvedValue(null);
+
+      await expect(service.remove('intruder', 'h1')).rejects.toBeInstanceOf(NotFoundException);
+      expect(prismaMock.habit.delete).not.toHaveBeenCalled();
     });
   });
 });
