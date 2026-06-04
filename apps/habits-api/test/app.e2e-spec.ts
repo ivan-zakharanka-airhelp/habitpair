@@ -330,5 +330,67 @@ describe('Habits API (e2e)', () => {
       });
       expect(res.body.bestStreaks).toEqual([{ start: '2026-06-01', end: '2026-06-07', length: 1 }]);
     });
+
+    it('computes the monthly metrics read-model (closed under-target month breaks the streak)', async () => {
+      const id = await createHabit(tokenA, {
+        name: 'monthly metrics',
+        modality: 'POSITIVE',
+        frequency: 'MONTHLY',
+        targetCount: 2,
+      });
+      await putMark(tokenA, id, '2026-03-10', 'COMPLETED');
+      await putMark(tokenA, id, '2026-03-25', 'COMPLETED'); // March satisfied
+      await putMark(tokenA, id, '2026-04-15', 'COMPLETED'); // April under target
+      await putMark(tokenA, id, '2026-05-08', 'COMPLETED');
+      await putMark(tokenA, id, '2026-05-12', 'COMPLETED'); // May satisfied
+
+      const res = await request(app.getHttpServer())
+        .get(`/habits/${id}/metrics?today=2026-06-15`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .expect(200);
+
+      // March✓ April✗ May✓, June open/empty → streak counts only May (April breaks it).
+      expect(res.body.unit).toBe('MONTH');
+      expect(res.body.currentStreak).toBe(1);
+      expect(res.body.currentRun).toEqual({ start: '2026-05-01', end: '2026-05-31', length: 1 });
+      expect(res.body.rollingConsistency).toEqual({ numerator: 2, denominator: 3, percent: 67 });
+      expect(res.body.recentCompletion).toEqual({
+        numerator: 2,
+        denominator: 3,
+        percent: 67,
+        phase: 'PERCENT',
+      });
+      // length-tie broken toward recency → May before March.
+      expect(res.body.bestStreaks).toEqual([
+        { start: '2026-05-01', end: '2026-05-31', length: 1 },
+        { start: '2026-03-01', end: '2026-03-31', length: 1 },
+      ]);
+    });
+
+    it('returns a neutral all-null read-model for a never-marked habit', async () => {
+      const id = await createHabit(tokenA, {
+        name: 'never marked',
+        modality: 'POSITIVE',
+        frequency: 'DAILY',
+      });
+
+      const res = await request(app.getHttpServer())
+        .get(`/habits/${id}/metrics?today=2026-06-15`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .expect(200);
+
+      // No anchor → nothing evaluable; neutral empties (no NaN, no "0 of 0").
+      expect(res.body.unit).toBe('DAY');
+      expect(res.body.currentStreak).toBe(0);
+      expect(res.body.currentRun).toBeNull();
+      expect(res.body.rollingConsistency).toEqual({ numerator: 0, denominator: 0, percent: null });
+      expect(res.body.recentCompletion).toEqual({
+        numerator: 0,
+        denominator: 0,
+        percent: null,
+        phase: 'RATIO',
+      });
+      expect(res.body.bestStreaks).toEqual([]);
+    });
   });
 });

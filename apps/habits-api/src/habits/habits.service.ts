@@ -144,12 +144,8 @@ export class HabitsService {
 
     const todayDate = parseDateOnly(today);
 
-    const anchorRow = await this.prisma.mark.findFirst({
-      where: { habitId },
-      orderBy: { date: 'asc' },
-      select: { date: true },
-    });
-
+    // Unbounded read (unlike getCalendar's windowed one), so marks[0] is always
+    // the true anchor — no separate anchor query needed.
     const marks = await this.prisma.mark.findMany({
       where: { habitId },
       select: { date: true, status: true },
@@ -159,7 +155,7 @@ export class HabitsService {
     return computeMetrics({
       frequency: habit.frequency,
       target: habit.targetCount ?? 1,
-      anchor: anchorRow?.date ?? null,
+      anchor: marks[0]?.date ?? null,
       today: todayDate,
       marks,
     });
