@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedAppRouteImport } from './routes/_authed/app'
+import { Route as AuthedHabitsHabitIdRouteImport } from './routes/_authed/habits.$habitId'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -39,18 +40,25 @@ const AuthedAppRoute = AuthedAppRouteImport.update({
   path: '/app',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedHabitsHabitIdRoute = AuthedHabitsHabitIdRouteImport.update({
+  id: '/habits/$habitId',
+  path: '/habits/$habitId',
+  getParentRoute: () => AuthedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/app': typeof AuthedAppRoute
+  '/habits/$habitId': typeof AuthedHabitsHabitIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/app': typeof AuthedAppRoute
+  '/habits/$habitId': typeof AuthedHabitsHabitIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -59,13 +67,21 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/_authed/app': typeof AuthedAppRoute
+  '/_authed/habits/$habitId': typeof AuthedHabitsHabitIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/register' | '/app'
+  fullPaths: '/' | '/login' | '/register' | '/app' | '/habits/$habitId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/register' | '/app'
-  id: '__root__' | '/' | '/_authed' | '/login' | '/register' | '/_authed/app'
+  to: '/' | '/login' | '/register' | '/app' | '/habits/$habitId'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authed'
+    | '/login'
+    | '/register'
+    | '/_authed/app'
+    | '/_authed/habits/$habitId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -112,15 +128,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAppRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/habits/$habitId': {
+      id: '/_authed/habits/$habitId'
+      path: '/habits/$habitId'
+      fullPath: '/habits/$habitId'
+      preLoaderRoute: typeof AuthedHabitsHabitIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
 interface AuthedRouteChildren {
   AuthedAppRoute: typeof AuthedAppRoute
+  AuthedHabitsHabitIdRoute: typeof AuthedHabitsHabitIdRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAppRoute: AuthedAppRoute,
+  AuthedHabitsHabitIdRoute: AuthedHabitsHabitIdRoute,
 }
 
 const AuthedRouteWithChildren =

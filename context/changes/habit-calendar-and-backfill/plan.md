@@ -343,33 +343,33 @@ None — no schema change. The `Mark` model, `@@unique([habitId, date])`, and wr
 
 #### Automated
 
-- [x] 1.1 Lint passes: `npm run lint -w @habitpair/habits-api`
-- [x] 1.2 Unit specs pass (daily computed-missed, anchor boundary, today/future excluded, weekly/monthly closed vs in-progress, target-met, UTC/DST round-trip, monthSpan guard)
-- [x] 1.3 e2e passes (calendar endpoint per frequency, 404 ownership, 400 bad range, retroactive write reflected)
-- [x] 1.4 Build passes: `npm run build -w @habitpair/habits-api`
+- [x] 1.1 Lint passes: `npm run lint -w @habitpair/habits-api` — 428686f
+- [x] 1.2 Unit specs pass (daily computed-missed, anchor boundary, today/future excluded, weekly/monthly closed vs in-progress, target-met, UTC/DST round-trip, monthSpan guard) — 428686f
+- [x] 1.3 e2e passes (calendar endpoint per frequency, 404 ownership, 400 bad range, retroactive write reflected) — 428686f
+- [x] 1.4 Build passes: `npm run build -w @habitpair/habits-api` — 428686f
 
 #### Manual
 
-- [x] 1.5 `curl` daily habit with gaps → computedMissedDates correct, none before firstMarkDate
-- [x] 1.6 `curl` 2×/week habit → satisfied week absent from failedPeriods, under-target closed week present
+- [x] 1.5 `curl` daily habit with gaps → computedMissedDates correct, none before firstMarkDate — 428686f
+- [x] 1.6 `curl` 2×/week habit → satisfied week absent from failedPeriods, under-target closed week present — 428686f
 
 ### Phase 2: Detail page + multi-month calendar (read-only)
 
 #### Automated
 
-- [ ] 2.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
-- [ ] 2.2 Lint passes: `npm run lint -w @habitpair/web`
-- [ ] 2.3 Existing tests stay green: `npm run test -w @habitpair/web`
-- [ ] 2.4 Build passes: `npm run build -w @habitpair/web`
+- [x] 2.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
+- [x] 2.2 Lint passes: `npm run lint -w @habitpair/web`
+- [x] 2.3 Existing tests stay green: `npm run test -w @habitpair/web`
+- [x] 2.4 Build passes: `npm run build -w @habitpair/web`
 
 #### Manual
 
-- [ ] 2.5 List row info-area opens detail; mark-today button still works and does not navigate
-- [ ] 2.6 Default 3 months; SpanControl switches 6 / 12 / All; All spans first-mark → today (capped 24mo)
-- [ ] 2.7 Prev/next + month-year jump page back without limit; a month before the first mark is reachable; forward stops at current month
-- [ ] 2.8 Monday-first ISO columns; 5–6 rows per month
-- [ ] 2.9 Coloring matches backend (✓ completed, ✗ explicit + daily computed, period tint, today marker, neutral before anchor / in-progress)
-- [ ] 2.10 Future days disabled; responsive single-column on mobile
+- [x] 2.5 List row info-area opens detail; mark-today button still works and does not navigate
+- [x] 2.6 Default 3 months; SpanControl switches 6 / 12 / All; All spans first-mark → today (capped 24mo)
+- [x] 2.7 Prev/next + month-year jump page back without limit; a month before the first mark is reachable; forward stops at current month
+- [x] 2.8 Monday-first ISO columns; 5–6 rows per month
+- [x] 2.9 Coloring matches backend (✓ completed, ✗ explicit + daily computed, period tint, today marker, neutral before anchor / in-progress)
+- [x] 2.10 Future days disabled; responsive single-column on mobile
 
 ### Phase 3: Retroactive marking (3-state cycle)
 
