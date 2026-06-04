@@ -11,6 +11,7 @@ import {
   monthSpan,
   parseDateOnly,
 } from '../marks/period';
+import { computeMetrics } from '../marks/metrics';
 
 @Injectable()
 export class HabitsService {
@@ -130,5 +131,37 @@ export class HabitsService {
             todayDate,
           ),
     };
+  }
+
+  // Computes the four insight metrics on read from all of a habit's marks and
+  // its (immutable) frequency/target. Delegates the math to computeMetrics —
+  // this method only owns the 404-on-miss ownership check and the Prisma reads.
+  async getMetrics(userId: string, habitId: string, today: string) {
+    // 404 (not 403) on a miss — mirrors getCalendar so a habit's existence is
+    // not leaked across users.
+    const habit = await this.prisma.habit.findFirst({ where: { id: habitId, userId } });
+    if (!habit) throw new NotFoundException('Habit not found');
+
+    const todayDate = parseDateOnly(today);
+
+    const anchorRow = await this.prisma.mark.findFirst({
+      where: { habitId },
+      orderBy: { date: 'asc' },
+      select: { date: true },
+    });
+
+    const marks = await this.prisma.mark.findMany({
+      where: { habitId },
+      select: { date: true, status: true },
+      orderBy: { date: 'asc' },
+    });
+
+    return computeMetrics({
+      frequency: habit.frequency,
+      target: habit.targetCount ?? 1,
+      anchor: anchorRow?.date ?? null,
+      today: todayDate,
+      marks,
+    });
   }
 }

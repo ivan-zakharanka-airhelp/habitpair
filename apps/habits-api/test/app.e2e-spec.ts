@@ -227,4 +227,106 @@ describe('Habits API (e2e)', () => {
       ]);
     });
   });
+
+  describe('GET /habits/:habitId/metrics', () => {
+    const createHabit = (token: string, body: Record<string, unknown>) =>
+      request(app.getHttpServer())
+        .post('/habits')
+        .set('Authorization', `Bearer ${token}`)
+        .send(body)
+        .expect(201)
+        .then((res) => res.body.id as string);
+
+    const putMark = (token: string, habitId: string, date: string, status: string) =>
+      request(app.getHttpServer())
+        .put(`/habits/${habitId}/marks/${date}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ status })
+        .expect(200);
+
+    it('requires a valid token (guard runs before validation)', () => {
+      return request(app.getHttpServer())
+        .get(`/habits/${randomUUID()}/metrics?today=2026-06-15`)
+        .expect(401);
+    });
+
+    it('rejects a malformed today with 400', async () => {
+      const id = await createHabit(tokenA, {
+        name: 'metrics bad today',
+        modality: 'POSITIVE',
+        frequency: 'DAILY',
+      });
+      await request(app.getHttpServer())
+        .get(`/habits/${id}/metrics?today=2026-6-15`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .expect(400);
+    });
+
+    it('404s when the caller does not own the habit', async () => {
+      const id = await createHabit(tokenA, {
+        name: 'metrics a-only',
+        modality: 'POSITIVE',
+        frequency: 'DAILY',
+      });
+      await request(app.getHttpServer())
+        .get(`/habits/${id}/metrics?today=2026-06-15`)
+        .set('Authorization', `Bearer ${tokenB}`)
+        .expect(404);
+    });
+
+    it('computes the daily metrics read-model for an owned habit', async () => {
+      const id = await createHabit(tokenA, {
+        name: 'daily metrics',
+        modality: 'POSITIVE',
+        frequency: 'DAILY',
+      });
+      await putMark(tokenA, id, '2026-06-13', 'COMPLETED');
+      await putMark(tokenA, id, '2026-06-14', 'COMPLETED');
+
+      const res = await request(app.getHttpServer())
+        .get(`/habits/${id}/metrics?today=2026-06-15`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .expect(200);
+
+      // 13,14 done, today (15) unmarked → streak shows through yesterday.
+      expect(res.body.unit).toBe('DAY');
+      expect(res.body.currentStreak).toBe(2);
+      expect(res.body.rollingConsistency).toEqual({ numerator: 2, denominator: 2, percent: 100 });
+      expect(res.body.recentCompletion).toEqual({
+        numerator: 2,
+        denominator: 2,
+        percent: 100,
+        phase: 'RATIO',
+      });
+      expect(res.body.bestStreaks).toEqual([{ start: '2026-06-13', end: '2026-06-14', length: 2 }]);
+    });
+
+    it('computes the weekly metrics read-model (closed under-target week breaks the streak)', async () => {
+      const id = await createHabit(tokenA, {
+        name: 'weekly metrics',
+        modality: 'POSITIVE',
+        frequency: 'WEEKLY',
+        targetCount: 2,
+      });
+      await putMark(tokenA, id, '2026-06-01', 'COMPLETED');
+      await putMark(tokenA, id, '2026-06-02', 'COMPLETED'); // week Jun 1–7 satisfied
+      await putMark(tokenA, id, '2026-06-08', 'COMPLETED'); // week Jun 8–14 under target
+
+      const res = await request(app.getHttpServer())
+        .get(`/habits/${id}/metrics?today=2026-06-17`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .expect(200);
+
+      expect(res.body.unit).toBe('WEEK');
+      expect(res.body.currentStreak).toBe(0); // closed Jun 8–14 failed
+      expect(res.body.rollingConsistency).toEqual({ numerator: 1, denominator: 2, percent: 50 });
+      expect(res.body.recentCompletion).toEqual({
+        numerator: 1,
+        denominator: 2,
+        percent: 50,
+        phase: 'PERCENT',
+      });
+      expect(res.body.bestStreaks).toEqual([{ start: '2026-06-01', end: '2026-06-07', length: 1 }]);
+    });
+  });
 });
