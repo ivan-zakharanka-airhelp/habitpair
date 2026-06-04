@@ -325,31 +325,31 @@ Each metrics request reads all of a habit's marks (`{date, status}`, ordered by 
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `npm test -w @habitpair/habits-api -- metrics`
-- [x] 1.2 Full backend unit suite passes: `npm test -w @habitpair/habits-api`
-- [x] 1.3 E2e passes: `npm run test:e2e -w @habitpair/habits-api`
-- [x] 1.4 Build + typecheck pass: `npm run build -w @habitpair/habits-api`
-- [x] 1.5 Lint passes: `npm run lint -w @habitpair/habits-api`
+- [x] 1.1 Unit tests pass: `npm test -w @habitpair/habits-api -- metrics` — d0e6c6b
+- [x] 1.2 Full backend unit suite passes: `npm test -w @habitpair/habits-api` — d0e6c6b
+- [x] 1.3 E2e passes: `npm run test:e2e -w @habitpair/habits-api` — d0e6c6b
+- [x] 1.4 Build + typecheck pass: `npm run build -w @habitpair/habits-api` — d0e6c6b
+- [x] 1.5 Lint passes: `npm run lint -w @habitpair/habits-api` — d0e6c6b
 
 #### Manual
 
-- [x] 1.6 `curl` of `GET …/metrics` returns sane numbers for daily/weekly/monthly fixtures
-- [x] 1.7 PRD FR-007 + Business Logic edge case and roadmap S-04 no longer present frequency as editable
+- [x] 1.6 `curl` of `GET …/metrics` returns sane numbers for daily/weekly/monthly fixtures — d0e6c6b
+- [x] 1.7 PRD FR-007 + Business Logic edge case and roadmap S-04 no longer present frequency as editable — d0e6c6b
 
 ### Phase 2: Primary metrics UI
 
 #### Automated
 
-- [ ] 2.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
-- [ ] 2.2 Frontend tests pass: `npm run test -w @habitpair/web`
-- [ ] 2.3 Build passes: `npm run build -w @habitpair/web`
-- [ ] 2.4 Lint passes: `make lint`
+- [x] 2.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
+- [x] 2.2 Frontend tests pass: `npm run test -w @habitpair/web`
+- [x] 2.3 Build passes: `npm run build -w @habitpair/web`
+- [x] 2.4 Lint passes: `make lint`
 
 #### Manual
 
-- [ ] 2.5 Strip renders correct streak / % / ratio for daily/weekly/monthly (preview)
-- [ ] 2.6 Marking today and backfilling a past day update the strip live
-- [ ] 2.7 Brand-new habit shows a neutral empty state (no "0 of 0" / NaN%)
+- [x] 2.5 Strip renders correct streak / % / ratio for daily/weekly/monthly (preview)
+- [x] 2.6 Marking today and backfilling a past day update the strip live
+- [x] 2.7 Brand-new habit shows a neutral empty state (no "0 of 0" / NaN%)
 
 ### Phase 3: Best-streaks secondary view
 

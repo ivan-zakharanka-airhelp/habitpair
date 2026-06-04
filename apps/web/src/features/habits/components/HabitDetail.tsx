@@ -7,6 +7,7 @@ import { todayLocalISO } from '../lib/today';
 import type { CalendarSpan } from '../types';
 import { CalendarNav } from './CalendarNav';
 import { HabitCalendar } from './HabitCalendar';
+import { HabitMetrics } from './HabitMetrics';
 import { SpanControl } from './SpanControl';
 
 function frequencyText(frequency: string, targetCount: number | null): string {
@@ -52,6 +53,8 @@ export function HabitDetail({ habitId }: { habitId: string }) {
         {habit.modality === 'POSITIVE' ? 'Building' : 'Breaking'} ·{' '}
         {frequencyText(habit.frequency, habit.targetCount)}
       </p>
+
+      <HabitMetrics habitId={habitId} today={today} />
 
       <div className="mt-4 flex flex-wrap items-center gap-4">
         <SpanControl value={span} onChange={setSpan} allEnabled={firstMarkDate != null} />

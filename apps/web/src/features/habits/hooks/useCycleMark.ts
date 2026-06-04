@@ -21,12 +21,15 @@ interface CycleVars {
 // useToggleMark's cancel/snapshot/rollback/invalidate shape. The optimistic write
 // touches `marks` only: daily ✓/✗ recolors instantly because stored marks win over
 // computed coloring (HabitCalendar.buildStatusSets), while weekly/monthly period
-// tint reconciles on the settle refetch. onSettled also invalidates the list key —
-// a retroactive change can shift the current-period progress shown on the list.
+// tint reconciles on the settle refetch. onSettled also invalidates the list key
+// (a retroactive change can shift the current-period progress shown on the list)
+// and the metrics key (it can shift the streak/consistency/completion numbers).
 export function useCycleMark(habitId: string, from: string, to: string, today: string) {
   const queryClient = useQueryClient();
   const calendarKey = ['habits', habitId, 'calendar', from, to, today] as const;
   const listKey = ['habits', todayLocalISO()] as const;
+  // Prefix match across the `today` segment of the metrics key.
+  const metricsKey = ['habits', habitId, 'metrics'] as const;
 
   return useMutation({
     mutationFn: ({ date, storedStatus }: CycleVars): Promise<void> => {
@@ -55,6 +58,7 @@ export function useCycleMark(habitId: string, from: string, to: string, today: s
       Promise.all([
         queryClient.invalidateQueries({ queryKey: calendarKey }),
         queryClient.invalidateQueries({ queryKey: listKey }),
+        queryClient.invalidateQueries({ queryKey: metricsKey }),
       ]),
   });
 }
