@@ -264,23 +264,23 @@ No schema change. The `onDelete: Cascade` on `Mark.habit` already exists; deleti
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `npm test -w @habitpair/habits-api`
-- [x] 1.2 E2E tests pass: `npm run test:e2e -w @habitpair/habits-api`
-- [x] 1.3 Build/typecheck passes: `npm run build -w @habitpair/habits-api`
-- [x] 1.4 Lint passes: `npm run lint -w @habitpair/habits-api`
+- [x] 1.1 Unit tests pass: `npm test -w @habitpair/habits-api` — 59905ac
+- [x] 1.2 E2E tests pass: `npm run test:e2e -w @habitpair/habits-api` — 59905ac
+- [x] 1.3 Build/typecheck passes: `npm run build -w @habitpair/habits-api` — 59905ac
+- [x] 1.4 Lint passes: `npm run lint -w @habitpair/habits-api` — 59905ac
 
 #### Manual
 
-- [x] 1.5 `curl PATCH` edits name/modality; `frequency` in body → 400
-- [x] 1.6 `curl DELETE` → 204; habit gone from list; calendar 404s
+- [x] 1.5 `curl PATCH` edits name/modality; `frequency` in body → 400 — 59905ac
+- [x] 1.6 `curl DELETE` → 204; habit gone from list; calendar 404s — 59905ac
 
 ### Phase 2: Frontend data layer
 
 #### Automated
 
-- [ ] 2.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
-- [ ] 2.2 Lint passes: `npm run lint -w @habitpair/web`
-- [ ] 2.3 Existing frontend tests pass: `npm run test -w @habitpair/web`
+- [x] 2.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
+- [x] 2.2 Lint passes: `npm run lint -w @habitpair/web`
+- [x] 2.3 Existing frontend tests pass: `npm run test -w @habitpair/web`
 
 ### Phase 3: Detail-page UI
 

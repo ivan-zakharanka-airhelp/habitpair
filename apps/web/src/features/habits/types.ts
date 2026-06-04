@@ -9,6 +9,11 @@ export interface CreateHabitInput {
   targetCount?: number;
 }
 
+export interface UpdateHabitInput {
+  name?: string;
+  modality?: Modality;
+}
+
 export interface HabitListItem {
   id: string;
   name: string;
