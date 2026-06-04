@@ -278,22 +278,22 @@ No schema change. The `onDelete: Cascade` on `Mark.habit` already exists; deleti
 
 #### Automated
 
-- [x] 2.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
-- [x] 2.2 Lint passes: `npm run lint -w @habitpair/web`
-- [x] 2.3 Existing frontend tests pass: `npm run test -w @habitpair/web`
+- [x] 2.1 Typecheck passes: `npm run typecheck -w @habitpair/web` — 0a84da1
+- [x] 2.2 Lint passes: `npm run lint -w @habitpair/web` — 0a84da1
+- [x] 2.3 Existing frontend tests pass: `npm run test -w @habitpair/web` — 0a84da1
 
 ### Phase 3: Detail-page UI
 
 #### Automated
 
-- [ ] 3.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
-- [ ] 3.2 Lint passes: `npm run lint -w @habitpair/web`
-- [ ] 3.3 Frontend tests pass: `npm run test -w @habitpair/web`
+- [x] 3.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
+- [x] 3.2 Lint passes: `npm run lint -w @habitpair/web`
+- [x] 3.3 Frontend tests pass: `npm run test -w @habitpair/web`
 
 #### Manual
 
-- [ ] 3.4 Edit name + Save updates header and `/app` list
-- [ ] 3.5 Changing modality moves the habit between Building/Breaking groups
-- [ ] 3.6 Cancel discards edits; header reverts
-- [ ] 3.7 Delete → confirm → navigates to `/app`, habit gone; Esc/Cancel aborts
-- [ ] 3.8 Empty name on edit is blocked
+- [x] 3.4 Edit name + Save updates header and `/app` list
+- [x] 3.5 Changing modality moves the habit between Building/Breaking groups
+- [x] 3.6 Cancel discards edits; header reverts
+- [x] 3.7 Delete → confirm → navigates to `/app`, habit gone; Esc/Cancel aborts
+- [x] 3.8 Empty name on edit is blocked
