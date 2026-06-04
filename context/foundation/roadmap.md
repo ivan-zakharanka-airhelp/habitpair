@@ -33,7 +33,7 @@ This is the *north star* — the smallest end-to-end slice whose successful deli
 | S-01  | create-habit-and-mark-today | create first habit + mark today + see it on the modality-grouped list (≤ ~1 min)  | F-01          | US-01, US-02, FR-004, FR-005, FR-006, FR-009 | done     |
 | S-02  | habit-calendar-and-backfill | open a habit's detail, see the monthly calendar, change any past day retroactively | S-01          | US-03, FR-010, FR-011, FR-012         | done     |
 | S-03  | habit-insight-metrics       | see current streak, rolling consistency %, adaptive ratio, and top-10 best streaks     | S-02          | US-03, FR-013, FR-014, FR-015, FR-016 | done     |
-| S-04  | edit-and-delete-habit       | edit a habit's name, modality, and target count, and delete it with a brief undo  | S-03          | FR-007, FR-008                        | proposed |
+| S-04  | edit-and-delete-habit       | edit a habit's name, modality, and target count, and delete it with a brief undo  | S-03          | FR-007, FR-008                        | done     |
 
 ## Baseline
 
@@ -113,7 +113,7 @@ Foundations below assume these are present and do NOT re-scaffold them. **Per th
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Sequenced last because habit management (edit/delete) sits off the core activation → insight validation path, so it lands after the insight slice (S-03) proves the product's value. With frequency immutable (FR-007), edit carries no streak-reset seam; the main hazard is delete, which is destructive but bounded by the ~5 s undo affordance.
-- **Status:** proposed
+- **Status:** done
 
 ## Backlog Handoff
 
@@ -147,3 +147,4 @@ Foundations below assume these are present and do NOT re-scaffold them. **Per th
 ## Done
 
 - **S-03: user can see, on a habit's detail page, the current streak, a rolling-window consistency percentage (30 days / 8 weeks / 6 months by frequency), an adaptive early-phase ratio that transitions to a percentage after 14 days of tracking, and — in a secondary, non-prominent view — the top 10 longest streaks ever achieved, each shown with its start date, end date, and length in days, ordered by length (longest first; ties broken toward recency), with the active streak highlighted in place or pinned below the leaderboard when it doesn't rank.** — Archived 2026-06-04 → `context/archive/2026-06-04-habit-insight-metrics/`. Lesson: —.
+- **S-04: user can edit an existing habit's name, modality, and target count — frequency is fixed at creation and cannot be edited, so the period structure is stable and no edit resets the streak — and can permanently delete a habit (removing all its marks) with a brief (~5 s) opportunity to undo.** — Archived 2026-06-04 → `context/archive/2026-06-04-edit-and-delete-habit/`. Lesson: —.

@@ -1,10 +1,10 @@
 ---
 change_id: edit-and-delete-habit
 title: Edit and delete habit
-status: impl_reviewed
+status: archived
 created: 2026-06-04
 updated: 2026-06-04
-archived_at: null
+archived_at: 2026-06-04T18:36:32Z
 ---
 
 ## Notes
