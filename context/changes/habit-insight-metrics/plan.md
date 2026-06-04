@@ -356,14 +356,14 @@ Each metrics request reads all of a habit's marks (`{date, status}`, ordered by 
 
 #### Automated
 
-- [x] 3.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
-- [x] 3.2 Frontend tests pass: `npm run test -w @habitpair/web`
-- [x] 3.3 Build passes: `npm run build -w @habitpair/web`
-- [x] 3.4 Lint passes: `make lint`
+- [x] 3.1 Typecheck passes: `npm run typecheck -w @habitpair/web` — 37116d2
+- [x] 3.2 Frontend tests pass: `npm run test -w @habitpair/web` — 37116d2
+- [x] 3.3 Build passes: `npm run build -w @habitpair/web` — 37116d2
+- [x] 3.4 Lint passes: `make lint` — 37116d2
 
 #### Manual
 
-- [x] 3.5 "Best streaks" is collapsed on load and absent from the main surface until expanded (NFR)
-- [x] 3.6 Expanded list shows correct top-10-by-length, longest-first, accurate spans/units
-- [x] 3.7 Keyboard-only: disclosure reachable and toggleable via Tab + Enter/Space
-- [x] 3.8 Ongoing streak shows an end date clamped to today, not a future date
+- [x] 3.5 "Best streaks" is collapsed on load and absent from the main surface until expanded (NFR) — 37116d2
+- [x] 3.6 Expanded list shows correct top-10-by-length, longest-first, accurate spans/units — 37116d2
+- [x] 3.7 Keyboard-only: disclosure reachable and toggleable via Tab + Enter/Space — 37116d2
+- [x] 3.8 Ongoing streak shows an end date clamped to today, not a future date — 37116d2
