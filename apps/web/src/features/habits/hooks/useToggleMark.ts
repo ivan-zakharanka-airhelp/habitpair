@@ -5,7 +5,8 @@ import type { HabitListItem } from '../types';
 
 // Toggling today flips the habit's todayStatus and shifts its current-period
 // completedCount by ±1. The optimistic update lands instantly (<300 ms NFR);
-// onError rolls back; onSettled reconciles with the server.
+// onError rolls back; onSettled reconciles the list with the server and
+// invalidates the habit's metrics key (today's mark shifts its streak/numbers).
 export function useToggleMark() {
   const queryClient = useQueryClient();
   const today = todayLocalISO();
@@ -40,6 +41,10 @@ export function useToggleMark() {
         queryClient.setQueryData(queryKey, context.previous);
       }
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey }),
+    onSettled: (_data, _error, habit) =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey }),
+        queryClient.invalidateQueries({ queryKey: ['habits', habit.id, 'metrics'] }),
+      ]),
   });
 }

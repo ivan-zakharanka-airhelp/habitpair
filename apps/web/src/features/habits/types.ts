@@ -49,3 +49,31 @@ export interface HabitCalendarResponse {
 }
 
 export type CalendarSpan = '3' | '6' | '12' | 'all';
+
+export type StreakUnit = 'DAY' | 'WEEK' | 'MONTH';
+
+interface MetricFraction {
+  numerator: number;
+  denominator: number;
+  percent: number | null; // null when denominator === 0 — UI renders a neutral "—"
+}
+
+export interface BestStreak {
+  start: string; // YYYY-MM-DD
+  end: string; // YYYY-MM-DD, clamped to today
+  length: number; // consecutive success periods, in the native unit
+}
+
+// Mirrors habits-api computeMetrics (marks/metrics.ts). All four metrics are
+// computed on read from the habit's stored marks; the SPA only formats them.
+export interface HabitMetricsResponse {
+  unit: StreakUnit;
+  currentStreak: number;
+  // The ongoing run's span (length === currentStreak), or null when no active
+  // streak. Sent independently of bestStreaks so the UI can pin it when it's too
+  // short to make the top 10.
+  currentRun: BestStreak | null;
+  rollingConsistency: MetricFraction;
+  recentCompletion: MetricFraction & { phase: 'RATIO' | 'PERCENT' };
+  bestStreaks: BestStreak[]; // top 10, longest-first (ties broken by recency)
+}
