@@ -375,15 +375,15 @@ None — no schema change. The `Mark` model, `@@unique([habitId, date])`, and wr
 
 #### Automated
 
-- [x] 3.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
-- [x] 3.2 Lint passes: `npm run lint -w @habitpair/web`
-- [x] 3.3 Existing tests stay green: `npm run test -w @habitpair/web`
-- [x] 3.4 Build passes: `npm run build -w @habitpair/web`
+- [x] 3.1 Typecheck passes: `npm run typecheck -w @habitpair/web` — 438f118
+- [x] 3.2 Lint passes: `npm run lint -w @habitpair/web` — 438f118
+- [x] 3.3 Existing tests stay green: `npm run test -w @habitpair/web` — 438f118
+- [x] 3.4 Build passes: `npm run build -w @habitpair/web` — 438f118
 
 #### Manual
 
-- [x] 3.5 Click cycles unmarked → completed → missed → unmarked; persists across reload
-- [x] 3.6 Daily computed-missed day becomes completed on first click (cycle uses stored state)
-- [x] 3.7 Marking inside the current period updates list progress (cache invalidated)
-- [x] 3.8 Optimistic update feels instant; simulated failure rolls back
-- [x] 3.9 Future days remain non-interactive
+- [x] 3.5 Click cycles unmarked → completed → missed → unmarked; persists across reload — 438f118
+- [x] 3.6 Daily computed-missed day becomes completed on first click (cycle uses stored state) — 438f118
+- [x] 3.7 Marking inside the current period updates list progress (cache invalidated) — 438f118
+- [x] 3.8 Optimistic update feels instant; simulated failure rolls back — 438f118
+- [x] 3.9 Future days remain non-interactive — 438f118
