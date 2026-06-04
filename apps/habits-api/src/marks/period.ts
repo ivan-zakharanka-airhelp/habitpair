@@ -148,6 +148,7 @@ export function closedPeriodFailures(
   ) {
     const pEnd = endOfPeriod(pStart);
     if (pEnd.getTime() >= today.getTime()) break; // open period (holds today/future) — never fails
+    // Re-scan per period is O(periods×marks) — fine under the 36-month cap; bucket by period if it grows.
     const count = completed.filter(
       (m) => m.date.getTime() >= pStart.getTime() && m.date.getTime() <= pEnd.getTime(),
     ).length;

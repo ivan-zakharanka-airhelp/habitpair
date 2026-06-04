@@ -1,7 +1,7 @@
 ---
 change_id: habit-calendar-and-backfill
 title: Habit calendar and backfill
-status: implemented
+status: impl_reviewed
 created: 2026-06-03
 updated: 2026-06-04
 archived_at: null
