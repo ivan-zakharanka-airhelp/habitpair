@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtGuard } from '../auth/jwt.guard';
 import { AuthenticatedRequest } from '../auth/jwt-payload';
+import { CalendarQueryDto } from './dto/calendar-query.dto';
 import { CreateHabitDto } from './dto/create-habit.dto';
 import { HabitsService } from './habits.service';
 
@@ -20,5 +21,16 @@ export class HabitsController {
   @Post()
   create(@Req() req: AuthenticatedRequest, @Body() dto: CreateHabitDto) {
     return this.habitsService.create(req.user.sub, dto);
+  }
+
+  // Range-based (?from=YYYY-MM&to=YYYY-MM) so the multi-month view loads in one
+  // request. `today` is the client's local day (see CalendarQueryDto).
+  @Get(':habitId/calendar')
+  calendar(
+    @Req() req: AuthenticatedRequest,
+    @Param('habitId') habitId: string,
+    @Query() query: CalendarQueryDto,
+  ) {
+    return this.habitsService.getCalendar(req.user.sub, habitId, query.from, query.to, query.today);
   }
 }

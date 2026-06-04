@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'react-day-picker/style.css';
 
 /* The app is designed light-only; declare the scheme and paint an explicit light
    background so dark-mode browsers don't show black text on a dark canvas. */

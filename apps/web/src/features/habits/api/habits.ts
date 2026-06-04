@@ -1,7 +1,7 @@
 import { habitsApi } from '../../../shared/api/apiClient';
 import type { CreateHabitInput, HabitListItem, MarkStatus } from '../types';
 
-async function errorMessage(response: Response): Promise<string> {
+export async function errorMessage(response: Response): Promise<string> {
   try {
     const data: unknown = await response.json();
     const message = (data as { message?: unknown }).message;

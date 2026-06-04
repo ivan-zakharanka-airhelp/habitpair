@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { useToggleMark } from '../hooks/useToggleMark';
 import type { HabitListItem } from '../types';
 
@@ -15,10 +16,14 @@ export function HabitRow({ habit }: { habit: HabitListItem }) {
 
   return (
     <li className="flex items-center justify-between gap-4 rounded border border-gray-200 p-3">
-      <div className="flex flex-col">
+      <Link
+        to="/habits/$habitId"
+        params={{ habitId: habit.id }}
+        className="flex flex-1 flex-col hover:underline"
+      >
         <span className="font-medium">{habit.name}</span>
         <span className="text-sm text-gray-600">{progressText(habit)}</span>
-      </div>
+      </Link>
       <button
         type="button"
         aria-pressed={done}
