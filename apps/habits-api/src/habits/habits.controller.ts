@@ -1,9 +1,22 @@
-import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtGuard } from '../auth/jwt.guard';
 import { AuthenticatedRequest } from '../auth/jwt-payload';
 import { CalendarQueryDto } from './dto/calendar-query.dto';
 import { CreateHabitDto } from './dto/create-habit.dto';
 import { MetricsQueryDto } from './dto/metrics-query.dto';
+import { UpdateHabitDto } from './dto/update-habit.dto';
 import { HabitsService } from './habits.service';
 
 // Global prefix `habits` is set in main.ts → this controller serves /habits
@@ -45,5 +58,24 @@ export class HabitsController {
     @Query() query: MetricsQueryDto,
   ) {
     return this.habitsService.getMetrics(req.user.sub, habitId, query.today);
+  }
+
+  // Edits name/modality only; frequency/targetCount are immutable (rejected by
+  // the global forbidNonWhitelisted pipe). 404 on a non-owned habit.
+  @Patch(':habitId')
+  update(
+    @Req() req: AuthenticatedRequest,
+    @Param('habitId') habitId: string,
+    @Body() dto: UpdateHabitDto,
+  ) {
+    return this.habitsService.update(req.user.sub, habitId, dto);
+  }
+
+  // Hard delete (marks cascade in the DB). 204 on success, 404 on a non-owned
+  // habit.
+  @Delete(':habitId')
+  @HttpCode(204)
+  remove(@Req() req: AuthenticatedRequest, @Param('habitId') habitId: string) {
+    return this.habitsService.remove(req.user.sub, habitId);
   }
 }

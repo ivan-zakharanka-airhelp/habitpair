@@ -32,8 +32,8 @@ This is the *north star* — the smallest end-to-end slice whose successful deli
 | F-01  | auth-and-session-contract   | (foundation) email+password auth issues + verifies tokens; SPA gates routes       | —             | FR-001, FR-002, FR-003                | done     |
 | S-01  | create-habit-and-mark-today | create first habit + mark today + see it on the modality-grouped list (≤ ~1 min)  | F-01          | US-01, US-02, FR-004, FR-005, FR-006, FR-009 | done     |
 | S-02  | habit-calendar-and-backfill | open a habit's detail, see the monthly calendar, change any past day retroactively | S-01          | US-03, FR-010, FR-011, FR-012         | done     |
-| S-03  | habit-insight-metrics       | see current streak, rolling consistency %, adaptive ratio, and top-10 best streaks     | S-02          | US-03, FR-013, FR-014, FR-015, FR-016 | done     |
-| S-04  | edit-and-delete-habit       | edit a habit's name, modality, and target count, and delete it with a brief undo  | S-03          | FR-007, FR-008                        | proposed |
+| S-03  | habit-insight-metrics       | see current streak, rolling consistency %, adaptive ratio, and top-10 best streaks     | S-02          | US-03, FR-013, FR-014, FR-015, FR-016 | proposed |
+| S-04  | edit-and-delete-habit       | edit a habit (structural edit resets the streak) and delete it with a brief undo  | S-03          | FR-007, FR-008                        | proposed |
 
 ## Baseline
 
@@ -61,7 +61,7 @@ Foundations below assume these are present and do NOT re-scaffold them. **Per th
 - **Unknowns:**
   - Is a password-reset flow in MVP scope? — Owner: user. Block: no (PRD permits launching without it; resolve before user count crosses single digits).
 - **Risk:** Auth is the cross-cutting gate every slice depends on, and per-user scoping (`sub` → userId on every query) is what makes cross-tenant leakage — a product-killing incident per the guardrails — impossible. The existing guard is mock, so this is a real build, not an extension. Sequenced first because nothing user-facing is plannable until a signed-in user with a stable identity exists.
-- **Status:** ready
+- **Status:** done
 
 ## Slices
 
@@ -76,7 +76,7 @@ Foundations below assume these are present and do NOT re-scaffold them. **Per th
 - **Unknowns:**
   - Mark-control interaction shape (cycle vs. picker) — Owner: design. Block: no (PRD leaves this to design time; not pinned).
 - **Risk:** The largest slice and the activation flow — it introduces the real `Habit` + `Mark` data models (replacing the mock table) and must hit the <300 ms perceived-responsiveness guardrail on the mark interaction. Proving time-to-first-value here is the entire validation bet, so it leads.
-- **Status:** proposed
+- **Status:** done
 
 ### S-02: Habit detail — calendar and retroactive marking
 
@@ -88,31 +88,31 @@ Foundations below assume these are present and do NOT re-scaffold them. **Per th
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** The calendar grid is the pattern-view differentiator — the product's reason to exist beyond plain tracking — so it lands before the numeric metrics. Retroactive marks (FR-010) write into closed periods, so the write path must be built to trigger a downstream recompute even before the metrics engine (S-03) exists.
-- **Status:** proposed
+- **Status:** done
 
 ### S-03: Habit insight metrics
 
-- **Outcome:** user can see, on a habit's detail page, the current streak, a rolling-window consistency percentage (30 days / 8 weeks / 6 months by frequency), an adaptive early-phase ratio that transitions to a percentage after 14 days of tracking, and — in a secondary, non-prominent view — the top 10 longest streaks ever achieved, each shown with its start date, end date, and length in days, ordered by length (longest first; ties broken toward recency), with the active streak highlighted in place or pinned below the leaderboard when it doesn't rank.
+- **Outcome:** user can see, on a habit's detail page, the current streak, a rolling-window consistency percentage (30 days / 8 weeks / 6 months by frequency), an adaptive early-phase ratio that transitions to a percentage after 14 days of tracking, and — in a secondary, non-prominent view — the top 10 longest streaks ever achieved, each shown with its start date, end date, and length in days, ordered chronologically (most recent first).
 - **Change ID:** habit-insight-metrics
 - **PRD refs:** US-03, FR-013, FR-014, FR-015, FR-016; `## Non-Functional Requirements` (timezone/DST robustness of period rules)
 - **Prerequisites:** S-02
 - **Parallel with:** —
 - **Blockers:** —
 - **Unknowns:**
-  - Visual treatment of the secondary best-streaks view — **resolved (S-03):** a collapsed disclosure expanding to a proportional bar chart (full-width bars, labelled above) ordered longest-first, with the active streak highlighted in place or pinned below (with a "to crack the top 10" nudge) when it doesn't rank. Owner: design. Block: no.
+  - Visual treatment of the secondary best-streaks view — a proportional bar chart (as in the reference screenshot) vs. a plain dated list — Owner: design. Block: no (the content is fixed: the top 10 longest streaks, each with start/end dates and day count, ordered chronologically; only the rendering is open).
 - **Risk:** The heaviest slice — it implements the frequency-aware period-success + streak + rolling-window engine from `## Business Logic`, including the timezone/DST boundary robustness NFR (a corrupted streak from a DST transition is a defect). Retroactive marks from S-02 must recompute correctly across affected ranges. The top-10 best-streaks view (FR-015) raises the bar further: it requires enumerating *every* historical streak run with its date span, not just the single maximum — a superset of the current-streak computation.
-- **Status:** done
+- **Status:** proposed
 
 ### S-04: Edit and delete a habit
 
-- **Outcome:** user can edit an existing habit's name, modality, and target count — frequency is fixed at creation and cannot be edited, so the period structure is stable and no edit resets the streak — and can permanently delete a habit (removing all its marks) with a brief (~5 s) opportunity to undo.
+- **Outcome:** user can edit an existing habit's name, modality, frequency, and target count — where a structural change (modality or frequency) visibly resets the current streak to zero as a named consequence — and can permanently delete a habit (removing all its marks) with a brief (~5 s) opportunity to undo.
 - **Change ID:** edit-and-delete-habit
 - **PRD refs:** FR-007, FR-008
 - **Prerequisites:** S-03
 - **Parallel with:** —
 - **Blockers:** —
 - **Unknowns:** —
-- **Risk:** Sequenced last because habit management (edit/delete) sits off the core activation → insight validation path, so it lands after the insight slice (S-03) proves the product's value. With frequency immutable (FR-007), edit carries no streak-reset seam; the main hazard is delete, which is destructive but bounded by the ~5 s undo affordance.
+- **Risk:** Sequenced last because FR-007's streak-reset consequence is only meaningful once the streak engine (S-03) exists — building edit earlier would leave the reset half-wired — and habit management sits off the activation → insight validation path. Delete is destructive but bounded by the ~5 s undo affordance.
 - **Status:** proposed
 
 ## Backlog Handoff
@@ -123,12 +123,12 @@ Foundations below assume these are present and do NOT re-scaffold them. **Per th
 | S-01       | create-habit-and-mark-today | Activation: create first habit and mark today (north star)              | no                    | Plan after F-01 lands                  |
 | S-02       | habit-calendar-and-backfill | Habit detail: calendar grid + retroactive marking                       | no                    | Plan after S-01                        |
 | S-03       | habit-insight-metrics       | Habit insight: streaks, rolling %, top-10 best streaks, adaptive ratio              | no                    | Plan after S-02                        |
-| S-04       | edit-and-delete-habit       | Edit and delete a habit (name, modality, target; frequency fixed; undo)         | no                    | Plan after S-03                        |
+| S-04       | edit-and-delete-habit       | Edit and delete a habit (streak-reset on structural edit; undo)         | no                    | Plan after S-03                        |
 
 ## Open Roadmap Questions
 
 1. **Is a password-reset flow in MVP scope?** — Owner: user. Block: F-01 scope (non-blocking for launch — PRD permits shipping without it; recommended to resolve before user count crosses single digits).
-2. **What is the precise shape of the "secondary view" for the top-10 best streaks (FR-015)?** — **resolved (S-03):** a collapsed "Best streaks" disclosure expanding to a proportional bar chart (full-width bars), ordered longest-first, with the active streak highlighted in place or pinned below when it doesn't rank. Owner: design. Block: none (resolved).
+2. **What is the precise shape of the "secondary view" for the top-10 best streaks (FR-015)?** — proportional bar chart (as in the reference screenshot) vs. a plain dated list. Owner: design. Block: S-03 (design-owned; non-blocking — any non-prominent placement satisfies the FR).
 3. **Email-verification policy as the user base grows.** — Owner: user, with input from operations. Block: roadmap-wide (post-MVP; non-blocking — MVP ships with immediate-access signup).
 
 ## Parked
@@ -146,4 +146,8 @@ Foundations below assume these are present and do NOT re-scaffold them. **Per th
 
 ## Done
 
-- **S-03: user can see, on a habit's detail page, the current streak, a rolling-window consistency percentage (30 days / 8 weeks / 6 months by frequency), an adaptive early-phase ratio that transitions to a percentage after 14 days of tracking, and — in a secondary, non-prominent view — the top 10 longest streaks ever achieved, each shown with its start date, end date, and length in days, ordered by length (longest first; ties broken toward recency), with the active streak highlighted in place or pinned below the leaderboard when it doesn't rank.** — Archived 2026-06-04 → `context/archive/2026-06-04-habit-insight-metrics/`. Lesson: —.
+(Empty on first generation. `/10x-archive` appends an entry here — and flips the matching item's `Status` to `done` — when a change whose `Change ID` matches a roadmap item is archived. Do NOT pre-populate.)
+
+- **S-01: user can register, land directly on a screen to create their first habit (name, modality, frequency; target count required for weekly/monthly), mark today completed or missed, and see the habit on a modality-grouped list showing the current period's progress against its target — within ~1 minute of signup.** — Archived 2026-06-04 → `context/archive/2026-06-02-create-habit-and-mark-today/`. Lesson: —.
+- **F-01: (foundation) email+password auth works end-to-end — `auth-api` issues access + refresh tokens on register / sign-in / sign-out, `habits-api` verifies them via a real guard (replacing the mock), every authenticated request carries a per-user identity, and the SPA stores the token and gates protected routes.** — Archived 2026-06-04 → `context/archive/2026-05-31-auth-and-session-contract/`. Lesson: —.
+- **S-02: user can open a habit's detail page, see a monthly day-of-week calendar (Monday-first, ISO 8601) with each cell rendering completed / missed / today / unmarked, and select any past day to change its status retroactively with no time-window restriction.** — Archived 2026-06-04 → `context/archive/2026-06-03-habit-calendar-and-backfill/`. Lesson: —.

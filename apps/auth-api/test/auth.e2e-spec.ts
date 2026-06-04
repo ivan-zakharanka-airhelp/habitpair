@@ -1,8 +1,7 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { createTestApp } from './helpers';
 
 function decodeJwtPayload(token: string): { sub: string } {
   return JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
@@ -19,19 +18,7 @@ describe('Auth lifecycle (e2e)', () => {
   let userId: string;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    // Mirror main.ts so e2e exercises the real prefix + validation behavior.
-    app.setGlobalPrefix('auth');
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
-    );
-    await app.init();
-
-    prisma = app.get(PrismaService);
+    ({ app, prisma } = await createTestApp());
     await prisma.user.deleteMany({ where: { email } });
   });
 

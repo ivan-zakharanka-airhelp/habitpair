@@ -1,5 +1,5 @@
 import { habitsApi } from '../../../shared/api/apiClient';
-import type { CreateHabitInput, HabitListItem, MarkStatus } from '../types';
+import type { CreateHabitInput, HabitListItem, MarkStatus, UpdateHabitInput } from '../types';
 
 export async function errorMessage(response: Response): Promise<string> {
   try {
@@ -31,6 +31,26 @@ export async function createHabit(input: CreateHabitInput): Promise<void> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    throw new Error(await errorMessage(response));
+  }
+}
+
+export async function updateHabit(habitId: string, input: UpdateHabitInput): Promise<void> {
+  const response = await habitsApi(`/habits/${habitId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    throw new Error(await errorMessage(response));
+  }
+}
+
+export async function deleteHabit(habitId: string): Promise<void> {
+  const response = await habitsApi(`/habits/${habitId}`, {
+    method: 'DELETE',
   });
   if (!response.ok) {
     throw new Error(await errorMessage(response));
