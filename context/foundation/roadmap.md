@@ -3,7 +3,7 @@ project: habitpair
 version: 1
 status: draft
 created: 2026-05-28
-updated: 2026-05-28
+updated: 2026-06-04
 prd_version: 1
 main_goal: low-complexity
 top_blocker: time
@@ -30,7 +30,7 @@ This is the *north star* — the smallest end-to-end slice whose successful deli
 | ID    | Change ID                   | Outcome (user can …)                                                              | Prerequisites | PRD refs                              | Status   |
 | ----- | --------------------------- | --------------------------------------------------------------------------------- | ------------- | ------------------------------------- | -------- |
 | F-01  | auth-and-session-contract   | (foundation) email+password auth issues + verifies tokens; SPA gates routes       | —             | FR-001, FR-002, FR-003                | ready    |
-| S-01  | create-habit-and-mark-today | create first habit + mark today + see it on the modality-grouped list (≤ ~1 min)  | F-01          | US-01, US-02, FR-004, FR-005, FR-006, FR-009 | proposed |
+| S-01  | create-habit-and-mark-today | create first habit + mark today + see it on the modality-grouped list (≤ ~1 min)  | F-01          | US-01, US-02, FR-004, FR-005, FR-006, FR-009 | done     |
 | S-02  | habit-calendar-and-backfill | open a habit's detail, see the monthly calendar, change any past day retroactively | S-01          | US-03, FR-010, FR-011, FR-012         | proposed |
 | S-03  | habit-insight-metrics       | see current streak, rolling consistency %, adaptive ratio, and longest streak     | S-02          | US-03, FR-013, FR-014, FR-015, FR-016 | proposed |
 | S-04  | edit-and-delete-habit       | edit a habit (structural edit resets the streak) and delete it with a brief undo  | S-03          | FR-007, FR-008                        | proposed |
@@ -76,7 +76,7 @@ Foundations below assume these are present and do NOT re-scaffold them. **Per th
 - **Unknowns:**
   - Mark-control interaction shape (cycle vs. picker) — Owner: design. Block: no (PRD leaves this to design time; not pinned).
 - **Risk:** The largest slice and the activation flow — it introduces the real `Habit` + `Mark` data models (replacing the mock table) and must hit the <300 ms perceived-responsiveness guardrail on the mark interaction. Proving time-to-first-value here is the entire validation bet, so it leads.
-- **Status:** proposed
+- **Status:** done
 
 ### S-02: Habit detail — calendar and retroactive marking
 
@@ -147,3 +147,5 @@ Foundations below assume these are present and do NOT re-scaffold them. **Per th
 ## Done
 
 (Empty on first generation. `/10x-archive` appends an entry here — and flips the matching item's `Status` to `done` — when a change whose `Change ID` matches a roadmap item is archived. Do NOT pre-populate.)
+
+- **S-01: user can register, land directly on a screen to create their first habit (name, modality, frequency; target count required for weekly/monthly), mark today completed or missed, and see the habit on a modality-grouped list showing the current period's progress against its target — within ~1 minute of signup.** — Archived 2026-06-04 → `context/archive/2026-06-02-create-habit-and-mark-today/`. Lesson: —.
