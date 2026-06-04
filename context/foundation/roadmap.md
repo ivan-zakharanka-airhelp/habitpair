@@ -92,14 +92,14 @@ Foundations below assume these are present and do NOT re-scaffold them. **Per th
 
 ### S-03: Habit insight metrics
 
-- **Outcome:** user can see, on a habit's detail page, the current streak, a rolling-window consistency percentage (30 days / 8 weeks / 6 months by frequency), an adaptive early-phase ratio that transitions to a percentage after 14 days of tracking, and — in a secondary, non-prominent view — the top 10 longest streaks ever achieved, each shown with its start date, end date, and length in days, ordered chronologically (most recent first).
+- **Outcome:** user can see, on a habit's detail page, the current streak, a rolling-window consistency percentage (30 days / 8 weeks / 6 months by frequency), an adaptive early-phase ratio that transitions to a percentage after 14 days of tracking, and — in a secondary, non-prominent view — the top 10 longest streaks ever achieved, each shown with its start date, end date, and length in days, ordered by length (longest first; ties broken toward recency), with the active streak highlighted in place or pinned below the leaderboard when it doesn't rank.
 - **Change ID:** habit-insight-metrics
 - **PRD refs:** US-03, FR-013, FR-014, FR-015, FR-016; `## Non-Functional Requirements` (timezone/DST robustness of period rules)
 - **Prerequisites:** S-02
 - **Parallel with:** —
 - **Blockers:** —
 - **Unknowns:**
-  - Visual treatment of the secondary best-streaks view — a proportional bar chart (as in the reference screenshot) vs. a plain dated list — Owner: design. Block: no (the content is fixed: the top 10 longest streaks, each with start/end dates and day count, ordered chronologically; only the rendering is open).
+  - Visual treatment of the secondary best-streaks view — **resolved (S-03):** a collapsed disclosure expanding to a proportional centered-bar chart ordered longest-first, with the active streak highlighted in place or pinned below (with a "to crack the top 10" nudge) when it doesn't rank. Owner: design. Block: no.
 - **Risk:** The heaviest slice — it implements the frequency-aware period-success + streak + rolling-window engine from `## Business Logic`, including the timezone/DST boundary robustness NFR (a corrupted streak from a DST transition is a defect). Retroactive marks from S-02 must recompute correctly across affected ranges. The top-10 best-streaks view (FR-015) raises the bar further: it requires enumerating *every* historical streak run with its date span, not just the single maximum — a superset of the current-streak computation.
 - **Status:** proposed
 
@@ -128,7 +128,7 @@ Foundations below assume these are present and do NOT re-scaffold them. **Per th
 ## Open Roadmap Questions
 
 1. **Is a password-reset flow in MVP scope?** — Owner: user. Block: F-01 scope (non-blocking for launch — PRD permits shipping without it; recommended to resolve before user count crosses single digits).
-2. **What is the precise shape of the "secondary view" for the top-10 best streaks (FR-015)?** — proportional bar chart (as in the reference screenshot) vs. a plain dated list. Owner: design. Block: S-03 (design-owned; non-blocking — any non-prominent placement satisfies the FR).
+2. **What is the precise shape of the "secondary view" for the top-10 best streaks (FR-015)?** — **resolved (S-03):** a collapsed "Best streaks" disclosure expanding to a proportional centered-bar chart, ordered longest-first, with the active streak highlighted in place or pinned below when it doesn't rank. Owner: design. Block: none (resolved).
 3. **Email-verification policy as the user base grows.** — Owner: user, with input from operations. Block: roadmap-wide (post-MVP; non-blocking — MVP ships with immediate-access signup).
 
 ## Parked

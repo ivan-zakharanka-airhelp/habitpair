@@ -1,3 +1,4 @@
+import { localDateFromISO } from './today';
 import type { HabitMetricsResponse, StreakUnit } from '../types';
 
 const UNIT_NOUN: Record<StreakUnit, string> = {
@@ -41,4 +42,16 @@ export function recentCompletionLabel(recent: HabitMetricsResponse['recentComple
   if (recent.percent === null) return '—';
   if (recent.phase === 'RATIO') return `${recent.numerator} of ${recent.denominator}`;
   return `${recent.percent}%`;
+}
+
+// A best-streak boundary date as "Jun 4, 2026". Parse via localDateFromISO (not
+// new Date(iso)) so the displayed day matches the server's date key —
+// new Date('YYYY-MM-DD') is UTC and would shift west of GMT. 'en-US' is explicit
+// (the UI is English-only) so the format is deterministic.
+export function streakDateLabel(iso: string): string {
+  return localDateFromISO(iso).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
 }

@@ -69,7 +69,11 @@ export interface BestStreak {
 export interface HabitMetricsResponse {
   unit: StreakUnit;
   currentStreak: number;
+  // The ongoing run's span (length === currentStreak), or null when no active
+  // streak. Sent independently of bestStreaks so the UI can pin it when it's too
+  // short to make the top 10.
+  currentRun: BestStreak | null;
   rollingConsistency: MetricFraction;
   recentCompletion: MetricFraction & { phase: 'RATIO' | 'PERCENT' };
-  bestStreaks: BestStreak[];
+  bestStreaks: BestStreak[]; // top 10, longest-first (ties broken by recency)
 }

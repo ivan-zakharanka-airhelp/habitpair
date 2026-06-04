@@ -41,9 +41,13 @@ export interface RecentCompletion extends MetricFraction {
 export interface HabitMetrics {
   unit: StreakUnit;
   currentStreak: number;
+  // The ongoing run's span (length === currentStreak), or null when there is no
+  // active streak. Returned independently of bestStreaks so the UI can still pin
+  // the active streak when it is too short to make the top 10.
+  currentRun: BestStreak | null;
   rollingConsistency: MetricFraction;
   recentCompletion: RecentCompletion;
-  bestStreaks: BestStreak[];
+  bestStreaks: BestStreak[]; // top 10 by (length desc, start desc)
 }
 
 export interface MetricsInput {
@@ -78,6 +82,7 @@ export function computeMetrics(input: MetricsInput): HabitMetrics {
     return {
       unit,
       currentStreak: 0,
+      currentRun: null,
       rollingConsistency: { numerator: 0, denominator: 0, percent: null },
       recentCompletion: { numerator: 0, denominator: 0, percent: null, phase: 'RATIO' },
       bestStreaks: [],
@@ -95,15 +100,22 @@ export function computeMetrics(input: MetricsInput): HabitMetrics {
   const window = closed.slice(Math.max(0, closed.length - ROLLING_WINDOW[input.frequency]));
   const ageDays = Math.round((input.today.getTime() - input.anchor.getTime()) / DAY_MS);
 
+  // The ongoing run is the most recent run (runs are chronological); it is the
+  // active streak iff currentStreak > 0 (a pending current period only ever sits
+  // last, so nothing else can be ongoing). Its length equals currentStreak.
+  const runs = collectRuns(periods, input.today);
+  const cs = currentStreak(periods);
+
   return {
     unit,
-    currentStreak: currentStreak(periods),
+    currentStreak: cs,
+    currentRun: cs > 0 ? (runs[runs.length - 1] ?? null) : null,
     rollingConsistency: fraction(window),
     recentCompletion: {
       ...fraction(closed),
       phase: ageDays < RATIO_PHASE_DAYS ? 'RATIO' : 'PERCENT',
     },
-    bestStreaks: bestStreaks(periods, input.today),
+    bestStreaks: topStreaksByLength(runs),
   };
 }
 
@@ -188,10 +200,10 @@ function currentStreak(periods: ClassifiedPeriod[]): number {
   return streak;
 }
 
-// Collect every maximal success-run, select the top 10 by (length desc, start
-// desc) so length-ties break toward recency, then re-sort the selection by
-// start desc for most-recent-first display. The ongoing run is a normal run.
-function bestStreaks(periods: ClassifiedPeriod[], today: Date): BestStreak[] {
+// Every maximal success-run in chronological order (ascending start). The
+// ongoing run, if any, is the last element. Its end is clamped to today so an
+// ongoing weekly/monthly run never shows a future period boundary.
+function collectRuns(periods: ClassifiedPeriod[], today: Date): BestStreak[] {
   const runs: BestStreak[] = [];
   let runStart = -1;
   for (let i = 0; i <= periods.length; i++) {
@@ -202,17 +214,21 @@ function bestStreaks(periods: ClassifiedPeriod[], today: Date): BestStreak[] {
       const last = i - 1;
       runs.push({
         start: formatDateOnly(periods[runStart].start),
-        // Clamp to today so an ongoing run (whose weekly/monthly period boundary
-        // is in the future) never displays a future end date.
         end: formatDateOnly(minDate(periods[last].end, today)),
         length: last - runStart + 1,
       });
       runStart = -1;
     }
   }
+  return runs;
+}
 
-  const top = [...runs].sort((a, b) => b.length - a.length || compareDateDesc(a.start, b.start));
-  return top.slice(0, 10).sort((a, b) => compareDateDesc(a.start, b.start));
+// Top 10 by (length desc, start desc): longest first, length-ties broken toward
+// recency. This is both the selection rule and the display order.
+function topStreaksByLength(runs: BestStreak[]): BestStreak[] {
+  return [...runs]
+    .sort((a, b) => b.length - a.length || compareDateDesc(a.start, b.start))
+    .slice(0, 10);
 }
 
 function fraction(periods: ClassifiedPeriod[]): MetricFraction {

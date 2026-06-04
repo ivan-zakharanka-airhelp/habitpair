@@ -46,6 +46,7 @@ describe('computeMetrics — unit + empty habit', () => {
   it('returns neutral empties for a never-marked habit', () => {
     const m = computeMetrics(input(DAILY, 1, '2026-06-15', []));
     expect(m.currentStreak).toBe(0);
+    expect(m.currentRun).toBeNull();
     expect(m.bestStreaks).toEqual([]);
     expect(m.rollingConsistency).toEqual({ numerator: 0, denominator: 0, percent: null });
     expect(m.recentCompletion).toEqual({
@@ -262,16 +263,16 @@ describe('recentCompletion', () => {
 });
 
 describe('bestStreaks', () => {
-  it('enumerates every run and displays them most-recent-first', () => {
+  it('enumerates every run and displays them longest-first (ties broken by recency)', () => {
     // Runs: Jun 1–3 (3), Jun 5–9 (5), Jun 11–12 (2); today far ahead, all closed.
     const marks = [1, 2, 3, 5, 6, 7, 8, 9, 11, 12].map((n) =>
       mark(`2026-06-${String(n).padStart(2, '0')}`),
     );
     const m = computeMetrics(input(DAILY, 1, '2026-06-30', marks));
     expect(m.bestStreaks).toEqual([
-      { start: '2026-06-11', end: '2026-06-12', length: 2 },
       { start: '2026-06-05', end: '2026-06-09', length: 5 },
       { start: '2026-06-01', end: '2026-06-03', length: 3 },
+      { start: '2026-06-11', end: '2026-06-12', length: 2 },
     ]);
   });
 
@@ -308,6 +309,46 @@ describe('bestStreaks', () => {
       input(MONTHLY, 1, '2026-06-15', [mark('2026-04-01'), mark('2026-05-01'), mark('2026-06-01')]),
     );
     expect(m.bestStreaks).toEqual([{ start: '2026-04-01', end: '2026-06-15', length: 3 }]);
+  });
+});
+
+describe('currentRun', () => {
+  it('returns the ongoing run (and it also appears in bestStreaks when it ranks)', () => {
+    const m = computeMetrics(
+      input(DAILY, 1, '2026-06-15', [mark('2026-06-13'), mark('2026-06-14'), mark('2026-06-15')]),
+    );
+    expect(m.currentRun).toEqual({ start: '2026-06-13', end: '2026-06-15', length: 3 });
+    expect(m.bestStreaks).toContainEqual(m.currentRun);
+  });
+
+  it('is null when there is no active streak', () => {
+    const m = computeMetrics(
+      input(DAILY, 1, '2026-06-15', [
+        mark('2026-06-13'),
+        mark('2026-06-14'),
+        mark('2026-06-15', MISSED),
+      ]),
+    );
+    expect(m.currentStreak).toBe(0);
+    expect(m.currentRun).toBeNull();
+  });
+
+  it('is still returned when the active streak is too short to make the top 10', () => {
+    // Ten closed 3-day runs (1st–3rd of Jan–Oct) fill the top 10; a 2-day ongoing
+    // run (Dec 30–31) is bumped out by length but must survive on currentRun so
+    // the UI can pin it.
+    const past = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].flatMap((mo) => {
+      const mm = String(mo).padStart(2, '0');
+      return [mark(`2026-${mm}-01`), mark(`2026-${mm}-02`), mark(`2026-${mm}-03`)];
+    });
+    const m = computeMetrics(
+      input(DAILY, 1, '2026-12-31', [...past, mark('2026-12-30'), mark('2026-12-31')]),
+    );
+    expect(m.currentStreak).toBe(2);
+    expect(m.bestStreaks).toHaveLength(10);
+    expect(m.bestStreaks.every((s) => s.length === 3)).toBe(true);
+    expect(m.bestStreaks.map((s) => s.start)).not.toContain('2026-12-30');
+    expect(m.currentRun).toEqual({ start: '2026-12-30', end: '2026-12-31', length: 2 });
   });
 });
 

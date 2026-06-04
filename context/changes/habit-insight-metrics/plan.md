@@ -20,9 +20,9 @@ After S-01 (data model + activation) and S-02 (calendar + retroactive marking), 
 
 ## Desired End State
 
-Opening a habit's detail page shows, directly under the title, a compact strip of three numbers: the **current streak** (in the habit's native unit — days/weeks/months), the **rolling consistency %** over the trailing window (30 days / 8 weeks / 6 months), and the **recent-completion** figure (a raw "X of Y" for the habit's first 14 days of tracking, a percentage afterward). Below the calendar, a **"Best streaks"** section sits collapsed by default; expanding it reveals up to ten dated rows — each a past streak's date span and length — ordered most-recent-first. Retroactively changing any past day (S-02) updates all of these numbers. No metric is ever visible for a never-marked habit, and no best-streak appears on the main surface until the user expands the disclosure.
+Opening a habit's detail page shows, directly under the title, a compact strip of three numbers: the **current streak** (in the habit's native unit — days/weeks/months), the **rolling consistency %** over the trailing window (30 days / 8 weeks / 6 months), and the **recent-completion** figure (a raw "X of Y" for the habit's first 14 days of tracking, a percentage afterward). Below the calendar, a **"Best streaks"** section sits collapsed by default; expanding it reveals up to ten dated rows — each a past streak's date span and length — ordered longest-first. Retroactively changing any past day (S-02) updates all of these numbers. No metric is ever visible for a never-marked habit, and no best-streak appears on the main surface until the user expands the disclosure.
 
-Verify by: opening a habit with ≥7 days of marks and confirming the strip matches hand-computed values; backfilling a past day and watching the streak/percentage update; expanding best streaks and confirming the top-10-by-length, most-recent-first ordering; and the backend unit + e2e suites passing across daily/weekly/monthly including a DST window.
+Verify by: opening a habit with ≥7 days of marks and confirming the strip matches hand-computed values; backfilling a past day and watching the streak/percentage update; expanding best streaks and confirming the top-10-by-length, longest-first ordering; and the backend unit + e2e suites passing across daily/weekly/monthly including a DST window.
 
 ### Key Discoveries:
 
@@ -58,7 +58,7 @@ A new pure module `apps/habits-api/src/marks/metrics.ts` builds, once, the chron
 - **Denominators exclude the in-progress current period** and never extend before the anchor. Daily rolling window = the 30 days `[today-30, today-1]` intersected with `[anchor, ∞)`; weekly = the 8 ISO weeks immediately before the current week (≥ anchor week); monthly = the 6 months before the current month (≥ anchor month). Recent-completion uses the same rule but unbounded (all closed periods since the anchor).
 - **`denominator == 0` edge.** A habit whose only mark is today (anchor == current period) has zero closed evaluable periods. Return `percent: null` and let the UI render a neutral "—"; do not divide by zero or show "0 of 0". The current streak can still be `1` in this state (today counts) — that combination is expected.
 - **Best-streak date spans.** `start` = the first success period's start-of-period date; `end` = the last success period's end-of-period date, **clamped to `today`** so an ongoing run (whose current period boundary is in the future for weekly/monthly) never displays a future end date. `length` is the count of consecutive success periods in the habit's native unit.
-- **Top-10 selection vs display order are different sorts.** Select by `(length desc, start desc)` and take 10; then re-sort those 10 by `start desc` for display (most recent first). The ongoing run is included as a normal run.
+- **Top 10 by length, displayed longest-first.** Select and display by the same `(length desc, start desc)` sort — longest first, length-ties broken toward recency. The ongoing run is included as a normal run. The active run is **also** returned separately (`currentRun`) regardless of rank, so the UI can pin it below the leaderboard when it is too short to make the top 10 (with a "N <unit> to crack the top 10" nudge, where N = #10's length − current length, since the active run is the most recent and so only needs to *reach* #10's length to take the slot).
 - **DST / timezone.** All boundary math goes through `period.ts`'s UTC-getter helpers — never `getDate()`/`new Date('YYYY-MM-DD')` without the explicit `Z`. Mirror `period.spec.ts`'s DST-window test in `metrics.spec.ts`.
 
 ## Phase 1: Backend metrics engine, endpoint, and spec reconciliation
@@ -90,9 +90,10 @@ type StreakUnit = 'DAY' | 'WEEK' | 'MONTH';
 interface HabitMetrics {
   unit: StreakUnit;                 // derived from frequency; unit for all streak lengths
   currentStreak: number;            // consecutive successful periods ending now (0 if none)
+  currentRun: { start: string; end: string; length: number } | null; // active run regardless of rank; null if none
   rollingConsistency: { numerator: number; denominator: number; percent: number | null };
   recentCompletion:  { numerator: number; denominator: number; percent: number | null; phase: 'RATIO' | 'PERCENT' };
-  bestStreaks: Array<{ start: string; end: string; length: number }>; // YYYY-MM-DD; top 10; most-recent-first
+  bestStreaks: Array<{ start: string; end: string; length: number }>; // YYYY-MM-DD; top 10; longest-first
 }
 ```
 
@@ -130,7 +131,7 @@ If `startOfIsoWeek`/`startOfMonth`/`endOfIsoWeek`/`endOfMonth`/`addUtcDays` need
 
 **Intent**: Lock every semantic decision and the DST/consistency invariants.
 
-**Contract**: Unit specs (mirroring `period.spec.ts` style) covering, per frequency: current-streak edges (today completed/unmarked/missed; in-progress weekly meeting vs not meeting target; break on a gap); rolling-consistency denominators (young habit shorter than window; in-progress excluded; window boundaries exact); recent-completion (ratio→percent transition at exactly 14 days; anchor at first mark; `denominator == 0` → null); best-streaks (enumerate all runs, top-10-by-length with tie-break, most-recent-first display, ongoing run included, end-date clamped to today, native unit); a DST-window round-trip; and a consistency check that classification agrees with `computedMissedDates`/`closedPeriodFailures`. E2e: `GET …/metrics` returns 200 + shape for an owned habit, **404** for another user's habit, **400** for a malformed `today`, **401** unauthenticated.
+**Contract**: Unit specs (mirroring `period.spec.ts` style) covering, per frequency: current-streak edges (today completed/unmarked/missed; in-progress weekly meeting vs not meeting target; break on a gap); rolling-consistency denominators (young habit shorter than window; in-progress excluded; window boundaries exact); recent-completion (ratio→percent transition at exactly 14 days; anchor at first mark; `denominator == 0` → null); best-streaks (enumerate all runs, top-10-by-length with tie-break, longest-first display, ongoing run included, end-date clamped to today, native unit); a DST-window round-trip; and a consistency check that classification agrees with `computedMissedDates`/`closedPeriodFailures`. E2e: `GET …/metrics` returns 200 + shape for an owned habit, **404** for another user's habit, **400** for a malformed `today`, **401** unauthenticated.
 
 ### Success Criteria:
 
@@ -240,7 +241,7 @@ Surface the top-10 best streaks in a collapsed, non-prominent disclosure below t
 
 **Intent**: A collapsed-by-default disclosure that expands to a dated list of up to ten past streaks.
 
-**Contract**: Props take the `bestStreaks` array + `unit` (reuse the metrics query result already loaded for the strip — do not issue a second request). Collapsed state shows only a toggle labelled "Best streaks"; expanded, it lists each run as date-span + native-unit length (via `metricsFormat`), in the order returned (most-recent-first). Empty list → the disclosure shows nothing or a quiet "No streaks yet". Use a native `<details>`/`<summary>` or an accessible button-toggled region (keyboard-operable per the accessibility baseline). Satisfies the NFR: nothing best-streak-related is visible until the user expands it.
+**Contract**: Props take the `bestStreaks` array + `unit` (reuse the metrics query result already loaded for the strip — do not issue a second request). Collapsed state shows only a toggle labelled "Best streaks"; expanded, it lists each run as date-span + native-unit length (via `metricsFormat`), in the order returned (longest-first). Empty list → the disclosure shows nothing or a quiet "No streaks yet". Use a native `<details>`/`<summary>` or an accessible button-toggled region (keyboard-operable per the accessibility baseline). Satisfies the NFR: nothing best-streak-related is visible until the user expands it.
 
 #### 2. Wire into the detail page
 
@@ -262,7 +263,7 @@ Surface the top-10 best streaks in a collapsed, non-prominent disclosure below t
 #### Manual Verification:
 
 - The "Best streaks" section is collapsed on load and absent from the main surface until expanded (NFR check).
-- Expanded, it shows the correct top-10-by-length runs, most-recent-first, with accurate date spans and unit-appropriate lengths for daily/weekly/monthly habits (preview).
+- Expanded, it shows the correct top-10-by-length runs, longest-first, with accurate date spans and unit-appropriate lengths for daily/weekly/monthly habits (preview).
 - Keyboard-only: the disclosure is reachable and toggwleable via Tab + Enter/Space.
 - The ongoing streak (if any) appears with an end date clamped to today, not a future date.
 
@@ -277,7 +278,7 @@ Surface the top-10 best streaks in a collapsed, non-prominent disclosure below t
 - **Streak**: daily today completed/unmarked/missed; gap breaks; weekly/monthly current period meeting vs not meeting target; zero-mark habit → 0.
 - **Rolling consistency**: window boundaries exact; habit younger than window; in-progress period excluded; `denominator == 0` → null.
 - **Recent completion**: ratio while < 14 days, percent at/after 14 days (test the exact boundary); anchor at first mark; `denominator == 0` → null.
-- **Best streaks**: enumerate all runs; top-10-by-length with tie-break by recency; display order most-recent-first; ongoing run included; end clamped to today; native unit (days/weeks/months).
+- **Best streaks**: enumerate all runs; top-10-by-length with tie-break by recency; display order longest-first; ongoing run included; end clamped to today; native unit (days/weeks/months).
 - **DST**: a window straddling a DST transition produces no off-by-one (mirror `period.spec.ts`).
 - **Consistency invariant**: metrics classification agrees with `computedMissedDates` / `closedPeriodFailures` over a shared range.
 
@@ -296,7 +297,7 @@ Surface the top-10 best streaks in a collapsed, non-prominent disclosure below t
 1. Seed a daily habit with a known pattern (e.g., 10 days, two gaps); open detail; confirm streak, rolling %, and ratio match hand calculation.
 2. Backfill a gap day to `COMPLETED`; confirm the streak and % update live.
 3. Repeat for a weekly (2×/week) and a monthly habit, including an in-progress current period that has/has-not met target.
-4. Expand "Best streaks"; confirm top-10-by-length, most-recent-first, correct spans and units.
+4. Expand "Best streaks"; confirm top-10-by-length, longest-first, correct spans and units.
 5. New habit with zero/one mark: confirm neutral empty states.
 6. Keyboard-only pass over the strip and the disclosure.
 
@@ -340,29 +341,29 @@ Each metrics request reads all of a habit's marks (`{date, status}`, ordered by 
 
 #### Automated
 
-- [x] 2.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
-- [x] 2.2 Frontend tests pass: `npm run test -w @habitpair/web`
-- [x] 2.3 Build passes: `npm run build -w @habitpair/web`
-- [x] 2.4 Lint passes: `make lint`
+- [x] 2.1 Typecheck passes: `npm run typecheck -w @habitpair/web` — 36e9e19
+- [x] 2.2 Frontend tests pass: `npm run test -w @habitpair/web` — 36e9e19
+- [x] 2.3 Build passes: `npm run build -w @habitpair/web` — 36e9e19
+- [x] 2.4 Lint passes: `make lint` — 36e9e19
 
 #### Manual
 
-- [x] 2.5 Strip renders correct streak / % / ratio for daily/weekly/monthly (preview)
-- [x] 2.6 Marking today and backfilling a past day update the strip live
-- [x] 2.7 Brand-new habit shows a neutral empty state (no "0 of 0" / NaN%)
+- [x] 2.5 Strip renders correct streak / % / ratio for daily/weekly/monthly (preview) — 36e9e19
+- [x] 2.6 Marking today and backfilling a past day update the strip live — 36e9e19
+- [x] 2.7 Brand-new habit shows a neutral empty state (no "0 of 0" / NaN%) — 36e9e19
 
 ### Phase 3: Best-streaks secondary view
 
 #### Automated
 
-- [ ] 3.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
-- [ ] 3.2 Frontend tests pass: `npm run test -w @habitpair/web`
-- [ ] 3.3 Build passes: `npm run build -w @habitpair/web`
-- [ ] 3.4 Lint passes: `make lint`
+- [x] 3.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
+- [x] 3.2 Frontend tests pass: `npm run test -w @habitpair/web`
+- [x] 3.3 Build passes: `npm run build -w @habitpair/web`
+- [x] 3.4 Lint passes: `make lint`
 
 #### Manual
 
-- [ ] 3.5 "Best streaks" is collapsed on load and absent from the main surface until expanded (NFR)
-- [ ] 3.6 Expanded list shows correct top-10-by-length, most-recent-first, accurate spans/units
-- [ ] 3.7 Keyboard-only: disclosure reachable and toggleable via Tab + Enter/Space
-- [ ] 3.8 Ongoing streak shows an end date clamped to today, not a future date
+- [x] 3.5 "Best streaks" is collapsed on load and absent from the main surface until expanded (NFR)
+- [x] 3.6 Expanded list shows correct top-10-by-length, longest-first, accurate spans/units
+- [x] 3.7 Keyboard-only: disclosure reachable and toggleable via Tab + Enter/Space
+- [x] 3.8 Ongoing streak shows an end date clamped to today, not a future date

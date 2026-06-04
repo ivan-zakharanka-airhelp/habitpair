@@ -1,4 +1,4 @@
-import { useHabitMetrics } from '../hooks/useHabitMetrics';
+import type { UseQueryResult } from '@tanstack/react-query';
 import {
   percentLabel,
   recentCompletionLabel,
@@ -31,9 +31,9 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   );
 }
 
-export function HabitMetrics({ habitId, today }: { habitId: string; today: string }) {
-  const query = useHabitMetrics(habitId, today);
-
+// The query is owned by HabitDetail and shared with BestStreaks so a single
+// useHabitMetrics call feeds both surfaces (no duplicate fetch).
+export function HabitMetrics({ query }: { query: UseQueryResult<HabitMetricsResponse> }) {
   if (query.isPending) {
     return <div aria-hidden className="mt-3 h-16 animate-pulse rounded bg-gray-100" />;
   }

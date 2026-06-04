@@ -3,6 +3,7 @@ import {
   percentLabel,
   recentCompletionLabel,
   rollingWindowLabel,
+  streakDateLabel,
   streakLabel,
 } from './metricsFormat';
 
@@ -52,5 +53,12 @@ describe('recentCompletionLabel', () => {
     expect(
       recentCompletionLabel({ numerator: 18, denominator: 30, percent: 60, phase: 'PERCENT' }),
     ).toBe('60%');
+  });
+});
+
+describe('streakDateLabel', () => {
+  it('formats an ISO date as a short, locale-stable label', () => {
+    expect(streakDateLabel('2026-01-05')).toBe('Jan 5, 2026');
+    expect(streakDateLabel('2026-12-31')).toBe('Dec 31, 2026');
   });
 });

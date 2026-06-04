@@ -299,6 +299,7 @@ describe('Habits API (e2e)', () => {
         phase: 'RATIO',
       });
       expect(res.body.bestStreaks).toEqual([{ start: '2026-06-13', end: '2026-06-14', length: 2 }]);
+      expect(res.body.currentRun).toEqual({ start: '2026-06-13', end: '2026-06-14', length: 2 });
     });
 
     it('computes the weekly metrics read-model (closed under-target week breaks the streak)', async () => {
@@ -319,6 +320,7 @@ describe('Habits API (e2e)', () => {
 
       expect(res.body.unit).toBe('WEEK');
       expect(res.body.currentStreak).toBe(0); // closed Jun 8–14 failed
+      expect(res.body.currentRun).toBeNull();
       expect(res.body.rollingConsistency).toEqual({ numerator: 1, denominator: 2, percent: 50 });
       expect(res.body.recentCompletion).toEqual({
         numerator: 1,

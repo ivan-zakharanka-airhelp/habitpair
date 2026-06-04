@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useCycleMark } from '../hooks/useCycleMark';
 import { useHabitCalendar } from '../hooks/useHabitCalendar';
+import { useHabitMetrics } from '../hooks/useHabitMetrics';
 import { calendarDisplay, calendarQueryRange, currentMonth } from '../lib/calendarRange';
 import { todayLocalISO } from '../lib/today';
 import type { CalendarSpan } from '../types';
+import { BestStreaks } from './BestStreaks';
 import { CalendarNav } from './CalendarNav';
 import { HabitCalendar } from './HabitCalendar';
 import { HabitMetrics } from './HabitMetrics';
@@ -27,6 +29,8 @@ export function HabitDetail({ habitId }: { habitId: string }) {
   const query = useHabitCalendar(habitId, range.fromMonth, range.toMonth, today);
   // Window-bound so optimistic writes + invalidation target the active calendar key.
   const cycleMark = useCycleMark(habitId, range.fromMonth, range.toMonth, today);
+  // One metrics query feeds both the strip and the best-streaks disclosure.
+  const metricsQuery = useHabitMetrics(habitId, today);
 
   if (query.isPending) {
     return <p className="mt-6 text-gray-600">Loading calendar…</p>;
@@ -54,7 +58,7 @@ export function HabitDetail({ habitId }: { habitId: string }) {
         {frequencyText(habit.frequency, habit.targetCount)}
       </p>
 
-      <HabitMetrics habitId={habitId} today={today} />
+      <HabitMetrics query={metricsQuery} />
 
       <div className="mt-4 flex flex-wrap items-center gap-4">
         <SpanControl value={span} onChange={setSpan} allEnabled={firstMarkDate != null} />
@@ -75,6 +79,14 @@ export function HabitDetail({ habitId }: { habitId: string }) {
           cycleMark={cycleMark}
         />
       </div>
+
+      {metricsQuery.data ? (
+        <BestStreaks
+          bestStreaks={metricsQuery.data.bestStreaks}
+          unit={metricsQuery.data.unit}
+          currentRun={metricsQuery.data.currentRun}
+        />
+      ) : null}
     </main>
   );
 }
