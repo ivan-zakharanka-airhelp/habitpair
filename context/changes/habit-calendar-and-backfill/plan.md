@@ -357,33 +357,33 @@ None — no schema change. The `Mark` model, `@@unique([habitId, date])`, and wr
 
 #### Automated
 
-- [x] 2.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
-- [x] 2.2 Lint passes: `npm run lint -w @habitpair/web`
-- [x] 2.3 Existing tests stay green: `npm run test -w @habitpair/web`
-- [x] 2.4 Build passes: `npm run build -w @habitpair/web`
+- [x] 2.1 Typecheck passes: `npm run typecheck -w @habitpair/web` — 502823c
+- [x] 2.2 Lint passes: `npm run lint -w @habitpair/web` — 502823c
+- [x] 2.3 Existing tests stay green: `npm run test -w @habitpair/web` — 502823c
+- [x] 2.4 Build passes: `npm run build -w @habitpair/web` — 502823c
 
 #### Manual
 
-- [x] 2.5 List row info-area opens detail; mark-today button still works and does not navigate
-- [x] 2.6 Default 3 months; SpanControl switches 6 / 12 / All; All spans first-mark → today (capped 24mo)
-- [x] 2.7 Prev/next + month-year jump page back without limit; a month before the first mark is reachable; forward stops at current month
-- [x] 2.8 Monday-first ISO columns; 5–6 rows per month
-- [x] 2.9 Coloring matches backend (✓ completed, ✗ explicit + daily computed, period tint, today marker, neutral before anchor / in-progress)
-- [x] 2.10 Future days disabled; responsive single-column on mobile
+- [x] 2.5 List row info-area opens detail; mark-today button still works and does not navigate — 502823c
+- [x] 2.6 Default 3 months; SpanControl switches 6 / 12 / All; All spans first-mark → today (capped 24mo) — 502823c
+- [x] 2.7 Prev/next + month-year jump page back without limit; a month before the first mark is reachable; forward stops at current month — 502823c
+- [x] 2.8 Monday-first ISO columns; 5–6 rows per month — 502823c
+- [x] 2.9 Coloring matches backend (✓ completed, ✗ explicit + daily computed, period tint, today marker, neutral before anchor / in-progress) — 502823c
+- [x] 2.10 Future days disabled; responsive single-column on mobile — 502823c
 
 ### Phase 3: Retroactive marking (3-state cycle)
 
 #### Automated
 
-- [ ] 3.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
-- [ ] 3.2 Lint passes: `npm run lint -w @habitpair/web`
-- [ ] 3.3 Existing tests stay green: `npm run test -w @habitpair/web`
-- [ ] 3.4 Build passes: `npm run build -w @habitpair/web`
+- [x] 3.1 Typecheck passes: `npm run typecheck -w @habitpair/web`
+- [x] 3.2 Lint passes: `npm run lint -w @habitpair/web`
+- [x] 3.3 Existing tests stay green: `npm run test -w @habitpair/web`
+- [x] 3.4 Build passes: `npm run build -w @habitpair/web`
 
 #### Manual
 
-- [ ] 3.5 Click cycles unmarked → completed → missed → unmarked; persists across reload
-- [ ] 3.6 Daily computed-missed day becomes completed on first click (cycle uses stored state)
-- [ ] 3.7 Marking inside the current period updates list progress (cache invalidated)
-- [ ] 3.8 Optimistic update feels instant; simulated failure rolls back
-- [ ] 3.9 Future days remain non-interactive
+- [x] 3.5 Click cycles unmarked → completed → missed → unmarked; persists across reload
+- [x] 3.6 Daily computed-missed day becomes completed on first click (cycle uses stored state)
+- [x] 3.7 Marking inside the current period updates list progress (cache invalidated)
+- [x] 3.8 Optimistic update feels instant; simulated failure rolls back
+- [x] 3.9 Future days remain non-interactive

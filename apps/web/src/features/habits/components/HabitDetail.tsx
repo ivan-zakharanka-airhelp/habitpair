@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
+import { useCycleMark } from '../hooks/useCycleMark';
 import { useHabitCalendar } from '../hooks/useHabitCalendar';
 import { calendarDisplay, calendarQueryRange, currentMonth } from '../lib/calendarRange';
 import { todayLocalISO } from '../lib/today';
@@ -23,6 +24,8 @@ export function HabitDetail({ habitId }: { habitId: string }) {
   // anchor (firstMarkDate) comes back with the data and only shapes the display.
   const range = calendarQueryRange(span, endMonth);
   const query = useHabitCalendar(habitId, range.fromMonth, range.toMonth, today);
+  // Window-bound so optimistic writes + invalidation target the active calendar key.
+  const cycleMark = useCycleMark(habitId, range.fromMonth, range.toMonth, today);
 
   if (query.isPending) {
     return <p className="mt-6 text-gray-600">Loading calendar…</p>;
@@ -66,6 +69,7 @@ export function HabitDetail({ habitId }: { habitId: string }) {
           data={data}
           numberOfMonths={display.numberOfMonths}
           startMonth={display.startMonth}
+          cycleMark={cycleMark}
         />
       </div>
     </main>

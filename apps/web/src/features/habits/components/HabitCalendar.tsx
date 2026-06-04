@@ -1,4 +1,5 @@
 import { DayPicker, type DayProps } from 'react-day-picker';
+import type { CycleMarkMutation } from '../hooks/useCycleMark';
 import { localDateFromISO, localKey, todayLocalDate } from '../lib/today';
 import type { HabitCalendarResponse } from '../types';
 
@@ -66,13 +67,19 @@ interface HabitCalendarProps {
   data: HabitCalendarResponse;
   numberOfMonths: number;
   startMonth: Date;
+  cycleMark: CycleMarkMutation;
 }
 
-// Read-only this phase — no onDayClick wiring yet (Phase 3). The window is driven
-// externally via `startMonth` (controlled `month`), so built-in nav is hidden.
-export function HabitCalendar({ data, numberOfMonths, startMonth }: HabitCalendarProps) {
+// Setting `onDayClick` flips react-day-picker into interactive mode, so each
+// non-hidden cell's `children` becomes a clickable DayButton (HabitDay still wraps
+// it + paints the status). Clicks cycle the *stored* mark, never the displayed
+// color: a daily computed-missed day (red, unmarked) starts the cycle at absent.
+// The window is driven externally via `startMonth` (controlled `month`), so the
+// built-in nav stays hidden.
+export function HabitCalendar({ data, numberOfMonths, startMonth, cycleMark }: HabitCalendarProps) {
   const today = todayLocalDate();
   const { completed, missed, failedPeriod } = buildStatusSets(data);
+  const pendingDate = cycleMark.isPending ? cycleMark.variables?.date : undefined;
 
   return (
     <DayPicker
@@ -87,6 +94,14 @@ export function HabitCalendar({ data, numberOfMonths, startMonth }: HabitCalenda
         completed: (date: Date) => completed.has(localKey(date)),
         missed: (date: Date) => missed.has(localKey(date)),
         failedPeriod: (date: Date) => failedPeriod.has(localKey(date)),
+      }}
+      onDayClick={(date, modifiers) => {
+        if (modifiers.disabled) return;
+        const key = localKey(date);
+        // One in-flight mutation per cell — a repeat click would cycle from a stale
+        // stored status and race the pending write. Other cells stay clickable.
+        if (pendingDate === key) return;
+        cycleMark.mutate({ date: key, storedStatus: data.marks[key] ?? null });
       }}
       components={{ Day: HabitDay }}
     />

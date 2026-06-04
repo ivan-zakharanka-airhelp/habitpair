@@ -4,14 +4,14 @@ const OPTIONS: { value: CalendarSpan; label: string }[] = [
   { value: '3', label: '3 mo' },
   { value: '6', label: '6 mo' },
   { value: '12', label: '12 mo' },
-  { value: 'all', label: 'All' },
+  { value: 'all', label: '2 yr' },
 ];
 
 interface SpanControlProps {
   value: CalendarSpan;
   onChange: (span: CalendarSpan) => void;
-  // 'All' needs the first-mark anchor to bound its window; disable it until the
-  // habit has at least one mark so the span can never resolve to no window.
+  // The '2 yr' ('all') span needs the first-mark anchor to bound its window;
+  // disable it until the habit has a mark so the span can never resolve to none.
   allEnabled: boolean;
 }
 
