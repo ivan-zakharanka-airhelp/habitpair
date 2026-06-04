@@ -5,6 +5,7 @@ import {
   rollingWindowLabel,
   streakDateLabel,
   streakLabel,
+  streakRangeLabel,
 } from './metricsFormat';
 
 describe('streakLabel', () => {
@@ -60,5 +61,19 @@ describe('streakDateLabel', () => {
   it('formats an ISO date as a short, locale-stable label', () => {
     expect(streakDateLabel('2026-01-05')).toBe('Jan 5, 2026');
     expect(streakDateLabel('2026-12-31')).toBe('Dec 31, 2026');
+  });
+});
+
+describe('streakRangeLabel', () => {
+  it('shares the year for a same-year range', () => {
+    expect(streakRangeLabel('2026-04-21', '2026-04-30')).toBe('Apr 21 – Apr 30, 2026');
+  });
+
+  it('shows both years across a year boundary', () => {
+    expect(streakRangeLabel('2025-12-28', '2026-01-03')).toBe('Dec 28, 2025 – Jan 3, 2026');
+  });
+
+  it('collapses a single-period run to one date', () => {
+    expect(streakRangeLabel('2026-04-21', '2026-04-21')).toBe('Apr 21, 2026');
   });
 });

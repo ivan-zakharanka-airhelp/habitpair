@@ -19,3 +19,7 @@ During Phase 3 manual review the user changed two best-streaks decisions from th
 - **Active-streak pinning + proportional bars.** The view renders proportional centered bars (width ∝ length). The active streak is highlighted in place when it ranks in the top 10, or **pinned distinctly below** the leaderboard (dashed, with a "N <unit> to crack the top 10" nudge) when it's too short to rank — so current progress stays visible without distorting the all-time leaderboard.
 
 Backend impact: `computeMetrics` now returns `currentRun: {start,end,length} | null` (the active run regardless of top-10 rank) alongside `bestStreaks`, so the SPA can pin it. This reopened the Phase-1 metrics contract (additive field + tests).
+
+### 2026-06-04 — Best-streaks layout fix (mobile + true proportionality)
+
+Follow-up after preview review: the first cut wedged the bar between flanking dates and used `min-w-fit`, which on a narrow mobile track floored every bar near its label width — and the active run's "Current" badge inflated its floor so the 4-day current bar rendered *wider* than longer runs. Reworked to a **stacked** layout: a label line (date range · length · "Current" badge) above a **full-width track with a proportional fill** (`width = length / maxLength`). Fill width is now exactly proportional at every screen size; the bar is purely visual (no in-bar text), so it never floors. Date ranges share the year when both ends match ("Apr 21 – Apr 30, 2026"). Not centered anymore — full-width bars read better on mobile.

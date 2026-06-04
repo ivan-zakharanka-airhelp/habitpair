@@ -44,14 +44,26 @@ export function recentCompletionLabel(recent: HabitMetricsResponse['recentComple
   return `${recent.percent}%`;
 }
 
-// A best-streak boundary date as "Jun 4, 2026". Parse via localDateFromISO (not
-// new Date(iso)) so the displayed day matches the server's date key —
-// new Date('YYYY-MM-DD') is UTC and would shift west of GMT. 'en-US' is explicit
-// (the UI is English-only) so the format is deterministic.
+// Parse via localDateFromISO (not new Date(iso)) so the displayed day matches the
+// server's date key — new Date('YYYY-MM-DD') is UTC and would shift west of GMT.
+// 'en-US' is explicit (the UI is English-only) so the format is deterministic.
+function fmtDate(iso: string, opts: Intl.DateTimeFormatOptions): string {
+  return localDateFromISO(iso).toLocaleDateString('en-US', opts);
+}
+
+// A best-streak boundary date as "Jun 4, 2026".
 export function streakDateLabel(iso: string): string {
-  return localDateFromISO(iso).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  return fmtDate(iso, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// A best-streak's date range. Collapses a single-period run to one date, and
+// drops the redundant start-year when both ends share a year:
+// "Apr 21 – Apr 30, 2026", but "Dec 28, 2025 – Jan 3, 2026" across a boundary.
+export function streakRangeLabel(start: string, end: string): string {
+  if (start === end) return streakDateLabel(start);
+  const startLabel =
+    start.slice(0, 4) === end.slice(0, 4)
+      ? fmtDate(start, { month: 'short', day: 'numeric' })
+      : streakDateLabel(start);
+  return `${startLabel} – ${streakDateLabel(end)}`;
 }

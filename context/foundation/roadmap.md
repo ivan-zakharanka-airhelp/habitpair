@@ -99,7 +99,7 @@ Foundations below assume these are present and do NOT re-scaffold them. **Per th
 - **Parallel with:** —
 - **Blockers:** —
 - **Unknowns:**
-  - Visual treatment of the secondary best-streaks view — **resolved (S-03):** a collapsed disclosure expanding to a proportional centered-bar chart ordered longest-first, with the active streak highlighted in place or pinned below (with a "to crack the top 10" nudge) when it doesn't rank. Owner: design. Block: no.
+  - Visual treatment of the secondary best-streaks view — **resolved (S-03):** a collapsed disclosure expanding to a proportional bar chart (full-width bars, labelled above) ordered longest-first, with the active streak highlighted in place or pinned below (with a "to crack the top 10" nudge) when it doesn't rank. Owner: design. Block: no.
 - **Risk:** The heaviest slice — it implements the frequency-aware period-success + streak + rolling-window engine from `## Business Logic`, including the timezone/DST boundary robustness NFR (a corrupted streak from a DST transition is a defect). Retroactive marks from S-02 must recompute correctly across affected ranges. The top-10 best-streaks view (FR-015) raises the bar further: it requires enumerating *every* historical streak run with its date span, not just the single maximum — a superset of the current-streak computation.
 - **Status:** proposed
 
@@ -128,7 +128,7 @@ Foundations below assume these are present and do NOT re-scaffold them. **Per th
 ## Open Roadmap Questions
 
 1. **Is a password-reset flow in MVP scope?** — Owner: user. Block: F-01 scope (non-blocking for launch — PRD permits shipping without it; recommended to resolve before user count crosses single digits).
-2. **What is the precise shape of the "secondary view" for the top-10 best streaks (FR-015)?** — **resolved (S-03):** a collapsed "Best streaks" disclosure expanding to a proportional centered-bar chart, ordered longest-first, with the active streak highlighted in place or pinned below when it doesn't rank. Owner: design. Block: none (resolved).
+2. **What is the precise shape of the "secondary view" for the top-10 best streaks (FR-015)?** — **resolved (S-03):** a collapsed "Best streaks" disclosure expanding to a proportional bar chart (full-width bars), ordered longest-first, with the active streak highlighted in place or pinned below when it doesn't rank. Owner: design. Block: none (resolved).
 3. **Email-verification policy as the user base grows.** — Owner: user, with input from operations. Block: roadmap-wide (post-MVP; non-blocking — MVP ships with immediate-access signup).
 
 ## Parked

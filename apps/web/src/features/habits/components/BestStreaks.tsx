@@ -1,65 +1,62 @@
-import { streakDateLabel, streakLabel } from '../lib/metricsFormat';
+import { streakLabel, streakRangeLabel } from '../lib/metricsFormat';
 import type { BestStreak, StreakUnit } from '../types';
 
-const ROW_GRID =
-  'grid grid-cols-[5rem_1fr_5rem] items-center gap-2 text-xs leading-tight text-gray-500 sm:grid-cols-[6.5rem_1fr_6.5rem] sm:gap-3 sm:text-sm';
+// Floor the rendered fill so a very short run still shows a visible nub without
+// distorting the larger bars (whose ratios dominate anyway).
+const MIN_FILL_PERCENT = 4;
 
-// One run row: start date · centered proportional bar (width ∝ length vs. the
-// longest run shown) · end date. `variant` drives emphasis: a plain leaderboard
-// run, the active run when it's on the leaderboard ("current"), or the active run
-// pinned below it ("pinned", dashed outline).
+// One run: a label line (date range · length, with a "Current" badge for the
+// active run) above a full-width track whose fill width is proportional to the
+// run's length vs. the longest run shown. Stacking the bar on its own full-width
+// line (rather than wedged between the dates) keeps proportions readable on
+// narrow screens and makes the fill *exactly* proportional — the length text no
+// longer floors the bar width.
 function StreakRow({
   streak,
   unit,
-  widthPercent,
+  maxLength,
   variant,
 }: {
   streak: BestStreak;
   unit: StreakUnit;
-  widthPercent: number;
-  variant: 'plain' | 'current' | 'pinned';
+  maxLength: number;
+  variant: 'plain' | 'current';
 }) {
-  const barClass =
-    variant === 'current'
-      ? 'bg-green-600 text-white'
-      : variant === 'pinned'
-        ? 'border border-dashed border-green-600 text-green-800'
-        : 'bg-green-200 text-green-900';
+  const fillPercent = Math.max(MIN_FILL_PERCENT, Math.round((streak.length / maxLength) * 100));
   return (
-    <div className={ROW_GRID}>
-      <span className="text-right tabular-nums">{streakDateLabel(streak.start)}</span>
-      <div className="flex justify-center">
-        <div
-          className={`flex h-7 min-w-fit items-center justify-center gap-1.5 rounded px-2.5 font-semibold whitespace-nowrap ${barClass}`}
-          style={{ width: `${widthPercent}%` }}
-        >
-          <span>{streakLabel(streak.length, unit)}</span>
-          {variant !== 'plain' ? (
-            <span
-              className={`rounded px-1 text-[10px] tracking-wide uppercase ${
-                variant === 'pinned' ? 'bg-green-600 text-white' : 'bg-white/25 text-white'
-              }`}
-            >
+    <div>
+      <div className="flex items-baseline justify-between gap-2 text-xs sm:text-sm">
+        <span className="text-gray-500 tabular-nums">
+          {streakRangeLabel(streak.start, streak.end)}
+        </span>
+        <span className="flex items-center gap-1.5 font-semibold text-gray-900">
+          {streakLabel(streak.length, unit)}
+          {variant === 'current' ? (
+            <span className="rounded bg-green-600 px-1 text-[10px] tracking-wide text-white uppercase">
               Current
             </span>
           ) : null}
-        </div>
+        </span>
       </div>
-      <span className="text-left tabular-nums">{streakDateLabel(streak.end)}</span>
+      <div className="mt-1 h-2.5 w-full overflow-hidden rounded bg-gray-100">
+        <div
+          className={`h-full rounded ${variant === 'current' ? 'bg-green-600' : 'bg-green-400'}`}
+          style={{ width: `${fillPercent}%` }}
+        />
+      </div>
     </div>
   );
 }
 
 // A collapsed-by-default disclosure of the habit's top-10 longest runs, ordered
-// longest-first (ties broken by recency — see computeMetrics). Each run is a
-// centered bar whose width is proportional to its length so magnitudes compare at
-// a glance, flanked by its start/end dates. The active run is accented + labelled
-// "Current": in place when it makes the top 10, or pinned below the leaderboard
-// (dashed, with a "N to crack the top 10" nudge) when it's too short to rank — so
-// immediate progress stays visible without polluting the leaderboard. Native
-// <details>/<summary> keeps it keyboard-operable and honors the NFR. Fed from the
-// metrics query already loaded by the strip (no extra fetch); an empty list
-// (never-marked or only-missed habit) renders nothing.
+// longest-first (ties by recency — see computeMetrics). Each run is a labelled,
+// full-width proportional bar so magnitudes compare at a glance. The active run is
+// accented + badged "Current": in place when it makes the top 10, or pinned below
+// the leaderboard (after a dashed divider, with a "N to crack the top 10" nudge)
+// when it's too short to rank — so immediate progress stays visible without
+// distorting the leaderboard. Native <details>/<summary> keeps it keyboard-operable
+// and honors the NFR. Fed from the metrics query already loaded by the strip (no
+// extra fetch); an empty list (never-marked or only-missed habit) renders nothing.
 export function BestStreaks({
   bestStreaks,
   unit,
@@ -85,13 +82,13 @@ export function BestStreaks({
       <summary className="cursor-pointer text-sm font-medium text-gray-700 select-none">
         Best streaks
       </summary>
-      <ol className="mt-3 space-y-1.5">
+      <ol className="mt-3 space-y-2.5">
         {bestStreaks.map((streak) => (
           <li key={`${streak.start}:${streak.end}`}>
             <StreakRow
               streak={streak}
               unit={unit}
-              widthPercent={Math.round((streak.length / maxLength) * 100)}
+              maxLength={maxLength}
               variant={
                 currentRun != null && streak.start === currentRun.start ? 'current' : 'plain'
               }
@@ -100,14 +97,9 @@ export function BestStreaks({
         ))}
       </ol>
       {pinned ? (
-        <div className="mt-2 border-t border-dashed border-gray-200 pt-2">
-          <StreakRow
-            streak={currentRun}
-            unit={unit}
-            widthPercent={Math.round((currentRun.length / maxLength) * 100)}
-            variant="pinned"
-          />
-          <p className="mt-1 text-center text-xs text-gray-500">
+        <div className="mt-2.5 border-t border-dashed border-gray-200 pt-2.5">
+          <StreakRow streak={currentRun} unit={unit} maxLength={maxLength} variant="current" />
+          <p className="mt-1 text-xs text-gray-500">
             {streakLabel(toBeat, unit)} to crack the top 10
           </p>
         </div>
