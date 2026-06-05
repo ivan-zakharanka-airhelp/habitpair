@@ -459,14 +459,14 @@ Re-skin the public surface: a full landing-page port (theme-aware) and the redes
 ### Phase 6: Marketing Landing + Auth
 
 #### Automated
-- [x] 6.1 FE type checking passes: `npm run typecheck -w @habitpair/web`
-- [x] 6.2 FE tests pass (auth-form tests updated/green): `npm run test -w @habitpair/web`
-- [x] 6.3 Web build compiles: `npm run build -w @habitpair/web`
-- [x] 6.4 Linting passes: `make lint`
+- [x] 6.1 FE type checking passes: `npm run typecheck -w @habitpair/web` — 46e51de
+- [x] 6.2 FE tests pass (auth-form tests updated/green): `npm run test -w @habitpair/web` — 46e51de
+- [x] 6.3 Web build compiles: `npm run build -w @habitpair/web` — 46e51de
+- [x] 6.4 Linting passes: `make lint` — 46e51de
 
 #### Manual
-- [x] 6.5 Landing matches the design across all sections in both themes; DowInsight Wednesday column shows; FAQ expands/collapses
-- [x] 6.6 Hero/final CTAs route correctly (unauthed → register/login; authed → dashboard)
-- [x] 6.7 Login/register cards match; validation + submit + error states work; login↔register toggle works
-- [x] 6.8 Landing + auth reflow cleanly at mobile widths
-- [x] 6.9 SEO meta + JSON-LD present in the built `index.html`
+- [x] 6.5 Landing matches the design across all sections in both themes; DowInsight Wednesday column shows; FAQ expands/collapses — 46e51de
+- [x] 6.6 Hero/final CTAs route correctly (unauthed → register/login; authed → dashboard) — 46e51de
+- [x] 6.7 Login/register cards match; validation + submit + error states work; login↔register toggle works — 46e51de
+- [x] 6.8 Landing + auth reflow cleanly at mobile widths — 46e51de
+- [x] 6.9 SEO meta + JSON-LD present in the built `index.html` — 46e51de
