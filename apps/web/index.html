@@ -3,8 +3,37 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#2e7d5b" />
     <title>habitpair</title>
+
+    <!-- Hanken Grotesk — the design's sans/display face. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+    />
+
+    <script>
+      // Avoid a light-flash before React mounts when dark is stored/preferred.
+      // Sets only the html background to the dark/light --bg approximation; the
+      // real data-theme lands on the .app root at React mount.
+      (function () {
+        try {
+          var th = localStorage.getItem('hp_theme') || 'system';
+          var dark =
+            th === 'dark' ||
+            (th === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.style.background = dark ? '#262320' : '#faf8f4';
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      #root:empty {
+        min-height: 100vh;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
