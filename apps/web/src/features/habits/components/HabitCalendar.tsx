@@ -1,109 +1,213 @@
-import { DayPicker, type DayProps } from 'react-day-picker';
-import type { CycleMarkMutation } from '../hooks/useCycleMark';
-import { localDateFromISO, localKey, todayLocalDate } from '../lib/today';
-import type { HabitCalendarResponse } from '../types';
+import { useEffect, useState } from 'react';
+import { Icon } from '../../../shared/components/Icon';
+import { ALL_CAP_MONTHS, indexToMonth, MONTH_NAMES, monthIndex } from '../lib/calendarRange';
+import { localDateFromISO, localKey, todayLocalISO } from '../lib/today';
+import type { HabitCalendarResponse, MarkStatus } from '../types';
+import { CalLegend } from './CalLegend';
+import { HistorySheet } from './HistorySheet';
+import { MonthView } from './MonthView';
 
-// Turn the read-model into Set<YYYY-MM-DD> matchers keyed by *local* date.
-// Stored marks always win over computed coloring: a computed-missed date that
-// already carries a stored mark is dropped from `missed`, so a Phase-3
-// optimistic write to `marks` recolors the cell on its own.
-function buildStatusSets(data: HabitCalendarResponse) {
-  const completed = new Set<string>();
-  const missed = new Set<string>();
-  for (const [key, status] of Object.entries(data.marks)) {
-    if (status === 'COMPLETED') completed.add(key);
-    else missed.add(key);
+// Responsive month count: 3 wide, 2 medium, 1 on mobile.
+function calcCols(): number {
+  const w = window.innerWidth;
+  if (w >= 980) return 3;
+  if (w >= 640) return 2;
+  return 1;
+}
+
+// Stored marks with daily computed-misses folded in as MISSED (stored marks win,
+// so an optimistic write to `marks` recolors the cell on its own). Mirrors the
+// old buildStatusSets logic; the design's mock had no computed-miss concept.
+function buildMarksView(data: HabitCalendarResponse): Record<string, MarkStatus> {
+  const view: Record<string, MarkStatus> = { ...data.marks };
+  for (const iso of data.computedMissedDates) {
+    if (!(iso in view)) view[iso] = 'MISSED';
   }
-  for (const key of data.computedMissedDates) {
-    if (!(key in data.marks)) missed.add(key);
-  }
-  const failedPeriod = new Set<string>();
+  return view;
+}
+
+// Weekly/monthly failed-period days → failtint set (the soft red behind unmarked
+// days of a period that closed under target).
+function buildFailSet(data: HabitCalendarResponse): Set<string> {
+  const set = new Set<string>();
   for (const period of data.failedPeriods) {
     const end = localDateFromISO(period.end);
     for (let d = localDateFromISO(period.start); d <= end; d.setDate(d.getDate() + 1)) {
-      failedPeriod.add(localKey(d));
+      set.add(localKey(d));
     }
   }
-  return { completed, missed, failedPeriod };
-}
-
-// react-day-picker v10 only renders the interactive DayButton when a selection
-// `mode` or `onDayClick` is set (DayPicker.js: isInteractive). This calendar is
-// read-only until Phase 3, so days render as plain <td> text and a DayButton
-// override would be dead. We therefore style the cell itself: a custom `Day`
-// (which always renders) tints the cell + paints the today ring, and stacks the
-// ✓/✗ beneath the date so the day number stays visible. Once Phase 3 adds
-// onDayClick, `children` becomes the DayButton and still carries the click.
-function HabitDay({ day: _day, modifiers, className, children, ...tdProps }: DayProps) {
-  const status = modifiers.completed ? 'completed' : modifiers.missed ? 'missed' : null;
-  const statusBg =
-    status === 'completed' ? 'bg-green-100' : status === 'missed' ? 'bg-red-100' : '';
-  const statusText =
-    status === 'completed' ? 'text-green-700' : status === 'missed' ? 'text-red-700' : '';
-  const cellClass = [
-    className,
-    statusBg,
-    // Period tint only behind days without their own ✓/✗ (weekly/monthly).
-    !status && modifiers.failedPeriod ? 'bg-red-50' : '',
-    modifiers.today ? 'rounded ring-2 ring-inset ring-blue-500' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
-  return (
-    <td {...tdProps} className={cellClass}>
-      <span className={`flex flex-col items-center justify-center leading-tight ${statusText}`}>
-        <span>{children}</span>
-        {status ? (
-          <span aria-hidden="true" className="text-xs font-bold">
-            {status === 'completed' ? '✓' : '✗'}
-          </span>
-        ) : null}
-      </span>
-    </td>
-  );
+  return set;
 }
 
 interface HabitCalendarProps {
   data: HabitCalendarResponse;
-  numberOfMonths: number;
-  startMonth: Date;
-  cycleMark: CycleMarkMutation;
+  onCycle: (iso: string) => void;
 }
 
-// Setting `onDayClick` flips react-day-picker into interactive mode, so each
-// non-hidden cell's `children` becomes a clickable DayButton (HabitDay still wraps
-// it + paints the status). Clicks cycle the *stored* mark, never the displayed
-// color: a daily computed-missed day (red, unmarked) starts the cycle at absent.
-// The window is driven externally via `startMonth` (controlled `month`), so the
-// built-in nav stays hidden.
-export function HabitCalendar({ data, numberOfMonths, startMonth, cycleMark }: HabitCalendarProps) {
-  const today = todayLocalDate();
-  const { completed, missed, failedPeriod } = buildStatusSets(data);
-  const pendingDate = cycleMark.isPending ? cycleMark.variables?.date : undefined;
+// The detail centerpiece: a 1–3 month sliding window over the fetched marks,
+// bounded by firstMarkDate..today, with calm month-step navigation and a
+// lazy-loading full-history sheet. The fetch (24 months) happens once in the
+// parent; this component only slides the display window — navigation never
+// refetches.
+export function HabitCalendar({ data, onCycle }: HabitCalendarProps) {
+  const today = todayLocalISO();
+  const { firstMarkDate } = data;
+  const marks = buildMarksView(data);
+  const failSet = buildFailSet(data);
+
+  const [cols, setCols] = useState(calcCols);
+  const [endMonth, setEndMonth] = useState(() => today.slice(0, 7));
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  // window resize is an external subscription, so the cols listener lives here.
+  useEffect(() => {
+    const onResize = () => setCols(calcCols());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const curIdx = monthIndex(today.slice(0, 7));
+  // Navigation floor = the oldest fetched month, NOT the first mark. This keeps
+  // the window a full `cols` wide even for a brand-new habit, and lets the user
+  // page back before the first mark to backfill old days (calendar-anchored).
+  const minIdx = curIdx - (ALL_CAP_MONTHS - 1);
+  const endIdx = Math.min(curIdx, Math.max(minIdx, monthIndex(endMonth)));
+  const startIdx = Math.max(minIdx, endIdx - (cols - 1));
+  // Near the start of history, slide the window forward so it stays full when possible.
+  const realEnd = realEndIdx(startIdx, endIdx, curIdx, cols);
+
+  const shownIdxs: number[] = [];
+  for (let i = startIdx; i <= realEnd; i++) shownIdxs.push(i);
+  const single = shownIdxs.length === 1;
+
+  const step = (delta: number) =>
+    setEndMonth(indexToMonth(Math.min(curIdx, Math.max(minIdx, endIdx + delta))));
+
+  // Newest-first months for the full-history sheet. Bounded to actual history
+  // (first mark → today), so a new habit's sheet isn't padded with empty months.
+  const historyFloor = Math.max(
+    minIdx,
+    firstMarkDate ? monthIndex(firstMarkDate.slice(0, 7)) : curIdx,
+  );
+  const allMonths: string[] = [];
+  for (let i = curIdx; i >= historyFloor; i--) allMonths.push(indexToMonth(i));
+
+  const prevDisabled = startIdx <= minIdx;
+  const nextDisabled = realEnd >= curIdx;
 
   return (
-    <DayPicker
-      ISOWeek
-      month={startMonth}
-      numberOfMonths={numberOfMonths}
-      hideNavigation
-      showOutsideDays={false}
-      today={today}
-      disabled={{ after: today }}
-      modifiers={{
-        completed: (date: Date) => completed.has(localKey(date)),
-        missed: (date: Date) => missed.has(localKey(date)),
-        failedPeriod: (date: Date) => failedPeriod.has(localKey(date)),
-      }}
-      onDayClick={(date, modifiers) => {
-        if (modifiers.disabled) return;
-        const key = localKey(date);
-        // One in-flight mutation per cell — a repeat click would cycle from a stale
-        // stored status and race the pending write. Other cells stay clickable.
-        if (pendingDate === key) return;
-        cycleMark.mutate({ date: key, storedStatus: data.marks[key] ?? null });
-      }}
-      components={{ Day: HabitDay }}
-    />
+    <section className="hist">
+      <div className="hist__head">
+        <div className="streaks__head">
+          <Icon name="cal" size={17} style={{ color: 'var(--accent)' }} />
+          <h3 className="streaks__title">History</h3>
+        </div>
+        {firstMarkDate != null ? (
+          <button type="button" className="hist__expand" onClick={() => setSheetOpen(true)}>
+            View full history <Icon name="chevR" size={14} />
+          </button>
+        ) : null}
+      </div>
+
+      {firstMarkDate == null ? (
+        <p className="muted" style={{ fontSize: '.9rem', marginTop: 0 }}>
+          No marks yet. Tap a day to start tracking.
+        </p>
+      ) : null}
+
+      <div className={`monthcard${single ? '' : ' monthcard--multi'}`}>
+        {single ? (
+          <>
+            <div className="monthcard__nav">
+              <button
+                type="button"
+                className="histnavbtn"
+                aria-label="Previous month"
+                disabled={prevDisabled}
+                onClick={() => step(-1)}
+              >
+                <Icon name="chevL" size={16} />
+              </button>
+              <span className="monthcard__label">
+                {MONTH_NAMES[realEnd % 12]} {Math.floor(realEnd / 12)}
+              </span>
+              <button
+                type="button"
+                className="histnavbtn"
+                aria-label="Next month"
+                disabled={nextDisabled}
+                onClick={() => step(1)}
+              >
+                <Icon name="chevR" size={16} />
+              </button>
+            </div>
+            <MonthView
+              ym={indexToMonth(realEnd)}
+              marks={marks}
+              failSet={failSet}
+              today={today}
+              onCycle={onCycle}
+            />
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="histnavbtn monthcard__arrow monthcard__arrow--prev"
+              aria-label="Earlier months"
+              disabled={prevDisabled}
+              onClick={() => step(-1)}
+            >
+              <Icon name="chevL" size={16} />
+            </button>
+            <button
+              type="button"
+              className="histnavbtn monthcard__arrow monthcard__arrow--next"
+              aria-label="Later months"
+              disabled={nextDisabled}
+              onClick={() => step(1)}
+            >
+              <Icon name="chevR" size={16} />
+            </button>
+            <div
+              className="monthcard__grid"
+              style={{ gridTemplateColumns: `repeat(${shownIdxs.length}, 1fr)` }}
+            >
+              {shownIdxs.map((i) => (
+                <MonthView
+                  key={indexToMonth(i)}
+                  ym={indexToMonth(i)}
+                  marks={marks}
+                  failSet={failSet}
+                  today={today}
+                  onCycle={onCycle}
+                  showTitle
+                />
+              ))}
+            </div>
+          </>
+        )}
+        <CalLegend />
+      </div>
+
+      {sheetOpen ? (
+        <HistorySheet
+          months={allMonths}
+          marks={marks}
+          failSet={failSet}
+          today={today}
+          onCycle={onCycle}
+          onClose={() => setSheetOpen(false)}
+        />
+      ) : null}
+    </section>
   );
+}
+
+// Keeps the visible window full when the requested end sits near the start of
+// history: shift the right edge forward to fill `cols` months without exceeding
+// the current month.
+function realEndIdx(startIdx: number, endIdx: number, curIdx: number, cols: number): number {
+  if (endIdx - startIdx < cols - 1) return Math.min(curIdx, startIdx + (cols - 1));
+  return endIdx;
 }

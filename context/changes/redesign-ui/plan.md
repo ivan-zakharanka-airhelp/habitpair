@@ -415,32 +415,32 @@ Re-skin the public surface: a full landing-page port (theme-aware) and the redes
 ### Phase 3: Dashboard Re-skin + List Enrichment
 
 #### Automated
-- [x] 3.1 Backend tests pass (incl. enrichment): `npm test -w @habitpair/habits-api`
-- [x] 3.2 Backend lint/build: `make lint` + `npm run build -w @habitpair/habits-api`
-- [x] 3.3 FE type checking passes: `npm run typecheck -w @habitpair/web`
-- [x] 3.4 FE tests pass (incl. optimistic-marking smoke test): `npm run test -w @habitpair/web`
-- [x] 3.5 Web build compiles: `npm run build -w @habitpair/web`
+- [x] 3.1 Backend tests pass (incl. enrichment): `npm test -w @habitpair/habits-api` — 404af78
+- [x] 3.2 Backend lint/build: `make lint` + `npm run build -w @habitpair/habits-api` — 404af78
+- [x] 3.3 FE type checking passes: `npm run typecheck -w @habitpair/web` — 404af78
+- [x] 3.4 FE tests pass (incl. optimistic-marking smoke test): `npm run test -w @habitpair/web` — 404af78
+- [x] 3.5 Web build compiles: `npm run build -w @habitpair/web` — 404af78
 
 #### Manual
-- [ ] 3.6 Dashboard matches `renders/list.png` (TodayHero ring, Building/Breaking, week strips, streak chips, mark controls)
-- [ ] 3.7 Daily marking is instant (optimistic, no artificial delay); weekly/monthly "Log one" increments correctly
-- [ ] 3.8 Create-habit modal validates, creates, closes, fires a success toast; habit lands in the right section
-- [ ] 3.9 Cards/sections reflow cleanly at mobile widths
+- [x] 3.6 Dashboard matches `renders/list.png` (TodayHero ring, Building/Breaking, week strips, streak chips, mark controls) — 404af78
+- [x] 3.7 Daily marking is instant (optimistic, no artificial delay); weekly/monthly "Log one" increments correctly — 404af78
+- [x] 3.8 Create-habit modal validates, creates, closes, fires a success toast; habit lands in the right section — 404af78
+- [x] 3.9 Cards/sections reflow cleanly at mobile widths — 404af78
 
 ### Phase 4: Detail Re-skin — Metrics, Hand-rolled Calendar, Best Streaks, Kebab Actions
 
 #### Automated
-- [ ] 4.1 FE type checking passes: `npm run typecheck -w @habitpair/web`
-- [ ] 4.2 FE tests pass (edit/delete/calendar-cycle smoke tests): `npm run test -w @habitpair/web`
-- [ ] 4.3 Web build compiles with `react-day-picker` removed: `npm run build -w @habitpair/web`
-- [ ] 4.4 Linting passes: `make lint`
+- [x] 4.1 FE type checking passes: `npm run typecheck -w @habitpair/web`
+- [x] 4.2 FE tests pass (edit/delete/calendar-cycle smoke tests): `npm run test -w @habitpair/web`
+- [x] 4.3 Web build compiles with `react-day-picker` removed: `npm run build -w @habitpair/web`
+- [x] 4.4 Linting passes: `make lint`
 
 #### Manual
-- [ ] 4.5 Detail matches `renders/detail.png` (metric rings, calendar failure tints + today ring, demoted Best Streaks proportional bars)
-- [ ] 4.6 "View full history" opens; months lazy-load on scroll; Escape closes
-- [ ] 4.7 Calendar day click cycles the mark; future days disabled
-- [ ] 4.8 Kebab Edit saves name/modality (frequency immutable, no target field); Kebab Delete confirms + returns to dashboard
-- [ ] 4.9 Empty-state shows the calendar hint; metrics show "—" not zeros
+- [x] 4.5 Detail matches `renders/detail.png` (metric rings, calendar failure tints + today ring, demoted Best Streaks proportional bars)
+- [x] 4.6 "View full history" opens; months lazy-load on scroll; Escape closes
+- [x] 4.7 Calendar day click cycles the mark; future days disabled
+- [x] 4.8 Kebab Edit saves name/modality (frequency immutable, no target field); Kebab Delete confirms + returns to dashboard
+- [x] 4.9 Empty-state shows the calendar hint; metrics show "—" not zeros
 
 ### Phase 5: Settings
 

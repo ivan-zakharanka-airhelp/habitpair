@@ -81,7 +81,12 @@ describe('HabitCard marking', () => {
     let rejectFetch: (reason: Error) => void = () => {};
     vi.stubGlobal(
       'fetch',
-      vi.fn(() => new Promise<Response>((_, reject) => { rejectFetch = reject; })),
+      vi.fn(
+        () =>
+          new Promise<Response>((_, reject) => {
+            rejectFetch = reject;
+          }),
+      ),
     );
 
     renderCard(dailyHabit());

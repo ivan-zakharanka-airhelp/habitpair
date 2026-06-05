@@ -1,38 +1,62 @@
-import { useState } from 'react';
+import { useState, type CSSProperties, type FormEvent } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { Button } from '../../../shared/components/Button';
+import { Dialog } from '../../../shared/components/Dialog';
+import { Field } from '../../../shared/components/Field';
+import { Icon } from '../../../shared/components/Icon';
+import { Input } from '../../../shared/components/Input';
+import { Segmented } from '../../../shared/components/Segmented';
+import { Skeleton } from '../../../shared/components/Skeleton';
+import { toast } from '../../../shared/lib/toast';
 import { useCycleMark } from '../hooks/useCycleMark';
 import { useDeleteHabit } from '../hooks/useDeleteHabit';
 import { useHabitCalendar } from '../hooks/useHabitCalendar';
 import { useHabitMetrics } from '../hooks/useHabitMetrics';
 import { useUpdateHabit } from '../hooks/useUpdateHabit';
-import { calendarDisplay, calendarQueryRange, currentMonth } from '../lib/calendarRange';
+import { calendarQueryRange, currentMonth } from '../lib/calendarRange';
 import { todayLocalISO } from '../lib/today';
-import type { CalendarSpan, Modality } from '../types';
+import type { Modality } from '../types';
 import { BestStreaks } from './BestStreaks';
-import { CalendarNav } from './CalendarNav';
+import { HabitActionsMenu } from './HabitActionsMenu';
 import { HabitCalendar } from './HabitCalendar';
 import { HabitMetrics } from './HabitMetrics';
-import { SpanControl } from './SpanControl';
 
-function frequencyText(frequency: string, targetCount: number | null): string {
+function freqText(frequency: string, targetCount: number | null): string {
   if (frequency === 'DAILY') return 'Daily';
-  const unit = frequency === 'WEEKLY' ? 'week' : 'month';
-  return `${targetCount ?? 1}× per ${unit}`;
+  return `${targetCount ?? 1}× per ${frequency === 'WEEKLY' ? 'week' : 'month'}`;
+}
+
+const formStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 18 };
+
+function DetailSkeleton() {
+  return (
+    <main className="container page">
+      <Skeleton w={130} h={38} r={999} />
+      <div style={{ marginTop: 18 }}>
+        <Skeleton w="50%" h={32} />
+      </div>
+      <div className="metrics">
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} w="100%" h={92} r="var(--radius)" />
+        ))}
+      </div>
+      <div style={{ marginTop: 32 }}>
+        <Skeleton w="100%" h={300} r="var(--radius)" />
+      </div>
+    </main>
+  );
 }
 
 export function HabitDetail({ habitId }: { habitId: string }) {
   const today = todayLocalISO();
-  const [span, setSpan] = useState<CalendarSpan>('3');
-  const [endMonth, setEndMonth] = useState<string>(() => currentMonth());
-
-  // The fetch range doesn't depend on the anchor, so the query key is stable; the
-  // anchor (firstMarkDate) comes back with the data and only shapes the display.
-  const range = calendarQueryRange(span, endMonth);
+  // Fetch a fixed 24-month window once; the calendar slides its display window
+  // over it client-side, so month navigation never refetches. The anchor
+  // (firstMarkDate) comes back with the data and only shapes the display.
+  const range = calendarQueryRange('all', currentMonth());
   const query = useHabitCalendar(habitId, range.fromMonth, range.toMonth, today);
-  // Window-bound so optimistic writes + invalidation target the active calendar key.
+  // Bound to the same window so optimistic writes + invalidation target this key.
   const cycleMark = useCycleMark(habitId, range.fromMonth, range.toMonth, today);
-  // One metrics query feeds both the strip and the best-streaks disclosure.
+  // One metrics query feeds both the strip and the best-streaks leaderboard.
   const metricsQuery = useHabitMetrics(habitId, today);
 
   const navigate = useNavigate();
@@ -43,162 +67,151 @@ export function HabitDetail({ habitId }: { habitId: string }) {
   const [editName, setEditName] = useState('');
   const [editModality, setEditModality] = useState<Modality>('POSITIVE');
 
-  if (query.isPending) {
-    return <p className="mt-6 text-gray-600">Loading calendar…</p>;
-  }
+  if (query.isPending) return <DetailSkeleton />;
   if (query.isError) {
     return (
-      <p role="alert" className="mt-6 text-sm text-red-600">
-        {query.error.message}
-      </p>
+      <main className="container page">
+        <div className="form-err" style={{ marginTop: 28 }} role="alert">
+          <Icon name="x" size={15} /> {query.error.message}
+        </div>
+      </main>
     );
   }
 
   const data = query.data;
   const { habit, firstMarkDate } = data;
-  const display = calendarDisplay(span, range, firstMarkDate);
+  const pos = habit.modality === 'POSITIVE';
+
+  const onCycle = (iso: string) => {
+    // One in-flight mutation per cell — a repeat click would cycle from a stale
+    // stored status and race the pending write. Other cells stay clickable.
+    if (cycleMark.isPending && cycleMark.variables?.date === iso) return;
+    cycleMark.mutate({ date: iso, storedStatus: data.marks[iso] ?? null });
+  };
+
+  const submitEdit = (event: FormEvent) => {
+    event.preventDefault();
+    const name = editName.trim();
+    if (!name) return;
+    updateHabit.mutate(
+      { name, modality: editModality },
+      {
+        onSuccess: () => {
+          toast(`“${name}” updated.`);
+          setEditing(false);
+        },
+      },
+    );
+  };
 
   return (
-    <main className="p-4">
-      <Link to="/app" className="text-sm text-blue-600 hover:underline">
-        ‹ Back to habits
-      </Link>
-
-      {editing ? (
-        <form
-          className="mt-2 flex max-w-sm flex-col gap-3"
-          aria-label="Edit habit"
-          onSubmit={(event) => {
-            event.preventDefault();
-            updateHabit.mutate(
-              { name: editName, modality: editModality },
-              { onSuccess: () => setEditing(false) },
-            );
+    <main className="container page fadein">
+      <div className="detail__bar">
+        <Link to="/app" className="backbtn">
+          <Icon name="arrowL" size={15} /> Back to habits
+        </Link>
+        <HabitActionsMenu
+          onEdit={() => {
+            setEditName(habit.name);
+            setEditModality(habit.modality);
+            setEditing(true);
           }}
-        >
-          <label className="flex flex-col gap-1">
-            Name
-            <input
-              type="text"
-              name="name"
-              required
-              value={editName}
-              onChange={(event) => setEditName(event.target.value)}
-              className="rounded border border-gray-300 p-2"
-            />
-          </label>
-          <label className="flex flex-col gap-1">
-            Type
-            <select
-              name="modality"
-              value={editModality}
-              onChange={(event) => setEditModality(event.target.value as Modality)}
-              className="rounded border border-gray-300 p-2"
-            >
-              <option value="POSITIVE">Build (positive)</option>
-              <option value="NEGATIVE">Break (negative)</option>
-            </select>
-          </label>
-          <p className="text-sm text-gray-500">
-            {frequencyText(habit.frequency, habit.targetCount)} · frequency can&rsquo;t be changed
-          </p>
-          {updateHabit.isError ? (
-            <p role="alert" className="text-sm text-red-600">
-              {updateHabit.error.message}
-            </p>
-          ) : null}
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={updateHabit.isPending}
-              className="rounded bg-black p-2 text-white disabled:opacity-50"
-            >
-              Save
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditing(false)}
-              className="rounded border border-gray-300 p-2"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      ) : (
-        <div className="mt-2 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">{habit.name}</h1>
-            <p className="text-sm text-gray-600">
-              {habit.modality === 'POSITIVE' ? 'Building' : 'Breaking'} ·{' '}
-              {frequencyText(habit.frequency, habit.targetCount)}
-            </p>
-          </div>
-          <div className="flex shrink-0 gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setEditName(habit.name);
-                setEditModality(habit.modality);
-                setEditing(true);
-              }}
-              className="rounded border border-gray-300 p-2 text-sm"
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmingDelete(true)}
-              className="rounded border border-red-300 p-2 text-sm text-red-600"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      )}
-
-      <HabitMetrics query={metricsQuery} />
-
-      <div className="mt-4 flex flex-wrap items-center gap-4">
-        <SpanControl value={span} onChange={setSpan} allEnabled={firstMarkDate != null} />
-        {span === 'all' ? null : (
-          <CalendarNav endMonth={endMonth} onChange={setEndMonth} max={currentMonth()} />
-        )}
+          onDelete={() => setConfirmingDelete(true)}
+        />
       </div>
 
-      {firstMarkDate == null ? (
-        <p className="mt-3 text-sm text-gray-500">No marks yet — mark a day to start tracking.</p>
-      ) : null}
-
-      <div className="mt-4">
-        <HabitCalendar
-          data={data}
-          numberOfMonths={display.numberOfMonths}
-          startMonth={display.startMonth}
-          cycleMark={cycleMark}
-        />
+      <div className="detail__head">
+        <span className="detail__meta">
+          <span className={`tag__chip ${pos ? 'tag__chip--pos' : 'tag__chip--neg'}`}>
+            {pos ? 'Building' : 'Breaking'}
+          </span>
+          <span className="detail__freq">{freqText(habit.frequency, habit.targetCount)}</span>
+        </span>
+        <h1 className="h1 detail__title">{habit.name}</h1>
       </div>
 
       {metricsQuery.data ? (
-        <BestStreaks
-          bestStreaks={metricsQuery.data.bestStreaks}
-          unit={metricsQuery.data.unit}
-          currentRun={metricsQuery.data.currentRun}
-        />
+        <HabitMetrics metrics={metricsQuery.data} firstMarkDate={firstMarkDate} />
       ) : null}
 
-      <ConfirmDialog
+      <HabitCalendar data={data} onCycle={onCycle} />
+
+      {metricsQuery.data ? <BestStreaks metrics={metricsQuery.data} /> : null}
+
+      <Dialog
+        open={editing}
+        title="Edit habit"
+        onCancel={() => setEditing(false)}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="edit-habit-form"
+              disabled={updateHabit.isPending || !editName.trim()}
+            >
+              {updateHabit.isPending ? 'Saving…' : 'Save changes'}
+            </Button>
+          </>
+        }
+      >
+        <form id="edit-habit-form" style={formStyle} onSubmit={submitEdit}>
+          <Field label="Name">
+            <Input value={editName} autoFocus onChange={(e) => setEditName(e.target.value)} />
+          </Field>
+          <div className="field">
+            <span className="label">Type</span>
+            <Segmented
+              value={editModality}
+              onChange={setEditModality}
+              ariaLabel="Type"
+              options={[
+                { value: 'POSITIVE', label: 'Build' },
+                { value: 'NEGATIVE', label: 'Break' },
+              ]}
+            />
+          </div>
+          <p className="field__hint">
+            {freqText(habit.frequency, habit.targetCount)} · frequency can&rsquo;t be changed.
+          </p>
+          {updateHabit.isError ? (
+            <div className="field__err" role="alert">
+              {updateHabit.error.message}
+            </div>
+          ) : null}
+        </form>
+      </Dialog>
+
+      <Dialog
         open={confirmingDelete}
         title="Delete habit"
-        message={`Delete “${habit.name}” and all its marks? This can’t be undone.`}
-        confirmLabel="Delete"
-        isPending={deleteHabit.isPending}
-        onConfirm={() =>
-          deleteHabit.mutate(undefined, {
-            onSuccess: () => navigate({ to: '/app' }),
-          })
-        }
         onCancel={() => setConfirmingDelete(false)}
-      />
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmingDelete(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger-solid"
+              disabled={deleteHabit.isPending}
+              onClick={() =>
+                deleteHabit.mutate(undefined, {
+                  onSuccess: () => {
+                    toast(`“${habit.name}” deleted.`);
+                    navigate({ to: '/app' });
+                  },
+                })
+              }
+            >
+              {deleteHabit.isPending ? 'Deleting…' : 'Delete habit'}
+            </Button>
+          </>
+        }
+      >
+        Delete &ldquo;{habit.name}&rdquo; and all its marks? This can&rsquo;t be undone.
+      </Dialog>
     </main>
   );
 }

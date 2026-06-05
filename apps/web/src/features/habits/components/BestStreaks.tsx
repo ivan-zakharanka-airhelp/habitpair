@@ -1,109 +1,65 @@
-import { streakLabel, streakRangeLabel } from '../lib/metricsFormat';
-import type { BestStreak, StreakUnit } from '../types';
+import { useState } from 'react';
+import { Card } from '../../../shared/components/Card';
+import { Icon } from '../../../shared/components/Icon';
+import { streakLabel } from '../lib/metricsFormat';
+import type { HabitMetricsResponse } from '../types';
+import { StreakRow } from './StreakRow';
 
-// Floor the rendered fill so a very short run still shows a visible nub without
-// distorting the larger bars (whose ratios dominate anyway).
-const MIN_FILL_PERCENT = 4;
+const LIMIT = 5;
 
-// One run: a label line (date range · length, with a "Current" badge for the
-// active run) above a full-width track whose fill width is proportional to the
-// run's length vs. the longest run shown. Stacking the bar on its own full-width
-// line (rather than wedged between the dates) keeps proportions readable on
-// narrow screens and makes the fill *exactly* proportional — the length text no
-// longer floors the bar width.
-function StreakRow({
-  streak,
-  unit,
-  maxLength,
-  variant,
-}: {
-  streak: BestStreak;
-  unit: StreakUnit;
-  maxLength: number;
-  variant: 'plain' | 'current';
-}) {
-  const fillPercent = Math.max(MIN_FILL_PERCENT, Math.round((streak.length / maxLength) * 100));
-  return (
-    <div>
-      <div className="flex items-baseline justify-between gap-2 text-xs sm:text-sm">
-        <span className="text-gray-500 tabular-nums">
-          {streakRangeLabel(streak.start, streak.end)}
-        </span>
-        <span className="flex items-center gap-1.5 font-semibold text-gray-900">
-          {streakLabel(streak.length, unit)}
-          {variant === 'current' ? (
-            <span className="rounded bg-green-600 px-1 text-[10px] tracking-wide text-white uppercase">
-              Current
-            </span>
-          ) : null}
-        </span>
-      </div>
-      <div className="mt-1 h-2.5 w-full overflow-hidden rounded bg-gray-100">
-        <div
-          className={`h-full rounded ${variant === 'current' ? 'bg-green-600' : 'bg-green-400'}`}
-          style={{ width: `${fillPercent}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-// A collapsed-by-default disclosure of the habit's top-10 longest runs, ordered
-// longest-first (ties by recency — see computeMetrics). Each run is a labelled,
-// full-width proportional bar so magnitudes compare at a glance. The active run is
-// accented + badged "Current": in place when it makes the top 10, or pinned below
-// the leaderboard (after a dashed divider, with a "N to crack the top 10" nudge)
-// when it's too short to rank — so immediate progress stays visible without
-// distorting the leaderboard. Native <details>/<summary> keeps it keyboard-operable
-// and honors the NFR. Fed from the metrics query already loaded by the strip (no
-// extra fetch); an empty list (never-marked or only-missed habit) renders nothing.
-export function BestStreaks({
-  bestStreaks,
-  unit,
-  currentRun,
-}: {
-  bestStreaks: BestStreak[];
-  unit: StreakUnit;
-  currentRun: BestStreak | null;
-}) {
-  // A currentRun is itself a run, so an empty leaderboard implies no active run.
+// The demoted best-streaks leaderboard: top runs longest-first as proportional
+// bars, collapsed to the top 5 (expand to all). The active run is accented in
+// place when it ranks, or pinned below a divider with a "N to crack the top N"
+// nudge when it's too short to rank — so current progress stays visible without
+// distorting the leaderboard. Renders nothing when there are no runs.
+export function BestStreaks({ metrics }: { metrics: HabitMetricsResponse }) {
+  const [showAll, setShowAll] = useState(false);
+  const { bestStreaks, currentRun, unit } = metrics;
   if (bestStreaks.length === 0) return null;
 
-  const maxLength = bestStreaks[0].length; // longest-first, so the first is the max
-  const currentInList = currentRun != null && bestStreaks.some((s) => s.start === currentRun.start);
-  const pinned = currentRun != null && !currentInList;
-  // pinned ⇒ every top-10 run outranks currentRun, which is the most recent run;
-  // a more-recent run can only be outranked by a strictly longer one, so #10
-  // (the shortest shown) is strictly longer — the gap is always ≥ 1.
+  const maxLen = bestStreaks[0].length; // longest-first, so the first is the max
+  const inList = currentRun != null && bestStreaks.some((s) => s.start === currentRun.start);
+  const pinned = currentRun != null && !inList;
+  // pinned ⇒ every shown run outranks currentRun (the most recent run); a more
+  // recent run can only be outranked by a strictly longer one, so the gap is ≥ 1.
   const toBeat = pinned ? bestStreaks[bestStreaks.length - 1].length - currentRun.length : 0;
+  const list = showAll ? bestStreaks : bestStreaks.slice(0, LIMIT);
+  const hidden = bestStreaks.length - LIMIT;
 
   return (
-    <details className="mt-6">
-      <summary className="cursor-pointer text-sm font-medium text-gray-700 select-none">
-        Best streaks
-      </summary>
-      <ol className="mt-3 space-y-2.5">
-        {bestStreaks.map((streak) => (
-          <li key={`${streak.start}:${streak.end}`}>
+    <section className="streaks">
+      <div className="streaks__head">
+        <Icon name="flame" size={17} style={{ color: 'var(--accent)' }} />
+        <h3 className="streaks__title">Best streaks</h3>
+      </div>
+      <Card className="streaks__card">
+        <div className="streaks__list">
+          {list.map((s, i) => (
             <StreakRow
-              streak={streak}
+              key={`${s.start}:${s.end}`}
+              s={s}
               unit={unit}
-              maxLength={maxLength}
-              variant={
-                currentRun != null && streak.start === currentRun.start ? 'current' : 'plain'
-              }
+              maxLen={maxLen}
+              rank={i + 1}
+              current={currentRun != null && s.start === currentRun.start}
             />
-          </li>
-        ))}
-      </ol>
-      {pinned ? (
-        <div className="mt-2.5 border-t border-dashed border-gray-200 pt-2.5">
-          <StreakRow streak={currentRun} unit={unit} maxLength={maxLength} variant="current" />
-          <p className="mt-1 text-xs text-gray-500">
-            {streakLabel(toBeat, unit)} to crack the top 10
-          </p>
+          ))}
         </div>
-      ) : null}
-    </details>
+        {hidden > 0 ? (
+          <button type="button" className="streaks__more" onClick={() => setShowAll((v) => !v)}>
+            {showAll ? 'Show less' : `Show all ${bestStreaks.length}`}
+            <Icon name={showAll ? 'chevU' : 'chevD'} size={14} />
+          </button>
+        ) : null}
+        {pinned ? (
+          <div className="streaks__divider">
+            <StreakRow s={currentRun} unit={unit} maxLen={maxLen} rank={null} current />
+            <p className="streaks__nudge">
+              {streakLabel(toBeat, unit)} to crack the top {bestStreaks.length}.
+            </p>
+          </div>
+        ) : null}
+      </Card>
+    </section>
   );
 }

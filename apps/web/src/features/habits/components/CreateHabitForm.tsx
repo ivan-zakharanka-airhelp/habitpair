@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
+import { useState, type CSSProperties, type FormEvent } from 'react';
 import { Button } from '../../../shared/components/Button';
 import { Dialog } from '../../../shared/components/Dialog';
 import { Field } from '../../../shared/components/Field';
@@ -9,31 +9,22 @@ import { useCreateHabit } from '../hooks/useCreateHabit';
 import type { Frequency, Modality } from '../types';
 
 interface CreateHabitFormProps {
-  open: boolean;
   onClose: () => void;
   initialModality?: Modality;
 }
 
 const formStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 18 };
 
-// The create flow as a modal. Modality is seeded by whichever section's "New"
-// opened it; daily habits omit targetCount (the backend forces it null).
-export function CreateHabitForm({ open, onClose, initialModality = 'POSITIVE' }: CreateHabitFormProps) {
+// The create flow as a modal. Mounted only while open (the parent remounts it on
+// each open), so state initializers give a clean form every time — no reset
+// effect. Modality is seeded by whichever section's "New" opened it; daily
+// habits omit targetCount (the backend forces it null).
+export function CreateHabitForm({ onClose, initialModality = 'POSITIVE' }: CreateHabitFormProps) {
   const createHabit = useCreateHabit();
   const [name, setName] = useState('');
   const [modality, setModality] = useState<Modality>(initialModality);
   const [frequency, setFrequency] = useState<Frequency>('DAILY');
   const [target, setTarget] = useState(2);
-
-  // Reset to a clean form each time the dialog (re)opens.
-  useEffect(() => {
-    if (open) {
-      setName('');
-      setModality(initialModality);
-      setFrequency('DAILY');
-      setTarget(2);
-    }
-  }, [open, initialModality]);
 
   const trimmed = name.trim();
 
@@ -41,7 +32,12 @@ export function CreateHabitForm({ open, onClose, initialModality = 'POSITIVE' }:
     event.preventDefault();
     if (!trimmed) return;
     createHabit.mutate(
-      { name: trimmed, modality, frequency, ...(frequency !== 'DAILY' ? { targetCount: target } : {}) },
+      {
+        name: trimmed,
+        modality,
+        frequency,
+        ...(frequency !== 'DAILY' ? { targetCount: target } : {}),
+      },
       {
         onSuccess: () => {
           toast(`“${trimmed}” added.`);
@@ -53,7 +49,7 @@ export function CreateHabitForm({ open, onClose, initialModality = 'POSITIVE' }:
 
   return (
     <Dialog
-      open={open}
+      open
       title="Add a habit"
       onCancel={onClose}
       footer={
@@ -61,7 +57,11 @@ export function CreateHabitForm({ open, onClose, initialModality = 'POSITIVE' }:
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" form="create-habit-form" disabled={createHabit.isPending || !trimmed}>
+          <Button
+            type="submit"
+            form="create-habit-form"
+            disabled={createHabit.isPending || !trimmed}
+          >
             {createHabit.isPending ? 'Adding…' : 'Add habit'}
           </Button>
         </>

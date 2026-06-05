@@ -66,11 +66,7 @@ export function Dashboard() {
             <p style={{ margin: '6px 0 0' }}>Create your first one, building or breaking.</p>
           </div>
           <div className="addhabit">
-            <Button
-              variant="soft"
-              className="addhabit__btn"
-              onClick={() => openAdd('POSITIVE')}
-            >
+            <Button variant="soft" className="addhabit__btn" onClick={() => openAdd('POSITIVE')}>
               <Icon name="plus" size={18} /> Add a habit
             </Button>
           </div>
@@ -91,7 +87,9 @@ export function Dashboard() {
           />
         </>
       )}
-      <CreateHabitForm open={addOpen} onClose={() => setAddOpen(false)} initialModality={addModality} />
+      {addOpen ? (
+        <CreateHabitForm onClose={() => setAddOpen(false)} initialModality={addModality} />
+      ) : null}
     </main>
   );
 }

@@ -6,30 +6,35 @@ export interface CalendarRange {
   toMonth: string; // YYYY-MM — backend query upper bound
 }
 
-export interface CalendarDisplay {
-  numberOfMonths: number; // months react-day-picker renders
-  startMonth: Date; // local first-of-month for the earliest displayed month
-}
+export const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
 
-// 'All' is a convenience view, soft-capped so an old anchor can't mount a huge
-// grid. Unbounded back-reach comes from navigating the fixed 3/6/12 spans, never
-// from 'All'. Backend monthSpan rejects > 36 months per request regardless.
-const ALL_CAP_MONTHS = 24;
+// The detail calendar fetches this many months up front (ending the current
+// month) and slides a display window over them client-side, so navigation never
+// refetches. Within the backend's 36-month-per-request cap (marks/period.ts).
+export const ALL_CAP_MONTHS = 24;
 
-function monthIndex(month: string): number {
+export function monthIndex(month: string): number {
   const [year, mon] = month.split('-').map(Number);
   return year * 12 + (mon - 1);
 }
 
-function indexToMonth(index: number): string {
+export function indexToMonth(index: number): string {
   const year = Math.floor(index / 12);
   const mon = (index % 12) + 1;
   return `${year}-${String(mon).padStart(2, '0')}`;
-}
-
-function monthToLocalDate(month: string): Date {
-  const [year, mon] = month.split('-').map(Number);
-  return new Date(year, mon - 1, 1);
 }
 
 // The user's current month (YYYY-MM), local — the forward clamp for navigation.
@@ -41,8 +46,8 @@ export function currentMonth(): string {
 // the query key never depends on server data (which would feed back into itself
 // and thrash). 3/6/12 fetch exactly the shown window — backward unbounded,
 // forward clamped at the current month. 'all' fetches the most recent
-// ALL_CAP_MONTHS ending at the current month; the display is trimmed to
-// first-mark→today afterwards (see calendarDisplay).
+// ALL_CAP_MONTHS ending at the current month; the display window is trimmed to
+// first-mark→today afterwards by the calendar component.
 export function calendarQueryRange(span: CalendarSpan, endMonth: string): CalendarRange {
   const currentIdx = monthIndex(currentMonth());
   if (span === 'all') {
@@ -56,30 +61,5 @@ export function calendarQueryRange(span: CalendarSpan, endMonth: string): Calend
   return {
     fromMonth: indexToMonth(toIdx - (count - 1)),
     toMonth: indexToMonth(toIdx),
-  };
-}
-
-// How many months react-day-picker renders and where it starts — derived during
-// render from the fetched range + the (global) first-mark anchor, so no effect
-// syncs server state into React state. 3/6/12 render the whole fetched range;
-// 'all' renders first-mark→today (so empty months before the anchor aren't
-// shown). With no anchor it falls back to the full fetched range.
-export function calendarDisplay(
-  span: CalendarSpan,
-  range: CalendarRange,
-  firstMarkDate: string | null,
-): CalendarDisplay {
-  const fromIdx = monthIndex(range.fromMonth);
-  const toIdx = monthIndex(range.toMonth);
-  if (span === 'all' && firstMarkDate != null) {
-    const startIdx = Math.max(fromIdx, monthIndex(firstMarkDate.slice(0, 7)));
-    return {
-      numberOfMonths: toIdx - startIdx + 1,
-      startMonth: monthToLocalDate(indexToMonth(startIdx)),
-    };
-  }
-  return {
-    numberOfMonths: toIdx - fromIdx + 1,
-    startMonth: monthToLocalDate(range.fromMonth),
   };
 }
