@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { Icon } from './Icon';
 
@@ -60,11 +61,14 @@ export function AccountMenu({ email }: AccountMenuProps) {
               <div className="acct__id-email">Signed in</div>
             </div>
           </div>
-          {/* /settings route lands in Phase 5; a plain anchor keeps this honest
-              (and typed-Link-safe) until then, when it upgrades to a router Link. */}
-          <a className="acct__item" role="menuitem" href="/settings" onClick={() => setOpen(false)}>
+          <Link
+            to="/settings"
+            className="acct__item"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+          >
             <Icon name="gear" size={17} /> Settings
-          </a>
+          </Link>
           <div className="acct__sep" />
           <button
             type="button"

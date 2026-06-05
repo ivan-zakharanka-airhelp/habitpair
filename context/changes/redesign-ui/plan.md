@@ -430,31 +430,31 @@ Re-skin the public surface: a full landing-page port (theme-aware) and the redes
 ### Phase 4: Detail Re-skin — Metrics, Hand-rolled Calendar, Best Streaks, Kebab Actions
 
 #### Automated
-- [x] 4.1 FE type checking passes: `npm run typecheck -w @habitpair/web`
-- [x] 4.2 FE tests pass (edit/delete/calendar-cycle smoke tests): `npm run test -w @habitpair/web`
-- [x] 4.3 Web build compiles with `react-day-picker` removed: `npm run build -w @habitpair/web`
-- [x] 4.4 Linting passes: `make lint`
+- [x] 4.1 FE type checking passes: `npm run typecheck -w @habitpair/web` — 304952d
+- [x] 4.2 FE tests pass (edit/delete/calendar-cycle smoke tests): `npm run test -w @habitpair/web` — 304952d
+- [x] 4.3 Web build compiles with `react-day-picker` removed: `npm run build -w @habitpair/web` — 304952d
+- [x] 4.4 Linting passes: `make lint` — 304952d
 
 #### Manual
-- [x] 4.5 Detail matches `renders/detail.png` (metric rings, calendar failure tints + today ring, demoted Best Streaks proportional bars)
-- [x] 4.6 "View full history" opens; months lazy-load on scroll; Escape closes
-- [x] 4.7 Calendar day click cycles the mark; future days disabled
-- [x] 4.8 Kebab Edit saves name/modality (frequency immutable, no target field); Kebab Delete confirms + returns to dashboard
-- [x] 4.9 Empty-state shows the calendar hint; metrics show "—" not zeros
+- [x] 4.5 Detail matches `renders/detail.png` (metric rings, calendar failure tints + today ring, demoted Best Streaks proportional bars) — 304952d
+- [x] 4.6 "View full history" opens; months lazy-load on scroll; Escape closes — 304952d
+- [x] 4.7 Calendar day click cycles the mark; future days disabled — 304952d
+- [x] 4.8 Kebab Edit saves name/modality (frequency immutable, no target field); Kebab Delete confirms + returns to dashboard — 304952d
+- [x] 4.9 Empty-state shows the calendar hint; metrics show "—" not zeros — 304952d
 
 ### Phase 5: Settings
 
 #### Automated
-- [ ] 5.1 Route tree regenerates + type-checks: `npm run typecheck -w @habitpair/web`
-- [ ] 5.2 FE tests pass: `npm run test -w @habitpair/web`
-- [ ] 5.3 Web build compiles: `npm run build -w @habitpair/web`
-- [ ] 5.4 Linting passes: `make lint`
+- [x] 5.1 Route tree regenerates + type-checks: `npm run typecheck -w @habitpair/web`
+- [x] 5.2 FE tests pass: `npm run test -w @habitpair/web`
+- [x] 5.3 Web build compiles: `npm run build -w @habitpair/web`
+- [x] 5.4 Linting passes: `make lint`
 
 #### Manual
-- [ ] 5.5 `/settings` matches the render; AccountMenu → Settings navigates; back returns to prior screen
-- [ ] 5.6 Theme Segmented switches + persists across reload + applies app-wide (incl. public surface)
-- [ ] 5.7 Export + Delete-account render as clearly inert ("coming soon")
-- [ ] 5.8 Email displays correctly from `useAuth`
+- [x] 5.5 `/settings` matches the render; AccountMenu → Settings navigates; back returns to prior screen
+- [x] 5.6 Theme Segmented switches + persists across reload + applies app-wide (incl. public surface)
+- [x] 5.7 Export + Delete-account render as clearly inert ("coming soon")
+- [x] 5.8 Email displays correctly from `useAuth`
 
 ### Phase 6: Marketing Landing + Auth
 
