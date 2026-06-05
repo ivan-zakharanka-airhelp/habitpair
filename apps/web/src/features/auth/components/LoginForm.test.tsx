@@ -48,7 +48,7 @@ describe('LoginForm', () => {
 
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.com' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password1' } });
-    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    fireEvent.click(screen.getByRole('button', { name: /log in/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Invalid email or password');
     expect(onSuccess).not.toHaveBeenCalled();
@@ -70,7 +70,7 @@ describe('LoginForm', () => {
 
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.com' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password1' } });
-    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    fireEvent.click(screen.getByRole('button', { name: /log in/i }));
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
     expect(authStore.getAccessToken()).toBe('a');

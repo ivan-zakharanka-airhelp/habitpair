@@ -3,9 +3,116 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#2e7d5b" />
-    <title>habitpair</title>
+
+    <!-- Primary SEO -->
+    <title>Habitpair: the calm habit tracker that shows you why you slip</title>
+    <meta
+      name="description"
+      content="Habitpair is a deliberately simple habit tracker for building good habits and breaking bad ones. A calm day-of-week grid surfaces the patterns behind your misses, so you fix the cause, not just count streaks. Free, private, no nagging."
+    />
+    <meta
+      name="keywords"
+      content="habit tracker, build habits, break bad habits, streak tracker, daily habit app, habit patterns, day of week insights, free habit tracker, private habit tracker, minimalist habit app"
+    />
+    <meta name="author" content="Habitpair" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://habitpair.com/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Habitpair" />
+    <meta property="og:url" content="https://habitpair.com/" />
+    <meta property="og:title" content="Habitpair: see why you slip, not just that you did" />
+    <meta
+      property="og:description"
+      content="A calm, deliberately simple habit tracker. Mark the days; a day-of-week grid quietly reveals the patterns behind your misses. Build good habits, break bad ones. Free and private."
+    />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Habitpair: the habit tracker that shows you why you slip" />
+    <meta
+      name="twitter:description"
+      content="Mark the days. A calm day-of-week grid reveals the patterns behind your misses. Build good habits, break bad ones. Free and private."
+    />
+
+    <!-- Structured data — helps rich results & AI answer engines -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Habitpair",
+        "applicationCategory": "LifestyleApplication",
+        "applicationSubCategory": "Habit Tracker",
+        "operatingSystem": "Web, iOS, Android",
+        "url": "https://habitpair.com/",
+        "description": "Habitpair is a deliberately simple habit tracker for building good habits and breaking bad ones. Instead of only counting streaks, its calm day-of-week grid surfaces the patterns behind your misses so you can fix the underlying cause.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "featureList": [
+          "Track habits you are building and habits you are breaking in one grid",
+          "Daily, weekly, and monthly habit frequencies",
+          "Day-of-week pattern insights that reveal why you slip",
+          "Streaks, rolling consistency, and all-time completion metrics",
+          "Calendar history with month-by-month review",
+          "Syncs across phone, tablet, and laptop through your account",
+          "Private by default with one-tap data export",
+          "Light and dark themes, no ads, no nagging notifications"
+        ],
+        "isAccessibleForFree": true
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What makes Habitpair different from other habit trackers?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Most trackers only tell you that you missed a day. Habitpair shows you why: a calm day-of-week grid reveals the patterns behind your misses, like consistently slipping on Wednesdays, so you can fix the cause instead of just resetting a streak."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can Habitpair help me break a bad habit, not just build a good one?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Habitpair tracks both. 'Building' habits count the days you show up; 'breaking' habits count the days you stay clean. Both live in the same honest grid."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is Habitpair free?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Habitpair is free to use. There are no ads and no motivational spam."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is my habit data private?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Your data is private by default and never sold. You can export everything you've logged to a single file at any time."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does Habitpair send reminders or notifications?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No nagging. Habitpair is intentionally quiet. You open it when you want to mark a day, and it shows you what's happening without guilt-tripping notifications."
+            }
+          }
+        ]
+      }
+    </script>
 
     <!-- Hanken Grotesk — the design's sans/display face. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -25,7 +132,13 @@
           var dark =
             th === 'dark' ||
             (th === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          document.documentElement.style.background = dark ? '#262320' : '#faf8f4';
+          var root = document.documentElement;
+          // data-theme on <html> so the dark token block cascades to <body> (an
+          // ancestor of .app) the instant the stylesheet loads — without it, body
+          // keeps the light --bg and flashes before .app paints. The style.background
+          // covers the gap before the stylesheet itself is parsed.
+          root.setAttribute('data-theme', dark ? 'dark' : 'light');
+          root.style.background = dark ? '#262320' : '#faf8f4';
         } catch (e) {}
       })();
     </script>

@@ -445,28 +445,28 @@ Re-skin the public surface: a full landing-page port (theme-aware) and the redes
 ### Phase 5: Settings
 
 #### Automated
-- [x] 5.1 Route tree regenerates + type-checks: `npm run typecheck -w @habitpair/web`
-- [x] 5.2 FE tests pass: `npm run test -w @habitpair/web`
-- [x] 5.3 Web build compiles: `npm run build -w @habitpair/web`
-- [x] 5.4 Linting passes: `make lint`
+- [x] 5.1 Route tree regenerates + type-checks: `npm run typecheck -w @habitpair/web` — 6bcfcbe
+- [x] 5.2 FE tests pass: `npm run test -w @habitpair/web` — 6bcfcbe
+- [x] 5.3 Web build compiles: `npm run build -w @habitpair/web` — 6bcfcbe
+- [x] 5.4 Linting passes: `make lint` — 6bcfcbe
 
 #### Manual
-- [x] 5.5 `/settings` matches the render; AccountMenu → Settings navigates; back returns to prior screen
-- [x] 5.6 Theme Segmented switches + persists across reload + applies app-wide (incl. public surface)
-- [x] 5.7 Export + Delete-account render as clearly inert ("coming soon")
-- [x] 5.8 Email displays correctly from `useAuth`
+- [x] 5.5 `/settings` matches the render; AccountMenu → Settings navigates; back returns to prior screen — 6bcfcbe
+- [x] 5.6 Theme Segmented switches + persists across reload + applies app-wide (incl. public surface) — 6bcfcbe
+- [x] 5.7 Export + Delete-account render as clearly inert ("coming soon") — 6bcfcbe
+- [x] 5.8 Email displays correctly from `useAuth` — 6bcfcbe
 
 ### Phase 6: Marketing Landing + Auth
 
 #### Automated
-- [ ] 6.1 FE type checking passes: `npm run typecheck -w @habitpair/web`
-- [ ] 6.2 FE tests pass (auth-form tests updated/green): `npm run test -w @habitpair/web`
-- [ ] 6.3 Web build compiles: `npm run build -w @habitpair/web`
-- [ ] 6.4 Linting passes: `make lint`
+- [x] 6.1 FE type checking passes: `npm run typecheck -w @habitpair/web`
+- [x] 6.2 FE tests pass (auth-form tests updated/green): `npm run test -w @habitpair/web`
+- [x] 6.3 Web build compiles: `npm run build -w @habitpair/web`
+- [x] 6.4 Linting passes: `make lint`
 
 #### Manual
-- [ ] 6.5 Landing matches the design across all sections in both themes; DowInsight Wednesday column shows; FAQ expands/collapses
-- [ ] 6.6 Hero/final CTAs route correctly (unauthed → register/login; authed → dashboard)
-- [ ] 6.7 Login/register cards match; validation + submit + error states work; login↔register toggle works
-- [ ] 6.8 Landing + auth reflow cleanly at mobile widths
-- [ ] 6.9 SEO meta + JSON-LD present in the built `index.html`
+- [x] 6.5 Landing matches the design across all sections in both themes; DowInsight Wednesday column shows; FAQ expands/collapses
+- [x] 6.6 Hero/final CTAs route correctly (unauthed → register/login; authed → dashboard)
+- [x] 6.7 Login/register cards match; validation + submit + error states work; login↔register toggle works
+- [x] 6.8 Landing + auth reflow cleanly at mobile widths
+- [x] 6.9 SEO meta + JSON-LD present in the built `index.html`
