@@ -145,6 +145,52 @@ describe('HabitsService', () => {
     });
   });
 
+  describe('findByUser — list enrichment', () => {
+    it('returns only marks inside the trailing 7-day window, oldest-first', async () => {
+      prismaMock.habit.findMany.mockResolvedValue([habit({ frequency: HabitFrequency.DAILY })]);
+      prismaMock.mark.findMany.mockResolvedValue([
+        { date: parseDateOnly('2026-05-28'), status: MarkStatus.COMPLETED }, // before window
+        { date: parseDateOnly('2026-05-30'), status: MarkStatus.COMPLETED }, // window edge
+        { date: parseDateOnly('2026-06-03'), status: MarkStatus.MISSED },
+        { date: parseDateOnly('2026-06-05'), status: MarkStatus.COMPLETED }, // today
+      ]);
+
+      const [row] = await service.findByUser('u1', '2026-06-05');
+
+      expect(row.recentMarks).toEqual([
+        { date: '2026-05-30', status: MarkStatus.COMPLETED },
+        { date: '2026-06-03', status: MarkStatus.MISSED },
+        { date: '2026-06-05', status: MarkStatus.COMPLETED },
+      ]);
+    });
+
+    it('computes currentStreak from the full mark history via the metrics engine', async () => {
+      prismaMock.habit.findMany.mockResolvedValue([habit({ frequency: HabitFrequency.DAILY })]);
+      prismaMock.mark.findMany.mockResolvedValue([
+        { date: parseDateOnly('2026-06-03'), status: MarkStatus.COMPLETED },
+        { date: parseDateOnly('2026-06-04'), status: MarkStatus.COMPLETED },
+        { date: parseDateOnly('2026-06-05'), status: MarkStatus.COMPLETED },
+      ]);
+
+      const [row] = await service.findByUser('u1', '2026-06-05');
+
+      expect(row.currentStreak).toBe(3);
+      expect(row.unit).toBe('DAY');
+    });
+
+    it('derives unit from frequency without an extra query', async () => {
+      prismaMock.habit.findMany.mockResolvedValue([
+        habit({ id: 'd', frequency: HabitFrequency.DAILY }),
+        habit({ id: 'w', frequency: HabitFrequency.WEEKLY, targetCount: 2 }),
+        habit({ id: 'm', frequency: HabitFrequency.MONTHLY, targetCount: 5 }),
+      ]);
+
+      const rows = await service.findByUser('u1', '2026-06-05');
+
+      expect(rows.map((r) => r.unit)).toEqual(['DAY', 'WEEK', 'MONTH']);
+    });
+  });
+
   describe('create — target normalization', () => {
     it('forces targetCount to null for a daily habit even if one is supplied', async () => {
       prismaMock.habit.create.mockResolvedValue({});

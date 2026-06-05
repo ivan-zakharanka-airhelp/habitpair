@@ -19,6 +19,12 @@ function pluralize(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? '' : 's'}`;
 }
 
+// The bare unit noun ("day"/"week"/"month") — for UI that renders the count and
+// its unit in separate type styles (e.g. the best-streak rows).
+export function unitNoun(unit: StreakUnit): string {
+  return UNIT_NOUN[unit];
+}
+
 // "5 days" / "2 weeks" / "1 month" — a streak length in its native unit.
 export function streakLabel(length: number, unit: StreakUnit): string {
   return pluralize(length, UNIT_NOUN[unit]);

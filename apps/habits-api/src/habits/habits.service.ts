@@ -4,6 +4,7 @@ import { HabitFrequency, HabitModality, MarkStatus } from '../../generated/prism
 import { CreateHabitDto } from './dto/create-habit.dto';
 import { UpdateHabitDto } from './dto/update-habit.dto';
 import {
+  addUtcDays,
   closedPeriodFailures,
   computedMissedDates,
   currentPeriodRange,
@@ -33,6 +34,7 @@ export class HabitsService {
 
   async findByUser(userId: string, today: string) {
     const todayDate = parseDateOnly(today);
+    const windowStart = addUtcDays(todayDate, -6); // 7-day strip: [today-6, today]
     const habits = await this.prisma.habit.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
@@ -41,7 +43,11 @@ export class HabitsService {
     return Promise.all(
       habits.map(async (habit) => {
         const { start, end } = currentPeriodRange(habit.frequency, todayDate);
-        const [todayMark, completedCount] = await Promise.all([
+        // The full mark history backs the streak (the metrics engine walks from
+        // the anchor period); the same rows feed the 7-day strip, so no extra
+        // query is needed. Acceptable at this app's scale — bound the read if
+        // habit counts ever grow (see plan's Performance Considerations).
+        const [todayMark, completedCount, marks] = await Promise.all([
           this.prisma.mark.findUnique({
             where: { habitId_date: { habitId: habit.id, date: todayDate } },
             select: { status: true },
@@ -53,7 +59,27 @@ export class HabitsService {
               date: { gte: start, lte: end },
             },
           }),
+          this.prisma.mark.findMany({
+            where: { habitId: habit.id },
+            select: { date: true, status: true },
+            orderBy: { date: 'asc' },
+          }),
         ]);
+
+        const { unit, currentStreak } = computeMetrics({
+          frequency: habit.frequency,
+          target: habit.targetCount ?? 1,
+          anchor: marks[0]?.date ?? null,
+          today: todayDate,
+          marks,
+        });
+
+        const recentMarks = marks
+          .filter(
+            (m) =>
+              m.date.getTime() >= windowStart.getTime() && m.date.getTime() <= todayDate.getTime(),
+          )
+          .map((m) => ({ date: formatDateOnly(m.date), status: m.status }));
 
         return {
           ...habit,
@@ -63,6 +89,9 @@ export class HabitsService {
             completedCount,
             target: habit.targetCount ?? 1,
           },
+          recentMarks,
+          currentStreak,
+          unit,
         };
       }),
     );

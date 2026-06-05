@@ -7,9 +7,5 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   const navigate = useNavigate();
-  return (
-    <main>
-      <LoginForm onSuccess={() => navigate({ to: '/app' })} />
-    </main>
-  );
+  return <LoginForm onSuccess={() => navigate({ to: '/app' })} />;
 }
