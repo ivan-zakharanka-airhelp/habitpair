@@ -14,6 +14,11 @@ export interface UpdateHabitInput {
   modality?: Modality;
 }
 
+export interface RecentMark {
+  date: string; // YYYY-MM-DD
+  status: MarkStatus;
+}
+
 export interface HabitListItem {
   id: string;
   name: string;
@@ -26,6 +31,11 @@ export interface HabitListItem {
     completedCount: number;
     target: number;
   };
+  // List enrichment (habits-api findByUser): the trailing 7-day mark window for
+  // the week strip, the active streak for the chip, and the streak unit.
+  recentMarks: RecentMark[];
+  currentStreak: number;
+  unit: StreakUnit;
 }
 
 export interface FailedPeriod {

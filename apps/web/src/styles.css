@@ -103,6 +103,15 @@
   --accent-ink:  oklch(0.18 0.012 75);
   --card-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 18px 36px -20px rgba(0,0,0,0.6);
 
+  /* Re-resolve component tokens that reference a base token via var()/color-mix():
+     such a property is frozen at the value computed where it is DECLARED (:root,
+     i.e. light), so without re-declaring here they would keep the light surface/
+     line/accent and cards/fields would render light-on-dark. */
+  --card-bg:     var(--surface);
+  --card-border: 1px solid color-mix(in oklch, var(--line) 70%, transparent);
+  --field-bg:    var(--surface);
+  --ring:        color-mix(in oklch, var(--accent) 45%, transparent);
+
   /* green accent (dark) */
   --accent:      oklch(0.76 0.11 162);
   --accent-2:    oklch(0.82 0.11 162);
@@ -414,14 +423,17 @@ button { font-family: inherit; }
 .today__count b { font-family: var(--font-display); font-weight: var(--title-weight); font-size: 1.15rem; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: -.01em; }
 .today__count span { display: block; font-size: .8rem; color: var(--ink-3); margin-top: 5px; }
 
-.ring { position: relative; width: 66px; height: 66px; flex: none; }
-.ring > svg { transform: rotate(-90deg); display: block; }
-.ring__track { fill: none; stroke: var(--surface-2); }
-.ring__fill { fill: none; stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset .7s cubic-bezier(.3,.8,.4,1); }
-.ring__txt { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; font-size: .92rem; color: var(--ink); font-variant-numeric: tabular-nums; }
-.ring--full .ring__fill { stroke: var(--success); }
-.ring--full .ring__txt { color: var(--success-ink); }
-.ring__check { color: var(--success); }
+/* progress ring (today's completion). Named `pring`, NOT `ring`: Tailwind v4
+   ships a `ring` utility (a 1px box-shadow) that would otherwise paint a square
+   frame around the SVG. */
+.pring { position: relative; width: 66px; height: 66px; flex: none; }
+.pring > svg { transform: rotate(-90deg); display: block; }
+.pring__track { fill: none; stroke: var(--surface-2); }
+.pring__fill { fill: none; stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset .7s cubic-bezier(.3,.8,.4,1); }
+.pring__txt { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; font-size: .92rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+.pring--full .pring__fill { stroke: var(--success); }
+.pring--full .pring__txt { color: var(--success-ink); }
+.pring__check { color: var(--success); }
 
 /* hairline that splits hero from the day's list */
 .today__rule { height: 1px; background: var(--line); margin: 26px 0 4px; }

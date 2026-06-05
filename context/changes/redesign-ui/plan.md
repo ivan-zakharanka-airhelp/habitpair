@@ -402,24 +402,24 @@ Re-skin the public surface: a full landing-page port (theme-aware) and the redes
 ### Phase 2: Shared Primitives + Shell
 
 #### Automated
-- [x] 2.1 Primitive unit tests pass: `npm run test -w @habitpair/web`
-- [x] 2.2 Type checking passes: `npm run typecheck -w @habitpair/web`
-- [x] 2.3 Linting passes: `make lint`
-- [x] 2.4 Web build compiles: `npm run build -w @habitpair/web`
+- [x] 2.1 Primitive unit tests pass: `npm run test -w @habitpair/web` — ef96001
+- [x] 2.2 Type checking passes: `npm run typecheck -w @habitpair/web` — ef96001
+- [x] 2.3 Linting passes: `make lint` — ef96001
+- [x] 2.4 Web build compiles: `npm run build -w @habitpair/web` — ef96001
 
 #### Manual
-- [x] 2.5 Each primitive renders correctly in both light and dark themes
-- [x] 2.6 Navbar brand + AccountMenu dropdown work (click-outside + Escape); avatar monogram from email
-- [x] 2.7 Dialog focus/Escape/backdrop and Toast auto-dismiss behave
+- [x] 2.5 Each primitive renders correctly in both light and dark themes — ef96001
+- [x] 2.6 Navbar brand + AccountMenu dropdown work (click-outside + Escape); avatar monogram from email — ef96001
+- [x] 2.7 Dialog focus/Escape/backdrop and Toast auto-dismiss behave — ef96001
 
 ### Phase 3: Dashboard Re-skin + List Enrichment
 
 #### Automated
-- [ ] 3.1 Backend tests pass (incl. enrichment): `npm test -w @habitpair/habits-api`
-- [ ] 3.2 Backend lint/build: `make lint` + `npm run build -w @habitpair/habits-api`
-- [ ] 3.3 FE type checking passes: `npm run typecheck -w @habitpair/web`
-- [ ] 3.4 FE tests pass (incl. optimistic-marking smoke test): `npm run test -w @habitpair/web`
-- [ ] 3.5 Web build compiles: `npm run build -w @habitpair/web`
+- [x] 3.1 Backend tests pass (incl. enrichment): `npm test -w @habitpair/habits-api`
+- [x] 3.2 Backend lint/build: `make lint` + `npm run build -w @habitpair/habits-api`
+- [x] 3.3 FE type checking passes: `npm run typecheck -w @habitpair/web`
+- [x] 3.4 FE tests pass (incl. optimistic-marking smoke test): `npm run test -w @habitpair/web`
+- [x] 3.5 Web build compiles: `npm run build -w @habitpair/web`
 
 #### Manual
 - [ ] 3.6 Dashboard matches `renders/list.png` (TodayHero ring, Building/Breaking, week strips, streak chips, mark controls)

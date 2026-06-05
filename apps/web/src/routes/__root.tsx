@@ -19,9 +19,7 @@ function RootLayout() {
   return (
     <div className="app" data-theme={effTheme} style={appStyle}>
       <Navbar />
-      <div className="p-6">
-        <Outlet />
-      </div>
+      <Outlet />
       <ToastHost />
       {import.meta.env.DEV ? <TanStackRouterDevtools /> : null}
     </div>
