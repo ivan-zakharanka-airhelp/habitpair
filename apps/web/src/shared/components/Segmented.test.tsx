@@ -29,9 +29,7 @@ describe('Segmented', () => {
 
   it('moves selection with arrow keys, wrapping at the ends', () => {
     const onChange = vi.fn();
-    render(
-      <Segmented value="light" options={['light', 'dark', 'system']} onChange={onChange} />,
-    );
+    render(<Segmented value="light" options={['light', 'dark', 'system']} onChange={onChange} />);
     fireEvent.keyDown(screen.getByRole('radio', { name: 'light' }), { key: 'ArrowRight' });
     expect(onChange).toHaveBeenCalledWith('dark');
     fireEvent.keyDown(screen.getByRole('radio', { name: 'light' }), { key: 'ArrowLeft' });
