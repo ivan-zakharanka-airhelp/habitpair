@@ -71,7 +71,7 @@ export function HabitCard({ habit }: { habit: HabitListItem }) {
             className="logbtn"
             data-met={done}
             disabled={toggle.isPending}
-            aria-label={`Log a ${habit.name} session`}
+            aria-label={`Log ${habit.name} ${neg ? 'clean' : 'done'} ${habit.frequency === 'WEEKLY' ? 'this week' : 'this month'}`}
             onClick={() => toggle.mutate(habit)}
           >
             {done ? <Icon name="check" size={16} /> : <Icon name="plus" size={15} />}

@@ -6,7 +6,7 @@ import { Segmented } from './Segmented';
 afterEach(cleanup);
 
 describe('Segmented', () => {
-  it('marks the selected option with aria-pressed and groups under the label', () => {
+  it('exposes a radiogroup and marks the selected option with aria-checked', () => {
     render(
       <Segmented
         value="dark"
@@ -15,19 +15,30 @@ describe('Segmented', () => {
         ariaLabel="Theme"
       />,
     );
-    expect(screen.getByRole('group', { name: 'Theme' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'dark' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'light' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('radiogroup', { name: 'Theme' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'dark' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: 'light' })).toHaveAttribute('aria-checked', 'false');
   });
 
   it('calls onChange with the clicked value', () => {
     const onChange = vi.fn();
     render(<Segmented value="light" options={['light', 'dark']} onChange={onChange} />);
-    fireEvent.click(screen.getByRole('button', { name: 'dark' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'dark' }));
     expect(onChange).toHaveBeenCalledWith('dark');
   });
 
-  it('renders object options and never fires onChange for a disabled one', () => {
+  it('moves selection with arrow keys, wrapping at the ends', () => {
+    const onChange = vi.fn();
+    render(
+      <Segmented value="light" options={['light', 'dark', 'system']} onChange={onChange} />,
+    );
+    fireEvent.keyDown(screen.getByRole('radio', { name: 'light' }), { key: 'ArrowRight' });
+    expect(onChange).toHaveBeenCalledWith('dark');
+    fireEvent.keyDown(screen.getByRole('radio', { name: 'light' }), { key: 'ArrowLeft' });
+    expect(onChange).toHaveBeenLastCalledWith('system');
+  });
+
+  it('renders object options and never selects a disabled one', () => {
     const onChange = vi.fn();
     render(
       <Segmented
@@ -39,7 +50,7 @@ describe('Segmented', () => {
         onChange={onChange}
       />,
     );
-    const disabled = screen.getByRole('button', { name: 'B' });
+    const disabled = screen.getByRole('radio', { name: 'B' });
     expect(disabled).toBeDisabled();
     fireEvent.click(disabled);
     expect(onChange).not.toHaveBeenCalled();

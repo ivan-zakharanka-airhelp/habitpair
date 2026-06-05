@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HabitDetail } from './HabitDetail';
-import { calendarQueryRange, currentMonth } from '../lib/calendarRange';
+import { calendarQueryRange } from '../lib/calendarRange';
 import { todayLocalISO } from '../lib/today';
 import type { HabitCalendarResponse, HabitMetricsResponse } from '../types';
 
@@ -56,7 +56,7 @@ function metricsData(): HabitMetricsResponse {
 // stub — only the edit/delete mutations do.
 function renderDetail() {
   const today = todayLocalISO();
-  const range = calendarQueryRange('all', currentMonth());
+  const range = calendarQueryRange();
   const client = new QueryClient({
     defaultOptions: { queries: { staleTime: Infinity, retry: false }, mutations: { retry: false } },
   });

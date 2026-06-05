@@ -13,7 +13,7 @@ import { useDeleteHabit } from '../hooks/useDeleteHabit';
 import { useHabitCalendar } from '../hooks/useHabitCalendar';
 import { useHabitMetrics } from '../hooks/useHabitMetrics';
 import { useUpdateHabit } from '../hooks/useUpdateHabit';
-import { calendarQueryRange, currentMonth } from '../lib/calendarRange';
+import { calendarQueryRange } from '../lib/calendarRange';
 import { todayLocalISO } from '../lib/today';
 import type { Modality } from '../types';
 import { BestStreaks } from './BestStreaks';
@@ -52,7 +52,7 @@ export function HabitDetail({ habitId }: { habitId: string }) {
   // Fetch a fixed 24-month window once; the calendar slides its display window
   // over it client-side, so month navigation never refetches. The anchor
   // (firstMarkDate) comes back with the data and only shapes the display.
-  const range = calendarQueryRange('all', currentMonth());
+  const range = calendarQueryRange();
   const query = useHabitCalendar(habitId, range.fromMonth, range.toMonth, today);
   // Bound to the same window so optimistic writes + invalidation target this key.
   const cycleMark = useCycleMark(habitId, range.fromMonth, range.toMonth, today);

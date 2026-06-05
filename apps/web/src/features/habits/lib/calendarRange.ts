@@ -1,5 +1,4 @@
 import { todayLocalISO } from './today';
-import type { CalendarSpan } from '../types';
 
 export interface CalendarRange {
   fromMonth: string; // YYYY-MM — backend query lower bound
@@ -42,24 +41,14 @@ export function currentMonth(): string {
   return todayLocalISO().slice(0, 7);
 }
 
-// The month range to FETCH. Deliberately independent of the first-mark anchor so
-// the query key never depends on server data (which would feed back into itself
-// and thrash). 3/6/12 fetch exactly the shown window — backward unbounded,
-// forward clamped at the current month. 'all' fetches the most recent
-// ALL_CAP_MONTHS ending at the current month; the display window is trimmed to
-// first-mark→today afterwards by the calendar component.
-export function calendarQueryRange(span: CalendarSpan, endMonth: string): CalendarRange {
+// The month range to FETCH: the most recent ALL_CAP_MONTHS ending at the current
+// month. Deliberately independent of the first-mark anchor so the query key never
+// depends on server data (which would feed back into itself and thrash). The
+// display window is trimmed to first-mark→today afterwards by the calendar component.
+export function calendarQueryRange(): CalendarRange {
   const currentIdx = monthIndex(currentMonth());
-  if (span === 'all') {
-    return {
-      fromMonth: indexToMonth(currentIdx - (ALL_CAP_MONTHS - 1)),
-      toMonth: indexToMonth(currentIdx),
-    };
-  }
-  const count = Number(span);
-  const toIdx = Math.min(monthIndex(endMonth), currentIdx);
   return {
-    fromMonth: indexToMonth(toIdx - (count - 1)),
-    toMonth: indexToMonth(toIdx),
+    fromMonth: indexToMonth(currentIdx - (ALL_CAP_MONTHS - 1)),
+    toMonth: indexToMonth(currentIdx),
   };
 }

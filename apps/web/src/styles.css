@@ -228,8 +228,8 @@ button { font-family: inherit; }
 .seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm); }
 .seg__btn { appearance: none; border: 0; background: transparent; color: var(--ink-2); font-size: .85rem; font-weight: 600; padding: 7px 13px; border-radius: calc(var(--radius-sm) - 2px); cursor: pointer; line-height: 1; min-height: 34px; }
 .seg__btn:hover { color: var(--ink); }
-.seg__btn[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px oklch(0.4 0.02 65 / 0.12); }
-[data-theme="dark"] .seg__btn[aria-pressed="true"] { box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+.seg__btn[aria-checked="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px oklch(0.4 0.02 65 / 0.12); }
+[data-theme="dark"] .seg__btn[aria-checked="true"] { box-shadow: 0 1px 3px rgba(0,0,0,.4); }
 /* In form fields, fill the field width with equal-width segments (aligns with inputs) */
 .field > .seg { display: flex; width: 100%; }
 .field > .seg .seg__btn { flex: 1; text-align: center; }

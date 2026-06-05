@@ -170,7 +170,7 @@ Recompose the authed dashboard to the design: `TodayHero` with completion `Ring`
 #### 1. Enrich the list read-model (backend)
 **File**: `apps/habits-api/src/habits/habits.service.ts` (method `findByUser`)
 **Intent**: Add `recentMarks` (last 7 days), `currentStreak`, and `unit` per habit, computed inside the existing per-habit `Promise.all` block, reusing the pure metrics engine. No schema change, no migration.
-**Contract**: Each list item gains `recentMarks: Array<{ date: string; status: 'COMPLETED' | 'MISSED' }>` (marks within the trailing 7-day window ending `today`), `currentStreak: number`, `unit: 'DAY' | 'WEEK' | 'MONTH'`. `unit` derived from `frequency` (no query); `currentStreak` via the metrics engine; `recentMarks` via a bounded `mark.findMany` over the 7-day range.
+**Contract**: Each list item gains `recentMarks: Array<{ date: string; status: 'COMPLETED' | 'MISSED' }>` (marks within the trailing 7-day window ending `today`), `currentStreak: number`, `unit: 'DAY' | 'WEEK' | 'MONTH'`. `unit` derived from `frequency` (no query); `currentStreak` via the metrics engine (which walks the habit's full mark history); `recentMarks` filtered in-memory from that same full-history read — a single `mark.findMany` per habit serves both, adding no query beyond the existing per-habit fan-out (see Performance Considerations).
 
 #### 2. List DTO/serialization (backend, if a response DTO exists)
 **File**: `apps/habits-api/src/habits/` (controller/serialization layer)

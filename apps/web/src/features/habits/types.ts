@@ -63,8 +63,6 @@ export interface HabitCalendarResponse {
   failedPeriods: FailedPeriod[];
 }
 
-export type CalendarSpan = '3' | '6' | '12' | 'all';
-
 export type StreakUnit = 'DAY' | 'WEEK' | 'MONTH';
 
 interface MetricFraction {
