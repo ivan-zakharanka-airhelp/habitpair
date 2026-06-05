@@ -389,28 +389,28 @@ Re-skin the public surface: a full landing-page port (theme-aware) and the redes
 ### Phase 1: Design Foundation — Tokens, Theming, Anti-flash
 
 #### Automated
-- [x] 1.1 Type checking passes: `npm run typecheck -w @habitpair/web`
-- [x] 1.2 Linting passes: `make lint`
-- [x] 1.3 Web build compiles (CSS + app): `npm run build -w @habitpair/web`
-- [x] 1.4 Existing tests stay green: `npm run test -w @habitpair/web`
+- [x] 1.1 Type checking passes: `npm run typecheck -w @habitpair/web` — 6be6b1d
+- [x] 1.2 Linting passes: `make lint` — 6be6b1d
+- [x] 1.3 Web build compiles (CSS + app): `npm run build -w @habitpair/web` — 6be6b1d
+- [x] 1.4 Existing tests stay green: `npm run test -w @habitpair/web` — 6be6b1d
 
 #### Manual
-- [x] 1.5 Theme toggle switches light↔dark; `system` follows OS preference live
-- [x] 1.6 No light-flash on a hard reload while in dark mode
-- [x] 1.7 Base typography, colors, and radii match the design's light/dark palettes
+- [x] 1.5 Theme toggle switches light↔dark; `system` follows OS preference live — 6be6b1d
+- [x] 1.6 No light-flash on a hard reload while in dark mode — 6be6b1d
+- [x] 1.7 Base typography, colors, and radii match the design's light/dark palettes — 6be6b1d
 
 ### Phase 2: Shared Primitives + Shell
 
 #### Automated
-- [ ] 2.1 Primitive unit tests pass: `npm run test -w @habitpair/web`
-- [ ] 2.2 Type checking passes: `npm run typecheck -w @habitpair/web`
-- [ ] 2.3 Linting passes: `make lint`
-- [ ] 2.4 Web build compiles: `npm run build -w @habitpair/web`
+- [x] 2.1 Primitive unit tests pass: `npm run test -w @habitpair/web`
+- [x] 2.2 Type checking passes: `npm run typecheck -w @habitpair/web`
+- [x] 2.3 Linting passes: `make lint`
+- [x] 2.4 Web build compiles: `npm run build -w @habitpair/web`
 
 #### Manual
-- [ ] 2.5 Each primitive renders correctly in both light and dark themes
-- [ ] 2.6 Navbar brand + AccountMenu dropdown work (click-outside + Escape); avatar monogram from email
-- [ ] 2.7 Dialog focus/Escape/backdrop and Toast auto-dismiss behave
+- [x] 2.5 Each primitive renders correctly in both light and dark themes
+- [x] 2.6 Navbar brand + AccountMenu dropdown work (click-outside + Escape); avatar monogram from email
+- [x] 2.7 Dialog focus/Escape/backdrop and Toast auto-dismiss behave
 
 ### Phase 3: Dashboard Re-skin + List Enrichment
 

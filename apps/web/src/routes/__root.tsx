@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { Navbar } from '../shared/components/Navbar';
+import { ToastHost } from '../shared/components/ToastHost';
 import { useTheme } from '../shared/hooks/useTheme';
 import type { AuthContext } from '../shared/types/auth';
 
@@ -21,6 +22,7 @@ function RootLayout() {
       <div className="p-6">
         <Outlet />
       </div>
+      <ToastHost />
       {import.meta.env.DEV ? <TanStackRouterDevtools /> : null}
     </div>
   );
