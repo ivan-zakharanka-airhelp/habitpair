@@ -27,17 +27,18 @@ function makeClient(baseUrl: string, refreshable: boolean): ApiClient {
 
   return async (path, init = {}) => {
     const response = await send(path, init);
-    if (response.status !== 401 || !refreshable || !authStore.getRefreshToken()) {
+    if (response.status !== 401 || !refreshable) {
       return response;
     }
-    // Access token likely expired: refresh once (single-flight) and retry. On
-    // refresh failure the store is already cleared and onAuthCleared drives the
-    // redirect, so surface the original 401.
-    const refreshed = await authStore.refresh();
-    if (!refreshed) {
-      return response;
+    // A 401 on an authenticated request means the access token is no longer
+    // accepted. Refresh once (single-flight) and replay on success. Every
+    // unrecoverable case — no refresh token, or a failed refresh — clears the
+    // session inside refresh() and fires onAuthCleared, which redirects to
+    // /login so the 401 never surfaces as a page-level error.
+    if (await authStore.refresh()) {
+      return send(path, init);
     }
-    return send(path, init);
+    return response;
   };
 }
 

@@ -12,9 +12,11 @@ if (!rootElement) {
   throw new Error('Root element not found');
 }
 
-// Losing the session redirects to /login; the boot exchange rehydrates a stored
-// session before any gated route renders.
+// Losing the session drops every cached query (so the next user never sees the
+// previous user's data) and redirects to /login; the boot exchange rehydrates a
+// stored session before any gated route renders.
 authStore.onAuthCleared = () => {
+  queryClient.clear();
   void router.navigate({ to: '/login' });
 };
 void authStore.bootstrap();
