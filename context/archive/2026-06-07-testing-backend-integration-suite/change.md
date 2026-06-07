@@ -1,10 +1,10 @@
 ---
 change_id: testing-backend-integration-suite
 title: Cross-user isolation + persisted-correctness integration suite
-status: impl_reviewed
+status: archived
 created: 2026-06-07
 updated: 2026-06-07
-archived_at: null
+archived_at: 2026-06-07T10:24:20Z
 ---
 
 ## Notes
