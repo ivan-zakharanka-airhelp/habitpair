@@ -351,26 +351,26 @@ None — no schema, no data, no production code changes.
 
 #### Automated
 
-- [x] 1.1 Type checking / build passes: `npm run build -w @habitpair/habits-api`
-- [x] 1.2 Linting passes: `npm run lint -w @habitpair/habits-api`
-- [x] 1.3 Existing e2e suite still passes: `npm run test:e2e -w @habitpair/habits-api`
+- [x] 1.1 Type checking / build passes: `npm run build -w @habitpair/habits-api` — 0e06aef
+- [x] 1.2 Linting passes: `npm run lint -w @habitpair/habits-api` — 0e06aef
+- [x] 1.3 Existing e2e suite still passes: `npm run test:e2e -w @habitpair/habits-api` — 0e06aef
 
 #### Manual
 
-- [x] 1.4 New helpers (`TODAY`, `deleteMark`, `getCalendar`, `getMetrics`, `getHabits`) export and import cleanly
+- [x] 1.4 New helpers (`TODAY`, `deleteMark`, `getCalendar`, `getMetrics`, `getHabits`) export and import cleanly — 0e06aef
 
 ### Phase 2: Cross-user Isolation + Durability Suite (#1, #6)
 
 #### Automated
 
-- [ ] 2.1 New suite passes: `npm run test:e2e -w @habitpair/habits-api -- isolation`
-- [ ] 2.2 Full e2e suite still green: `npm run test:e2e -w @habitpair/habits-api`
-- [ ] 2.3 Linting passes: `npm run lint -w @habitpair/habits-api`
+- [x] 2.1 New suite passes: `npm run test:e2e -w @habitpair/habits-api -- isolation`
+- [x] 2.2 Full e2e suite still green: `npm run test:e2e -w @habitpair/habits-api`
+- [x] 2.3 Linting passes: `npm run lint -w @habitpair/habits-api`
 
 #### Manual
 
-- [ ] 2.4 Commenting out an `assertOwned` makes the corresponding sweep row fail (anti-tautology), then revert
-- [ ] 2.5 The `it.each` sweep visibly covers all six routes incl. both mark routes
+- [x] 2.4 Commenting out an `assertOwned` makes the corresponding sweep row fail (anti-tautology), then revert
+- [x] 2.5 The `it.each` sweep visibly covers all six routes incl. both mark routes
 
 ### Phase 3: Persisted Correctness + Agreement + Backfill (#2, #5)
 
