@@ -79,7 +79,7 @@ orchestrator updates Status as artifacts appear on disk.
 
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|------------|-----------------|----------------|------------|--------|---------------|
-| 1 | Cross-user isolation + persisted-correctness integration suite | Prove the highest-impact backend properties at the cheapest new-signal layer — HTTP integration over a real Postgres with two users — extending the existing e2e harness. | #1, #2, #5, #6 | integration (Supertest + real DB) | change opened | context/changes/testing-backend-integration-suite/ |
+| 1 | Cross-user isolation + persisted-correctness integration suite | Prove the highest-impact backend properties at the cheapest new-signal layer — HTTP integration over a real Postgres with two users — extending the existing e2e harness. | #1, #2, #5, #6 | integration (Supertest + real DB) | implementing | context/changes/testing-backend-integration-suite/ |
 | 2 | Critical-flow browser e2e | Stand up a Playwright layer over the activation flow and the session-expiry / sign-out-cache lifecycle. | #3, #4 | e2e (browser) | not started | — |
 | 3 | Quality-gates wiring | Make the Phase-1 and Phase-2 suites blocking checks in the existing path-filtered CI; confirm web lint + typecheck is an enforced gate. | cross-cutting | gates | not started | — |
 
@@ -150,7 +150,17 @@ the relevant rollout phase ships; before that, it reads "TBD — see §3 Phase <
 
 ### 6.2 Adding an integration test (HTTP + real DB)
 
-- TBD — see §3 Phase 1. Will codify the two-user Supertest pattern over a real Postgres in `apps/*/test/app.e2e-spec.ts` (assert request → response shape AND the persisted side-effect; the non-owning user always gets 404).
+The two-user Supertest pattern over a real Postgres. Lives under `apps/<service>/test/*.e2e-spec.ts` (`jest-e2e.json`, `testRegex: .e2e-spec.ts$`, `rootDir: .`); CI runs `migrate:deploy` against a Postgres 16 service container first.
+
+- **Boot** via `createTestApp()` ([apps/habits-api/test/helpers.ts](../../apps/habits-api/test/helpers.ts)) — it mirrors `main.ts` (`setGlobalPrefix` + the real `ValidationPipe`) and returns `{ app, prisma, jwt }`.
+- **Two users**: mint two `randomUUID()` subjects and sign each with the service's own `jwt.signAsync({ sub })` (payload is `{ sub }` only — no `exp`). A wrong-secret token covers the 401 case. For an independent-session read-back, mint a *second* token for the *same* `sub`.
+- **DB reset**: `prisma.habit.deleteMany({ where: { userId: { in: [A, B] } } })` in `beforeAll` **and** `afterAll` (marks cascade). No truncate, no transaction. Each `it` calls `createHabit` so state never bleeds within a suite; fresh UUIDs isolate across suites.
+- **Deterministic time**: import the shared `TODAY` anchor and pass it as the explicit `today` to every time-dependent read — never wall-clock. `TODAY` is chosen so June periods are open and earlier ones closed.
+- **Assert both halves**: the request→response shape AND the persisted side-effect, read back through a *different* request (and, for durability, a second token) — never trust the write response alone.
+- **Ownership is always 404** (never 403): a non-owning user gets 404 on every `habitId`-addressed route, with no existence leak. Because the second-stage writes are id-keyed (`assertOwned` runs first), also re-read the owner's data to prove a failed cross-user write had no side-effect.
+- **Calendar↔metrics agreement** (`#2`/`#5`): hand-derive the expected failure set from the rule + `TODAY` (the **oracle** — never from endpoint output), assert each endpoint against it, *and* assert the two endpoints mutually agree. See `assertCalendarAgreesWithMetrics` in `consistency.e2e-spec.ts`.
+- **Reference**: `apps/habits-api/test/isolation.e2e-spec.ts` (`#1` 404 sweep + `#6` durability) and `apps/habits-api/test/consistency.e2e-spec.ts` (`#2` round-trip/agreement + `#5` backfill).
+- **Run locally**: `npm run test:e2e -w @habitpair/habits-api` (needs local Postgres on 5434; `-- <pattern>` filters by filename).
 
 ### 6.3 Adding an e2e test (browser)
 
@@ -158,7 +168,13 @@ the relevant rollout phase ships; before that, it reads "TBD — see §3 Phase <
 
 ### 6.4 Adding a test for a new API endpoint
 
-- TBD — see §3 Phase 1. Pattern to establish: every new route gets a non-owner 404 case alongside its happy path, and any write is verified by an independent read-back, not just the response.
+Every new route ships with, at minimum:
+
+- **The happy path** for the resource owner.
+- **A non-owner 404 case** — a valid token for a user who does not own the addressed resource must get 404 (not 403, not 200), proving no existence leak. Add the route to the `it.each` sweep in `isolation.e2e-spec.ts` rather than scattering one-off cases.
+- **Well-formed params in the 404 sweep** — the global `ValidationPipe` (`forbidNonWhitelisted`) runs *before* the handler, so a malformed query/body param returns a pipe-400 *before* ownership is evaluated. A 404 assertion against a malformed request silently tests the wrong status. Use valid `from`/`to` (`YYYY-MM`), `today`/`:date` (`YYYY-MM-DD`), and `status ∈ {COMPLETED, MISSED}`.
+- **Writes verified by an independent read-back**, not the write response — a fresh request (and, for durability, a second token for the same `sub`). A 200/204 is not proof of persistence.
+- **Owner-unchanged after a failed cross-user write** — second-stage writes are id-keyed, so a 404 alone does not prove B's write did nothing; re-read A's data.
 
 ### 6.5 Adding a frontend component / hook test
 
@@ -169,7 +185,11 @@ the relevant rollout phase ships; before that, it reads "TBD — see §3 Phase <
 
 ### 6.6 Per-rollout-phase notes
 
-(Empty. After each phase lands, `/10x-implement` appends a 2–3 line note here capturing anything surprising the phase taught.)
+**Phase 1 (cross-user isolation + persisted-correctness integration suite), 2026-06-07:**
+- `ValidationPipe` runs before the handler, so the `#1` non-owner-404 sweep must use *well-formed* params or it asserts a pipe-400 instead of an ownership-404. The mark routes (`:date` a raw path param) 404 before a bad-date 400, but `PUT`-body `status` is DTO-validated — so the whole sweep uses valid params uniformly.
+- Ownership is uniform 404 everywhere (zero `ForbiddenException` in the repo); second-stage writes are id-keyed and safe only because `assertOwned` runs first — hence the owner-unchanged re-read is the regression net, not the 404 alone.
+- `#2`/`#5` agreement is kept honest structurally: hand-derive `expectedFailures` from the rule + `TODAY`, assert each endpoint against it AND mutual consistency (calendar failure set vs metrics `denominator − numerator`), so a shared bug making both wrong the same way still fails. Fixtures stay inside the rolling window (daily 30 / weekly 8) so the mutual count holds.
+- The mark write is a single atomic `upsert`; no non-atomic sequence → no hermetic partial-failure stubs warranted.
 
 ## 7. What We Deliberately Don't Test
 

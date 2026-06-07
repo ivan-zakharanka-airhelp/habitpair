@@ -376,23 +376,23 @@ None — no schema, no data, no production code changes.
 
 #### Automated
 
-- [x] 3.1 New suite passes: `npm run test:e2e -w @habitpair/habits-api -- consistency`
-- [x] 3.2 Full e2e suite still green: `npm run test:e2e -w @habitpair/habits-api`
-- [x] 3.3 Linting passes: `npm run lint -w @habitpair/habits-api`
+- [x] 3.1 New suite passes: `npm run test:e2e -w @habitpair/habits-api -- consistency` — 45d0ecd
+- [x] 3.2 Full e2e suite still green: `npm run test:e2e -w @habitpair/habits-api` — 45d0ecd
+- [x] 3.3 Linting passes: `npm run lint -w @habitpair/habits-api` — 45d0ecd
 
 #### Manual
 
-- [x] 3.4 Every `expectedFailures` set is hand-derived from the rule, not read from endpoint output (oracle audit)
-- [x] 3.5 Optional Stryker run on `metrics.ts`/`period.ts` kills failure-classification mutants; equivalent survivors ignored consciously
-- [x] 3.6 One backfill scenario hand-checked against the PRD Business-Logic rule
+- [x] 3.4 Every `expectedFailures` set is hand-derived from the rule, not read from endpoint output (oracle audit) — 45d0ecd
+- [x] 3.5 Optional Stryker run on `metrics.ts`/`period.ts` kills failure-classification mutants; equivalent survivors ignored consciously — 45d0ecd
+- [x] 3.6 One backfill scenario hand-checked against the PRD Business-Logic rule — 45d0ecd
 
 ### Phase 4: Cookbook + Test-plan Sync
 
 #### Automated
 
-- [ ] 4.1 Referenced spec files exist: `ls apps/habits-api/test/isolation.e2e-spec.ts apps/habits-api/test/consistency.e2e-spec.ts`
+- [x] 4.1 Referenced spec files exist: `ls apps/habits-api/test/isolation.e2e-spec.ts apps/habits-api/test/consistency.e2e-spec.ts`
 
 #### Manual
 
-- [ ] 4.2 §6.2/§6.4 read as actionable, self-sufficient instructions
-- [ ] 4.3 §3 Phase-1 status and §5 gate match the merged reality
+- [x] 4.2 §6.2/§6.4 read as actionable, self-sufficient instructions
+- [x] 4.3 §3 Phase-1 status and §5 gate match the merged reality
