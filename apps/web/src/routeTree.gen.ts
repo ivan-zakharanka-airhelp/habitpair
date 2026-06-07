@@ -13,6 +13,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthedSettingsRouteImport } from './routes/_authed/settings'
 import { Route as AuthedAppRouteImport } from './routes/_authed/app'
 import { Route as AuthedHabitsHabitIdRouteImport } from './routes/_authed/habits.$habitId'
 
@@ -35,6 +36,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedSettingsRoute = AuthedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedAppRoute = AuthedAppRouteImport.update({
   id: '/app',
   path: '/app',
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/app': typeof AuthedAppRoute
+  '/settings': typeof AuthedSettingsRoute
   '/habits/$habitId': typeof AuthedHabitsHabitIdRoute
 }
 export interface FileRoutesByTo {
@@ -58,6 +65,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/app': typeof AuthedAppRoute
+  '/settings': typeof AuthedSettingsRoute
   '/habits/$habitId': typeof AuthedHabitsHabitIdRoute
 }
 export interface FileRoutesById {
@@ -67,13 +75,20 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/_authed/app': typeof AuthedAppRoute
+  '/_authed/settings': typeof AuthedSettingsRoute
   '/_authed/habits/$habitId': typeof AuthedHabitsHabitIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/register' | '/app' | '/habits/$habitId'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/register'
+    | '/app'
+    | '/settings'
+    | '/habits/$habitId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/register' | '/app' | '/habits/$habitId'
+  to: '/' | '/login' | '/register' | '/app' | '/settings' | '/habits/$habitId'
   id:
     | '__root__'
     | '/'
@@ -81,6 +96,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/_authed/app'
+    | '/_authed/settings'
     | '/_authed/habits/$habitId'
   fileRoutesById: FileRoutesById
 }
@@ -121,6 +137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/settings': {
+      id: '/_authed/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthedSettingsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/app': {
       id: '/_authed/app'
       path: '/app'
@@ -140,11 +163,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthedRouteChildren {
   AuthedAppRoute: typeof AuthedAppRoute
+  AuthedSettingsRoute: typeof AuthedSettingsRoute
   AuthedHabitsHabitIdRoute: typeof AuthedHabitsHabitIdRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAppRoute: AuthedAppRoute,
+  AuthedSettingsRoute: AuthedSettingsRoute,
   AuthedHabitsHabitIdRoute: AuthedHabitsHabitIdRoute,
 }
 

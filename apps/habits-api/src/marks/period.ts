@@ -176,24 +176,26 @@ function parseMonth(s: string): { year: number; month: number } {
   return { year, month };
 }
 
-function startOfIsoWeek(d: Date): Date {
+// Exported as the DST-safe boundary primitives metrics.ts reuses — never
+// duplicate this UTC-getter math elsewhere.
+export function startOfIsoWeek(d: Date): Date {
   const daysSinceMonday = (d.getUTCDay() + 6) % 7; // getUTCDay: Sun=0..Sat=6
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - daysSinceMonday));
 }
 
-function startOfMonth(d: Date): Date {
+export function startOfMonth(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
 }
 
-function endOfIsoWeek(d: Date): Date {
+export function endOfIsoWeek(d: Date): Date {
   return addUtcDays(startOfIsoWeek(d), 6);
 }
 
-function endOfMonth(d: Date): Date {
+export function endOfMonth(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0));
 }
 
-function addUtcDays(d: Date, n: number): Date {
+export function addUtcDays(d: Date, n: number): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + n));
 }
 

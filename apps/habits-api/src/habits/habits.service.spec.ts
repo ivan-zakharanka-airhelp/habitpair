@@ -30,7 +30,13 @@ function habit(overrides: Partial<HabitRow> = {}): HabitRow {
 
 describe('HabitsService', () => {
   const prismaMock = {
-    habit: { findMany: jest.fn(), create: jest.fn(), findFirst: jest.fn() },
+    habit: {
+      findMany: jest.fn(),
+      create: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
     mark: { findUnique: jest.fn(), count: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
   };
   let service: HabitsService;
@@ -136,6 +142,52 @@ describe('HabitsService', () => {
         completedCount: 4,
         target: 10,
       });
+    });
+  });
+
+  describe('findByUser — list enrichment', () => {
+    it('returns only marks inside the trailing 7-day window, oldest-first', async () => {
+      prismaMock.habit.findMany.mockResolvedValue([habit({ frequency: HabitFrequency.DAILY })]);
+      prismaMock.mark.findMany.mockResolvedValue([
+        { date: parseDateOnly('2026-05-28'), status: MarkStatus.COMPLETED }, // before window
+        { date: parseDateOnly('2026-05-30'), status: MarkStatus.COMPLETED }, // window edge
+        { date: parseDateOnly('2026-06-03'), status: MarkStatus.MISSED },
+        { date: parseDateOnly('2026-06-05'), status: MarkStatus.COMPLETED }, // today
+      ]);
+
+      const [row] = await service.findByUser('u1', '2026-06-05');
+
+      expect(row.recentMarks).toEqual([
+        { date: '2026-05-30', status: MarkStatus.COMPLETED },
+        { date: '2026-06-03', status: MarkStatus.MISSED },
+        { date: '2026-06-05', status: MarkStatus.COMPLETED },
+      ]);
+    });
+
+    it('computes currentStreak from the full mark history via the metrics engine', async () => {
+      prismaMock.habit.findMany.mockResolvedValue([habit({ frequency: HabitFrequency.DAILY })]);
+      prismaMock.mark.findMany.mockResolvedValue([
+        { date: parseDateOnly('2026-06-03'), status: MarkStatus.COMPLETED },
+        { date: parseDateOnly('2026-06-04'), status: MarkStatus.COMPLETED },
+        { date: parseDateOnly('2026-06-05'), status: MarkStatus.COMPLETED },
+      ]);
+
+      const [row] = await service.findByUser('u1', '2026-06-05');
+
+      expect(row.currentStreak).toBe(3);
+      expect(row.unit).toBe('DAY');
+    });
+
+    it('derives unit from frequency without an extra query', async () => {
+      prismaMock.habit.findMany.mockResolvedValue([
+        habit({ id: 'd', frequency: HabitFrequency.DAILY }),
+        habit({ id: 'w', frequency: HabitFrequency.WEEKLY, targetCount: 2 }),
+        habit({ id: 'm', frequency: HabitFrequency.MONTHLY, targetCount: 5 }),
+      ]);
+
+      const rows = await service.findByUser('u1', '2026-06-05');
+
+      expect(rows.map((r) => r.unit)).toEqual(['DAY', 'WEEK', 'MONTH']);
     });
   });
 
@@ -279,6 +331,69 @@ describe('HabitsService', () => {
       expect(res.marks).toEqual({});
       expect(res.computedMissedDates).toEqual([]);
       expect(res.failedPeriods).toEqual([]);
+    });
+  });
+
+  describe('update', () => {
+    it('applies name and modality for an owned habit, scoped by id+userId', async () => {
+      prismaMock.habit.findFirst.mockResolvedValue({ id: 'h1' });
+      prismaMock.habit.update.mockResolvedValue(
+        habit({ name: 'Run', modality: HabitModality.NEGATIVE }),
+      );
+
+      await service.update('u1', 'h1', { name: 'Run', modality: HabitModality.NEGATIVE });
+
+      expect(prismaMock.habit.findFirst).toHaveBeenCalledWith({
+        where: { id: 'h1', userId: 'u1' },
+        select: { id: true },
+      });
+      expect(prismaMock.habit.update).toHaveBeenCalledWith({
+        where: { id: 'h1' },
+        data: { name: 'Run', modality: HabitModality.NEGATIVE },
+      });
+    });
+
+    it('applies only the provided field (name-only leaves modality untouched)', async () => {
+      prismaMock.habit.findFirst.mockResolvedValue({ id: 'h1' });
+      prismaMock.habit.update.mockResolvedValue(habit({ name: 'Run' }));
+
+      await service.update('u1', 'h1', { name: 'Run' });
+
+      expect(prismaMock.habit.update).toHaveBeenCalledWith({
+        where: { id: 'h1' },
+        data: { name: 'Run' },
+      });
+    });
+
+    it('throws NotFound (not 403) when the habit is not owned by the caller', async () => {
+      prismaMock.habit.findFirst.mockResolvedValue(null);
+
+      await expect(service.update('intruder', 'h1', { name: 'Run' })).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(prismaMock.habit.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('remove', () => {
+    it('deletes an owned habit, scoped by id+userId (marks cascade in the DB)', async () => {
+      prismaMock.habit.findFirst.mockResolvedValue({ id: 'h1' });
+      prismaMock.habit.delete.mockResolvedValue(habit());
+
+      await service.remove('u1', 'h1');
+
+      expect(prismaMock.habit.findFirst).toHaveBeenCalledWith({
+        where: { id: 'h1', userId: 'u1' },
+        select: { id: true },
+      });
+      expect(prismaMock.habit.delete).toHaveBeenCalledWith({ where: { id: 'h1' } });
+    });
+
+    it('throws NotFound (not 403) when the habit is not owned by the caller', async () => {
+      prismaMock.habit.findFirst.mockResolvedValue(null);
+
+      await expect(service.remove('intruder', 'h1')).rejects.toBeInstanceOf(NotFoundException);
+      expect(prismaMock.habit.delete).not.toHaveBeenCalled();
     });
   });
 });

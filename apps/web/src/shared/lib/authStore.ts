@@ -54,7 +54,12 @@ function clear(): void {
 async function performRefresh(): Promise<boolean> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) {
+    // Reached when an authenticated request 401s but the refresh credential is
+    // already gone (cleared in another tab, wiped storage). The session is
+    // unrecoverable, so tear it down and fire onAuthCleared like a failed
+    // refresh — otherwise the 401 surfaces as a page error with no redirect.
     clear();
+    authStore.onAuthCleared?.();
     return false;
   }
   try {

@@ -7,9 +7,5 @@ export const Route = createFileRoute('/register')({
 
 function RegisterPage() {
   const navigate = useNavigate();
-  return (
-    <main>
-      <RegisterForm onSuccess={() => navigate({ to: '/app' })} />
-    </main>
-  );
+  return <RegisterForm onSuccess={() => navigate({ to: '/app' })} />;
 }

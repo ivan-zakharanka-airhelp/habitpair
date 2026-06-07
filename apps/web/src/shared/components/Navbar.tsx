@@ -1,26 +1,26 @@
 import { Link } from '@tanstack/react-router';
 import { useAuth } from '../../features/auth/hooks/useAuth';
+import { AccountMenu } from './AccountMenu';
 
 export function Navbar() {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   return (
-    <nav className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-      <Link to="/" className="text-xl font-bold">
-        habitpair
-      </Link>
-      {isAuthenticated ? (
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">{user?.email}</span>
-          <button type="button" onClick={logout} className="rounded bg-black p-2 text-white">
-            Log out
-          </button>
-        </div>
-      ) : (
-        <Link to="/login" className="rounded bg-black p-2 text-white">
-          Log in
+    <nav className="nav">
+      <div className="nav__inner">
+        <Link to={isAuthenticated ? '/app' : '/'} className="brand">
+          <span className="brand__mark" /> habitpair
         </Link>
-      )}
+        <div className="nav__right">
+          {isAuthenticated && user ? (
+            <AccountMenu email={user.email} />
+          ) : (
+            <Link to="/login" className="btn btn--ghost btn--sm">
+              Log in
+            </Link>
+          )}
+        </div>
+      </div>
     </nav>
   );
 }
