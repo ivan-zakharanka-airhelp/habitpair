@@ -390,9 +390,9 @@ None — no schema, no data, no production code changes.
 
 #### Automated
 
-- [x] 4.1 Referenced spec files exist: `ls apps/habits-api/test/isolation.e2e-spec.ts apps/habits-api/test/consistency.e2e-spec.ts`
+- [x] 4.1 Referenced spec files exist: `ls apps/habits-api/test/isolation.e2e-spec.ts apps/habits-api/test/consistency.e2e-spec.ts` — 6f883ce
 
 #### Manual
 
-- [x] 4.2 §6.2/§6.4 read as actionable, self-sufficient instructions
-- [x] 4.3 §3 Phase-1 status and §5 gate match the merged reality
+- [x] 4.2 §6.2/§6.4 read as actionable, self-sufficient instructions — 6f883ce
+- [x] 4.3 §3 Phase-1 status and §5 gate match the merged reality — 6f883ce
