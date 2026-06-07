@@ -32,7 +32,7 @@ This is the *north star* — the smallest end-to-end slice whose successful deli
 | F-01  | auth-and-session-contract   | (foundation) email+password auth issues + verifies tokens; SPA gates routes       | —             | FR-001, FR-002, FR-003                | done     |
 | S-01  | create-habit-and-mark-today | create first habit + mark today + see it on the modality-grouped list (≤ ~1 min)  | F-01          | US-01, US-02, FR-004, FR-005, FR-006, FR-009 | done     |
 | S-02  | habit-calendar-and-backfill | open a habit's detail, see the monthly calendar, change any past day retroactively | S-01          | US-03, FR-010, FR-011, FR-012         | done     |
-| S-03  | habit-insight-metrics       | see current streak, rolling consistency %, adaptive ratio, and top-10 best streaks     | S-02          | US-03, FR-013, FR-014, FR-015, FR-016 | proposed |
+| S-03  | habit-insight-metrics       | see current streak, rolling consistency %, adaptive ratio, and longest streak     | S-02          | US-03, FR-013, FR-014, FR-015, FR-016 | proposed |
 | S-04  | edit-and-delete-habit       | edit a habit (structural edit resets the streak) and delete it with a brief undo  | S-03          | FR-007, FR-008                        | proposed |
 
 ## Baseline
