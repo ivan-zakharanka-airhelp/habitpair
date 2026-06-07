@@ -83,6 +83,22 @@ describe('authStore', () => {
     expect(onAuthCleared).toHaveBeenCalledTimes(1);
   });
 
+  it('fires onAuthCleared without a network call when refresh runs with no stored token', async () => {
+    // No setSession: the store has no refresh token. A direct refresh() (driven
+    // by apiClient on a 401) must still tear down + redirect, not silently no-op.
+    const onAuthCleared = vi.fn();
+    authStore.onAuthCleared = onAuthCleared;
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await authStore.refresh();
+
+    expect(result).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(authStore.getSnapshot().isAuthenticated).toBe(false);
+    expect(onAuthCleared).toHaveBeenCalledTimes(1);
+  });
+
   it('bootstrap with no stored token resolves to unauthenticated without a network call', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);

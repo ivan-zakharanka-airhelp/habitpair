@@ -79,6 +79,28 @@ describe('apiClient refresh-and-retry', () => {
     expect(onAuthCleared).toHaveBeenCalledTimes(1);
   });
 
+  it('tears down the session on a 401 when no refresh token is left to recover with', async () => {
+    authStore.setSession(authResponse({ accessToken: 'old', refreshToken: 'r0' }));
+    // The in-memory access token is still set, but the durable refresh
+    // credential is gone (e.g. cleared in another tab) — the session can't be
+    // recovered, so the 401 must clear it and trigger the redirect.
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    const onAuthCleared = vi.fn();
+    authStore.onAuthCleared = onAuthCleared;
+
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(401));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const response = await habitsApi('/habits');
+
+    expect(response.status).toBe(401);
+    // One call only: no refresh request fired and no retry, since there was
+    // nothing to refresh with.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(authStore.getAccessToken()).toBeNull();
+    expect(onAuthCleared).toHaveBeenCalledTimes(1);
+  });
+
   it('never refresh-retries a 401 from the auth client', async () => {
     authStore.setSession(authResponse({ accessToken: 'old', refreshToken: 'r0' }));
 
