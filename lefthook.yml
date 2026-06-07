@@ -1,0 +1,51 @@
+# Pre-commit gate for the habitpair monorepo.
+# Each app owns its own ESLint/TS/test tooling, so commands are scoped per
+# workspace via `root:` — lefthook runs the command from that directory and
+# passes only the staged files inside it, relative to that root.
+pre-commit:
+  parallel: true
+  commands:
+    # --- lint (auto-fix staged files, then re-stage) ---
+    lint-auth:
+      root: "apps/auth-api/"
+      glob: "*.ts"
+      exclude: '(^|/)(generated|dist)/'
+      run: npx eslint --fix {staged_files} && git add {staged_files}
+    lint-habits:
+      root: "apps/habits-api/"
+      glob: "*.ts"
+      exclude: '(^|/)(generated|dist)/'
+      run: npx eslint --fix {staged_files} && git add {staged_files}
+    lint-web:
+      root: "apps/web/"
+      glob: "*.{ts,tsx}"
+      exclude: '(\.gen\.ts$|(^|/)dist/)'
+      run: npx eslint --fix {staged_files} && git add {staged_files}
+
+    # --- typecheck (whole project; gated on a touched file in the workspace) ---
+    typecheck-auth:
+      root: "apps/auth-api/"
+      glob: "*.ts"
+      run: npx tsc --noEmit -p tsconfig.json
+    typecheck-habits:
+      root: "apps/habits-api/"
+      glob: "*.ts"
+      run: npx tsc --noEmit -p tsconfig.json
+    typecheck-web:
+      root: "apps/web/"
+      glob: "*.{ts,tsx}"
+      run: npm run typecheck
+
+    # --- scoped tests on staged source files (unit only; e2e needs a DB) ---
+    test-habits:
+      root: "apps/habits-api/"
+      glob: "*.ts"
+      exclude: '(\.e2e-spec\.ts$|(^|/)(generated|dist|test)/)'
+      run: npx jest --findRelatedTests {staged_files} --passWithNoTests
+    test-web:
+      root: "apps/web/"
+      glob: "*.{ts,tsx}"
+      exclude: '(\.gen\.ts$|(^|/)dist/)'
+      env:
+        AI_AGENT: "1"
+      run: npx vitest related {staged_files} --run --passWithNoTests
