@@ -363,28 +363,28 @@ None — no schema, no data, no production code changes.
 
 #### Automated
 
-- [x] 2.1 New suite passes: `npm run test:e2e -w @habitpair/habits-api -- isolation`
-- [x] 2.2 Full e2e suite still green: `npm run test:e2e -w @habitpair/habits-api`
-- [x] 2.3 Linting passes: `npm run lint -w @habitpair/habits-api`
+- [x] 2.1 New suite passes: `npm run test:e2e -w @habitpair/habits-api -- isolation` — 30bd1b5
+- [x] 2.2 Full e2e suite still green: `npm run test:e2e -w @habitpair/habits-api` — 30bd1b5
+- [x] 2.3 Linting passes: `npm run lint -w @habitpair/habits-api` — 30bd1b5
 
 #### Manual
 
-- [x] 2.4 Commenting out an `assertOwned` makes the corresponding sweep row fail (anti-tautology), then revert
-- [x] 2.5 The `it.each` sweep visibly covers all six routes incl. both mark routes
+- [x] 2.4 Commenting out an `assertOwned` makes the corresponding sweep row fail (anti-tautology), then revert — 30bd1b5
+- [x] 2.5 The `it.each` sweep visibly covers all six routes incl. both mark routes — 30bd1b5
 
 ### Phase 3: Persisted Correctness + Agreement + Backfill (#2, #5)
 
 #### Automated
 
-- [ ] 3.1 New suite passes: `npm run test:e2e -w @habitpair/habits-api -- consistency`
-- [ ] 3.2 Full e2e suite still green: `npm run test:e2e -w @habitpair/habits-api`
-- [ ] 3.3 Linting passes: `npm run lint -w @habitpair/habits-api`
+- [x] 3.1 New suite passes: `npm run test:e2e -w @habitpair/habits-api -- consistency`
+- [x] 3.2 Full e2e suite still green: `npm run test:e2e -w @habitpair/habits-api`
+- [x] 3.3 Linting passes: `npm run lint -w @habitpair/habits-api`
 
 #### Manual
 
-- [ ] 3.4 Every `expectedFailures` set is hand-derived from the rule, not read from endpoint output (oracle audit)
-- [ ] 3.5 Optional Stryker run on `metrics.ts`/`period.ts` kills failure-classification mutants; equivalent survivors ignored consciously
-- [ ] 3.6 One backfill scenario hand-checked against the PRD Business-Logic rule
+- [x] 3.4 Every `expectedFailures` set is hand-derived from the rule, not read from endpoint output (oracle audit)
+- [x] 3.5 Optional Stryker run on `metrics.ts`/`period.ts` kills failure-classification mutants; equivalent survivors ignored consciously
+- [x] 3.6 One backfill scenario hand-checked against the PRD Business-Logic rule
 
 ### Phase 4: Cookbook + Test-plan Sync
 
