@@ -79,7 +79,7 @@ orchestrator updates Status as artifacts appear on disk.
 
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|------------|-----------------|----------------|------------|--------|---------------|
-| 1 | Cross-user isolation + persisted-correctness integration suite | Prove the highest-impact backend properties at the cheapest new-signal layer — HTTP integration over a real Postgres with two users — extending the existing e2e harness. | #1, #2, #5, #6 | integration (Supertest + real DB) | implementing | context/changes/testing-backend-integration-suite/ |
+| 1 | Cross-user isolation + persisted-correctness integration suite | Prove the highest-impact backend properties at the cheapest new-signal layer — HTTP integration over a real Postgres with two users — extending the existing e2e harness. | #1, #2, #5, #6 | integration (Supertest + real DB) | complete | context/archive/2026-06-07-testing-backend-integration-suite/ |
 | 2 | Critical-flow browser e2e | Stand up a Playwright layer over the activation flow and the session-expiry / sign-out-cache lifecycle. | #3, #4 | e2e (browser) | not started | — |
 | 3 | Quality-gates wiring | Make the Phase-1 and Phase-2 suites blocking checks in the existing path-filtered CI; confirm web lint + typecheck is an enforced gate. | cross-cutting | gates | not started | — |
 
