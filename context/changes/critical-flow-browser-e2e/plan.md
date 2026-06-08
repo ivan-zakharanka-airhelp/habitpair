@@ -284,23 +284,23 @@ None — additive tooling + tests; no schema, data, or production-code changes.
 
 #### Automated
 
-- [x] 2.1 `e2e/activation-flow.spec.ts` passes green
+- [x] 2.1 `e2e/activation-flow.spec.ts` passes green — 47eb518
 
 #### Manual
 
-- [x] 2.2 Deliberate-break (invalidation/Bearer) → test red, then reverted
-- [x] 2.3 Five-anti-pattern review passed
+- [x] 2.2 Deliberate-break (invalidation/Bearer) → test red, then reverted — 47eb518
+- [x] 2.3 Five-anti-pattern review passed — 47eb518
 
 ### Phase 3: Session-lifecycle E2E (Risk #3)
 
 #### Automated
 
-- [ ] 3.1 `e2e/session-expiry.spec.ts` passes green
-- [ ] 3.2 `e2e/signout-cache-leak.spec.ts` passes green
+- [x] 3.1 `e2e/session-expiry.spec.ts` passes green
+- [x] 3.2 `e2e/signout-cache-leak.spec.ts` passes green
 
 #### Manual
 
-- [ ] 3.3 Deliberate-break (3a redirect) → test red, then reverted
-- [ ] 3.4 Deliberate-break (3b remove `queryClient.clear()`) → leak caught, then reverted
-- [ ] 3.5 Five-anti-pattern review passed for both specs
-- [ ] 3.6 Full e2e suite runs green twice in a row (isolation)
+- [x] 3.3 Deliberate-break (3a redirect) → test red, then reverted
+- [x] 3.4 Deliberate-break (3b remove `queryClient.clear()`) → leak caught, then reverted
+- [x] 3.5 Five-anti-pattern review passed for both specs
+- [x] 3.6 Full e2e suite runs green twice in a row (isolation)
