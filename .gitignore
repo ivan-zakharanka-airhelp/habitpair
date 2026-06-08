@@ -27,6 +27,14 @@ Thumbs.db
 # Test coverage
 coverage/
 
+# Playwright / browser E2E
+playwright/.auth/
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+.playwright-cli/
+
 # K8s secrets (real values, not the example)
 infra/k8s/secrets.yaml
 infra/k8s/secrets.local.yaml
@@ -42,5 +50,8 @@ infra/terraform/*.tfplan
 
 # Debug logs
 npm-debug.log*
+
+# E2E CI stack log (background `npm run dev` output during the e2e workflow)
+/stack.log
 
 .claude

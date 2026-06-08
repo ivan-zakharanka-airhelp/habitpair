@@ -10,9 +10,12 @@
     "dev": "concurrently -n auth,habits,web -c blue,green,magenta \"npm:dev:auth\" \"npm:dev:habits\" \"npm:dev:web\"",
     "dev:auth": "npm run start:dev -w @habitpair/auth-api",
     "dev:habits": "npm run start:dev -w @habitpair/habits-api",
-    "dev:web": "npm run dev -w @habitpair/web"
+    "dev:web": "npm run dev -w @habitpair/web",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "concurrently": "^9.0.0",
     "lefthook": "^2.1.9"
   }

@@ -1,0 +1,97 @@
+name: e2e / test
+
+on:
+  pull_request:
+    paths:
+      - 'apps/**'
+      - 'e2e/**'
+      - 'playwright.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'Makefile'
+      - 'infra/docker/**'
+      - '.github/workflows/e2e.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'e2e/**'
+      - 'playwright.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'Makefile'
+      - 'infra/docker/**'
+      - '.github/workflows/e2e.yaml'
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-test-${{ github.ref }}
+  # PRs cancel in-progress (latest push wins); main runs finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Generate Prisma clients
+        run: |
+          npm run generate -w @habitpair/auth-api
+          npm run generate -w @habitpair/habits-api
+
+      - name: Start Postgres
+        run: make db-up
+
+      - name: Wait for Postgres
+        run: |
+          timeout 60 bash -c 'until docker compose -f infra/docker/docker-compose.yaml \
+            exec -T postgres pg_isready -U dev -q; do sleep 1; done'
+
+      - name: Migrate auth DB
+        run: npm run migrate:deploy -w @habitpair/auth-api
+        env:
+          DATABASE_URL: postgresql://dev:dev@localhost:5434/auth
+
+      - name: Migrate habits DB
+        run: npm run migrate:deploy -w @habitpair/habits-api
+        env:
+          DATABASE_URL: postgresql://dev:dev@localhost:5434/habits
+
+      - name: Configure web env
+        # The SPA throws at boot if VITE_*_API_URL is unset; `make setup` does
+        # this locally. The two APIs read their own .env.example fallback.
+        run: cp apps/web/.env.example apps/web/.env
+
+      - name: Start app stack and wait for health
+        run: |
+          nohup npm run dev > stack.log 2>&1 &
+          if ! timeout 120 bash -c 'until curl -sf http://localhost:3000/auth/health >/dev/null \
+              && curl -sf http://localhost:3001/habits/health >/dev/null \
+              && curl -sf http://localhost:5173 >/dev/null; do sleep 2; done'; then
+            echo "::error::App stack did not become healthy within 120s"
+            cat stack.log
+            exit 1
+          fi
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

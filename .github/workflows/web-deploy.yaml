@@ -11,6 +11,13 @@ concurrency:
   group: web-deploy-${{ github.ref }}
   cancel-in-progress: false
 
+# `actions: read` lets wait-for-apis poll sibling deploy/test runs via the API.
+# `contents: read` is all the build/deploy jobs need (checkout + artifacts);
+# AWS access uses repo secrets, not GITHUB_TOKEN.
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   build:
     # Manual dispatch always runs. workflow_run fires on ANY conclusion (success/failure/cancelled),
@@ -47,8 +54,92 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-  deploy:
+  # When a single merge to main touches both the SPA and an API, the SPA must not
+  # go live before the API it depends on. The per-app deploys run as independent
+  # workflow_run pipelines with no ordering, and web/test (no Postgres, no e2e) is
+  # far faster than an API pipeline (arm64 QEMU build + Trivy + migrate + rollout),
+  # so without this gate the SPA ships first and briefly calls endpoints that
+  # aren't deployed yet. Block the SPA deploy until each *changed* API's deploy
+  # has finished successfully.
+  #
+  # "Changed" is inferred from whether that API's test workflow ran for this exact
+  # commit — it shares the API's path filter and was queued at push time alongside
+  # web/test, so it already exists by the time web/test finishes and triggers us.
+  # No test run for this SHA => the API was untouched => we don't wait on it.
+  #
+  # Fails closed: if a changed API's tests or deploy don't succeed, this job fails
+  # and `deploy` is skipped via `needs:` — the SPA never ships ahead of a broken or
+  # absent backend, matching the repo's "don't ship on failure" deploy philosophy.
+  wait-for-apis:
     needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for changed API deploys to finish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          set -euo pipefail
+
+          # Newest run of a workflow file at this commit, filtered by trigger event.
+          # Prints "<status> <conclusion>", or nothing when no such run exists.
+          run_state() {
+            gh api \
+              "/repos/$REPO/actions/workflows/$1/runs?head_sha=$SHA&event=$2&per_page=1" \
+              --jq '.workflow_runs[0] // empty | "\(.status) \(.conclusion)"'
+          }
+
+          wait_for_api() {
+            local api="$1"
+            local test_wf="${api}-test.yaml"
+            local deploy_wf="${api}-deploy.yaml"
+            local s status conclusion deadline
+
+            s="$(run_state "$test_wf" push)"
+            if [ -z "$s" ]; then
+              echo "$api: no test run for $SHA — unchanged, not waiting."
+              return 0
+            fi
+            echo "$api: changed in this push — gating the SPA deploy on its pipeline."
+
+            deadline=$(( $(date +%s) + 1800 ))   # 30-minute ceiling
+            while :; do
+              if [ "$(date +%s)" -ge "$deadline" ]; then
+                echo "::error::Timed out after 30m waiting for $api deploy of $SHA."
+                return 1
+              fi
+
+              # Phase 1 — the API's tests must pass, otherwise its deploy never runs.
+              s="$(run_state "$test_wf" push)"
+              status="${s%% *}"; conclusion="${s#* }"
+              if [ "$status" != "completed" ]; then sleep 20; continue; fi
+              if [ "$conclusion" != "success" ]; then
+                echo "::error::$api tests for $SHA concluded '$conclusion' — its deploy will not run; not shipping the SPA."
+                return 1
+              fi
+
+              # Phase 2 — tests are green, so the workflow_run-triggered deploy will
+              # appear; wait for it to finish rolling out.
+              s="$(run_state "$deploy_wf" workflow_run)"
+              if [ -z "$s" ]; then echo "$api: tests green, deploy not created yet…"; sleep 20; continue; fi
+              status="${s%% *}"; conclusion="${s#* }"
+              if [ "$status" != "completed" ]; then echo "$api: deploy $status…"; sleep 20; continue; fi
+              if [ "$conclusion" != "success" ]; then
+                echo "::error::$api deploy of $SHA concluded '$conclusion'. Not shipping the SPA."
+                return 1
+              fi
+              echo "$api: deploy succeeded."
+              return 0
+            done
+          }
+
+          wait_for_api auth-api
+          wait_for_api habits-api
+          echo "All changed APIs are deployed — proceeding with the SPA deploy."
+
+  deploy:
+    needs: [build, wait-for-apis]
     runs-on: ubuntu-latest
     env:
       AWS_REGION: eu-west-1
