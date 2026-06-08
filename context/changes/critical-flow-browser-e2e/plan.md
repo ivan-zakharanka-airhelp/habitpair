@@ -295,12 +295,12 @@ None — additive tooling + tests; no schema, data, or production-code changes.
 
 #### Automated
 
-- [x] 3.1 `e2e/session-expiry.spec.ts` passes green
-- [x] 3.2 `e2e/signout-cache-leak.spec.ts` passes green
+- [x] 3.1 `e2e/session-expiry.spec.ts` passes green — adef970
+- [x] 3.2 `e2e/signout-cache-leak.spec.ts` passes green — adef970
 
 #### Manual
 
-- [x] 3.3 Deliberate-break (3a redirect) → test red, then reverted
-- [x] 3.4 Deliberate-break (3b remove `queryClient.clear()`) → leak caught, then reverted
-- [x] 3.5 Five-anti-pattern review passed for both specs
-- [x] 3.6 Full e2e suite runs green twice in a row (isolation)
+- [x] 3.3 Deliberate-break (3a redirect) → test red, then reverted — adef970
+- [x] 3.4 Deliberate-break (3b remove `queryClient.clear()`) → leak caught, then reverted — adef970
+- [x] 3.5 Five-anti-pattern review passed for both specs — adef970
+- [x] 3.6 Full e2e suite runs green twice in a row (isolation) — adef970
