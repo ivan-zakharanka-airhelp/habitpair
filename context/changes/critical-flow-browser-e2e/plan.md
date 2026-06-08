@@ -269,27 +269,27 @@ None — additive tooling + tests; no schema, data, or production-code changes.
 
 #### Automated
 
-- [x] 1.1 Root npm install + `@playwright/test` + `playwright install chromium`
-- [x] 1.2 `e2e/seed.spec.ts` passes green
-- [x] 1.3 `setup` project produces `playwright/.auth/user.json`
-- [x] 1.4 New e2e TypeScript compiles + lints
+- [x] 1.1 Root npm install + `@playwright/test` + `playwright install chromium` — e72319d
+- [x] 1.2 `e2e/seed.spec.ts` passes green — e72319d
+- [x] 1.3 `setup` project produces `playwright/.auth/user.json` — e72319d
+- [x] 1.4 New e2e TypeScript compiles + lints — e72319d
 
 #### Manual
 
-- [x] 1.5 Seed test demonstrates all four patterns on a real flow
-- [x] 1.6 A chromium-project test lands on `/app` without logging in (storageState rehydrates)
-- [x] 1.7 `E2E_RULES.md` + `.gitignore` entries + §6.3 cookbook accurate
+- [x] 1.5 Seed test demonstrates all four patterns on a real flow — e72319d
+- [x] 1.6 A chromium-project test lands on `/app` without logging in (storageState rehydrates) — e72319d
+- [x] 1.7 `E2E_RULES.md` + `.gitignore` entries + §6.3 cookbook accurate — e72319d
 
 ### Phase 2: Activation-flow E2E (Risk #4)
 
 #### Automated
 
-- [ ] 2.1 `e2e/activation-flow.spec.ts` passes green
+- [x] 2.1 `e2e/activation-flow.spec.ts` passes green
 
 #### Manual
 
-- [ ] 2.2 Deliberate-break (invalidation/Bearer) → test red, then reverted
-- [ ] 2.3 Five-anti-pattern review passed
+- [x] 2.2 Deliberate-break (invalidation/Bearer) → test red, then reverted
+- [x] 2.3 Five-anti-pattern review passed
 
 ### Phase 3: Session-lifecycle E2E (Risk #3)
 
