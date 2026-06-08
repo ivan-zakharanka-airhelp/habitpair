@@ -90,6 +90,9 @@ test("after sign-out, a second user sees none of the first user's habits", async
 
   // Teardown: delete A's habit with A's captured access token.
   if (aHabitId) {
-    await request.delete(`${HABITS_API_URL}/habits/${aHabitId}`, { headers: aAuthHeader });
+    const deleteResponse = await request.delete(`${HABITS_API_URL}/habits/${aHabitId}`, {
+      headers: aAuthHeader,
+    });
+    expect(deleteResponse.ok()).toBeTruthy();
   }
 });

@@ -79,6 +79,9 @@ test("a new habit and today's mark persist after page reload", async ({ page, re
 
   const created = habits.find((habit) => habit.name === habitName);
   if (created) {
-    await request.delete(`${HABITS_API_URL}/habits/${created.id}`, { headers: authHeader });
+    const deleteResponse = await request.delete(`${HABITS_API_URL}/habits/${created.id}`, {
+      headers: authHeader,
+    });
+    expect(deleteResponse.ok()).toBeTruthy();
   }
 });
