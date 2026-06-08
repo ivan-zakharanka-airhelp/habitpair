@@ -582,11 +582,11 @@ anti-patterns. Depends on Phase 1's `devOptions.enabled` (the harness serves `ma
 
 #### Automated
 
-- [x] 1.1 `npm install` at repo root succeeds; lockfile records `vite-plugin-pwa`
-- [x] 1.2 `npm run build -w @habitpair/web` emits `dist/manifest.webmanifest` + `dist/sw.js`
-- [x] 1.3 `npm run typecheck -w @habitpair/web` passes (virtual:pwa-register type resolves)
-- [x] 1.4 `npm run lint -w @habitpair/web` passes
-- [x] 1.5 `npm run test -w @habitpair/web` passes (node-env suite unaffected)
+- [x] 1.1 `npm install` at repo root succeeds; lockfile records `vite-plugin-pwa` — 4058d2f
+- [x] 1.2 `npm run build -w @habitpair/web` emits `dist/manifest.webmanifest` + `dist/sw.js` — 4058d2f
+- [x] 1.3 `npm run typecheck -w @habitpair/web` passes (virtual:pwa-register type resolves) — 4058d2f
+- [x] 1.4 `npm run lint -w @habitpair/web` passes — 4058d2f
+- [x] 1.5 `npm run test -w @habitpair/web` passes (node-env suite unaffected) — 4058d2f
 
 #### Manual
 
@@ -599,16 +599,16 @@ anti-patterns. Depends on Phase 1's `devOptions.enabled` (the harness serves `ma
 
 #### Automated
 
-- [ ] 2.1 `npm run test -w @habitpair/web` passes incl. Toast action-variant cases
-- [ ] 2.2 `npm run typecheck` + `npm run lint -w @habitpair/web` pass
-- [ ] 2.3 `npm run build -w @habitpair/web` succeeds (main.tsx virtual import resolves)
+- [x] 2.1 `npm run test -w @habitpair/web` passes incl. Toast action-variant cases
+- [x] 2.2 `npm run typecheck` + `npm run lint -w @habitpair/web` pass
+- [x] 2.3 `npm run build -w @habitpair/web` succeeds (main.tsx virtual import resolves)
 
 #### Manual
 
-- [ ] 2.4 Cold start: a pending update auto-activates and reloads once (no toast)
-- [ ] 2.5 Active session: a deploy surfaces the action toast; Reload loads it; never self-reloads
-- [ ] 2.6 First-ever load shows "ready to work offline" once and does not reload (no prior controller)
-- [ ] 2.7 The update action toast persists until clicked
+- [x] 2.4 Cold start: a pending update auto-activates and reloads once (no toast)
+- [x] 2.5 Active session: a deploy surfaces the action toast; Reload loads it; never self-reloads
+- [x] 2.6 First-ever load shows "ready to work offline" once and does not reload (no prior controller)
+- [x] 2.7 The update action toast persists until clicked
 
 ### Phase 3: Install affordance
 

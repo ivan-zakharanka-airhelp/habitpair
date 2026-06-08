@@ -26,4 +26,42 @@ describe('Toast', () => {
     });
     expect(onDone).toHaveBeenCalledTimes(1);
   });
+
+  it('renders an action button and uses the alert role', () => {
+    render(
+      <Toast
+        message="A new version is available."
+        onDone={() => {}}
+        action={{ label: 'Reload', onClick: () => {} }}
+      />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('A new version is available.');
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument();
+  });
+
+  it('fires the action onClick when its button is clicked', () => {
+    const onClick = vi.fn();
+    render(<Toast message="A new version is available." action={{ label: 'Reload', onClick }} />);
+    act(() => {
+      screen.getByRole('button', { name: 'Reload' }).click();
+    });
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not auto-dismiss an action toast on the short default duration', () => {
+    const onDone = vi.fn();
+    render(
+      <Toast
+        message="A new version is available."
+        duration={2600}
+        onDone={onDone}
+        action={{ label: 'Reload', onClick: () => {} }}
+      />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(2600);
+    });
+    expect(onDone).not.toHaveBeenCalled();
+  });
 });
