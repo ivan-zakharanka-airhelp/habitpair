@@ -600,10 +600,10 @@ anti-patterns. Depends on Phase 1's `devOptions.enabled` (the harness serves `ma
 
 #### Manual
 
-- [ ] 1.6 DevTools → Application → Manifest valid; 192 & 512 icons load (no 404)
-- [ ] 1.7 DevTools → Application → Service Workers shows SW registered & activated (dev)
-- [ ] 1.8 Lighthouse "Installable" check passes
-- [ ] 1.9 iOS standalone meta present; theme-color tracks light/dark
+- [x] 1.6 DevTools → Application → Manifest valid; 192 & 512 icons load (no 404)
+- [x] 1.7 DevTools → Application → Service Workers shows SW registered & activated (dev)
+- [x] 1.8 Lighthouse "Installable" check passes
+- [x] 1.9 iOS standalone meta present; theme-color tracks light/dark
 
 ### Phase 2: Hybrid update strategy
 
@@ -651,9 +651,9 @@ anti-patterns. Depends on Phase 1's `devOptions.enabled` (the harness serves `ma
 
 - [x] 5.1 `npm run test:e2e` passes `e2e/pwa-install.spec.ts` (manifest link + SW ready) — 2b8ccc7
 - [x] 5.2 Spec passes review against the five /10x-e2e anti-patterns — 2b8ccc7
-- [ ] 5.3 The e2e GitHub Actions workflow runs the new spec green
+- [x] 5.3 The e2e GitHub Actions workflow runs the new spec green
 
 #### Manual
 
-- [ ] 5.4 DevTools offline reload: shell renders offline (deep route too); data shows network-error state
-- [ ] 5.5 Install on a real device (Android Chrome + iOS Add to Home Screen); standalone launch + icon
+- [x] 5.4 DevTools offline reload: shell renders offline (deep route too); data shows network-error state
+- [x] 5.5 Install on a real device (Android Chrome + iOS Add to Home Screen); standalone launch + icon
