@@ -106,13 +106,27 @@ aws-deploy-web:                  ## Build SPA + sync to S3 + invalidate CloudFro
 	aws s3 sync apps/web/dist/ s3://$(BUCKET)/ \
 		--delete \
 		--exclude "index.html" \
+		--exclude "sw.js" \
+		--exclude "workbox-*.js" \
+		--exclude "manifest.webmanifest" \
 		--cache-control "public, max-age=31536000, immutable"
 	aws s3 cp apps/web/dist/index.html s3://$(BUCKET)/index.html \
 		--cache-control "no-cache, no-store, must-revalidate" \
 		--content-type "text/html; charset=utf-8"
+	# PWA files: never cache, explicit content-types (S3 mis-guesses .webmanifest)
+	aws s3 cp apps/web/dist/sw.js s3://$(BUCKET)/sw.js \
+		--cache-control "no-cache, no-store, must-revalidate" \
+		--content-type "application/javascript"
+	aws s3 cp apps/web/dist/manifest.webmanifest s3://$(BUCKET)/manifest.webmanifest \
+		--cache-control "no-cache, no-store, must-revalidate" \
+		--content-type "application/manifest+json"
+	aws s3 sync apps/web/dist/ s3://$(BUCKET)/ \
+		--exclude "*" --include "workbox-*.js" \
+		--cache-control "no-cache, no-store, must-revalidate" \
+		--content-type "application/javascript"
 	aws cloudfront create-invalidation \
 		--distribution-id $(DIST_ID) \
-		--paths "/index.html" "/"
+		--paths "/index.html" "/" "/sw.js" "/manifest.webmanifest" "/workbox-*.js"
 
 # ── Legacy Skaffold deploy target (kept for reference) ──
 

@@ -13,6 +13,7 @@ export function ToastHost() {
       key={current.id}
       message={current.message}
       duration={current.duration}
+      action={current.action}
       onDone={() => toastStore.dismiss(current.id)}
     />
   );
