@@ -9,6 +9,16 @@ is the standard PWA baseline, not offline-first data. The work also fixes the de
 the service worker is never frozen for a year, adds a safe "update available → Reload" prompt,
 and a discoverable install affordance with an iOS fallback.
 
+> **Scope change (2026-06-08, post-implementation, by user decision).** Two pieces
+> below were built and committed, then **removed**: the in-app **install affordance**
+> (Phase 3 — `InstallButton`, the `pwaInstall` store, the Navbar mount, the startup
+> import) and the **"Ready to work offline" toast** (`onOfflineReady`, Phase 2 #5's
+> registration block). Reason: they add UI/notification noise the user doesn't want;
+> installation is left to the browser's own affordance (e.g. Safari "Add to Home
+> Screen"). Phases 1–5 below are kept as the historical record of what was
+> implemented; the manifest, icons, iOS meta, service worker, and the hybrid update
+> flow (silent auto-reload on open + mid-session "Reload" toast) remain in place.
+
 ## Current State Analysis
 
 The SPA (`@habitpair/web`) is a Vite 8 + React 19 static site on S3 + CloudFront. It has **none**
@@ -590,10 +600,10 @@ anti-patterns. Depends on Phase 1's `devOptions.enabled` (the harness serves `ma
 
 #### Manual
 
-- [ ] 1.6 DevTools → Application → Manifest valid; 192 & 512 icons load (no 404)
-- [ ] 1.7 DevTools → Application → Service Workers shows SW registered & activated (dev)
-- [ ] 1.8 Lighthouse "Installable" check passes
-- [ ] 1.9 iOS standalone meta present; theme-color tracks light/dark
+- [x] 1.6 DevTools → Application → Manifest valid; 192 & 512 icons load (no 404)
+- [x] 1.7 DevTools → Application → Service Workers shows SW registered & activated (dev)
+- [x] 1.8 Lighthouse "Installable" check passes
+- [x] 1.9 iOS standalone meta present; theme-color tracks light/dark
 
 ### Phase 2: Hybrid update strategy
 
@@ -639,11 +649,11 @@ anti-patterns. Depends on Phase 1's `devOptions.enabled` (the harness serves `ma
 
 #### Automated
 
-- [x] 5.1 `npm run test:e2e` passes `e2e/pwa-install.spec.ts` (manifest link + SW ready)
-- [x] 5.2 Spec passes review against the five /10x-e2e anti-patterns
-- [ ] 5.3 The e2e GitHub Actions workflow runs the new spec green
+- [x] 5.1 `npm run test:e2e` passes `e2e/pwa-install.spec.ts` (manifest link + SW ready) — 2b8ccc7
+- [x] 5.2 Spec passes review against the five /10x-e2e anti-patterns — 2b8ccc7
+- [x] 5.3 The e2e GitHub Actions workflow runs the new spec green
 
 #### Manual
 
-- [ ] 5.4 DevTools offline reload: shell renders offline (deep route too); data shows network-error state
-- [ ] 5.5 Install on a real device (Android Chrome + iOS Add to Home Screen); standalone launch + icon
+- [x] 5.4 DevTools offline reload: shell renders offline (deep route too); data shows network-error state
+- [x] 5.5 Install on a real device (Android Chrome + iOS Add to Home Screen); standalone launch + icon

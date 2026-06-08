@@ -1,10 +1,10 @@
 ---
 change_id: critical-flow-browser-e2e
 title: Critical flow browser e2e
-status: impl_reviewed
+status: archived
 created: 2026-06-07
 updated: 2026-06-08
-archived_at: null
+archived_at: 2026-06-08T15:03:40Z
 ---
 
 ## Notes
