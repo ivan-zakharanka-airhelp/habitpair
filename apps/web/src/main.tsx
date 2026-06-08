@@ -7,9 +7,6 @@ import { router } from './router';
 import { queryClient } from './shared/api/queryClient';
 import { authStore } from './shared/lib/authStore';
 import { toast } from './shared/lib/toast';
-// Side-effect import: attaches the `beforeinstallprompt` listener at startup so
-// an event firing before React mounts is not missed.
-import './shared/lib/pwaInstall';
 import './styles.css';
 
 const rootElement = document.getElementById('root');
@@ -44,9 +41,6 @@ const updateSW = registerSW({
         onClick: () => void updateSW(true),
       });
     }
-  },
-  onOfflineReady() {
-    toast('Ready to work offline.');
   },
   onRegisteredSW(_swUrl, registration) {
     if (registration) {
