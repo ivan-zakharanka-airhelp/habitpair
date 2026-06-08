@@ -599,29 +599,29 @@ anti-patterns. Depends on Phase 1's `devOptions.enabled` (the harness serves `ma
 
 #### Automated
 
-- [x] 2.1 `npm run test -w @habitpair/web` passes incl. Toast action-variant cases
-- [x] 2.2 `npm run typecheck` + `npm run lint -w @habitpair/web` pass
-- [x] 2.3 `npm run build -w @habitpair/web` succeeds (main.tsx virtual import resolves)
+- [x] 2.1 `npm run test -w @habitpair/web` passes incl. Toast action-variant cases — bf87e4d
+- [x] 2.2 `npm run typecheck` + `npm run lint -w @habitpair/web` pass — bf87e4d
+- [x] 2.3 `npm run build -w @habitpair/web` succeeds (main.tsx virtual import resolves) — bf87e4d
 
 #### Manual
 
-- [x] 2.4 Cold start: a pending update auto-activates and reloads once (no toast)
-- [x] 2.5 Active session: a deploy surfaces the action toast; Reload loads it; never self-reloads
-- [x] 2.6 First-ever load shows "ready to work offline" once and does not reload (no prior controller)
-- [x] 2.7 The update action toast persists until clicked
+- [x] 2.4 Cold start: a pending update auto-activates and reloads once (no toast) — bf87e4d
+- [x] 2.5 Active session: a deploy surfaces the action toast; Reload loads it; never self-reloads — bf87e4d
+- [x] 2.6 First-ever load shows "ready to work offline" once and does not reload (no prior controller) — bf87e4d
+- [x] 2.7 The update action toast persists until clicked — bf87e4d
 
 ### Phase 3: Install affordance
 
 #### Automated
 
-- [ ] 3.1 `typecheck`/`lint`/`test -w @habitpair/web` pass; pwaInstall store import-safe under node
-- [ ] 3.2 `npm run build -w @habitpair/web` succeeds
+- [x] 3.1 `typecheck`/`lint`/`test -w @habitpair/web` pass; pwaInstall store import-safe under node
+- [x] 3.2 `npm run build -w @habitpair/web` succeeds
 
 #### Manual
 
-- [ ] 3.3 Chrome: Install button appears when installable; click prompts; hides once installed
-- [ ] 3.4 iOS Safari: "Add to Home Screen" hint shown instead
-- [ ] 3.5 No install button when already installed / unsupported
+- [x] 3.3 Chrome: Install button appears when installable; click prompts; hides once installed
+- [x] 3.4 iOS Safari: "Add to Home Screen" hint shown instead
+- [x] 3.5 No install button when already installed / unsupported
 
 ### Phase 4: Deploy & caching
 
