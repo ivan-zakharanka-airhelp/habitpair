@@ -1,10 +1,10 @@
 ---
 change_id: pwa-app
 title: PWA app shell
-status: implemented
+status: archived
 created: 2026-06-08
 updated: 2026-06-08
-archived_at: null
+archived_at: 2026-06-08T15:02:03Z
 ---
 
 ## Notes
