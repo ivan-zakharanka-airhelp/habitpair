@@ -627,20 +627,20 @@ anti-patterns. Depends on Phase 1's `devOptions.enabled` (the harness serves `ma
 
 #### Automated
 
-- [x] 4.1 `make -n aws-deploy-web` shows excludes + no-cache upload + extended invalidation
-- [x] 4.2 `web-deploy.yaml` mirrors the Makefile edits (excludes, upload step, invalidation paths)
+- [x] 4.1 `make -n aws-deploy-web` shows excludes + no-cache upload + extended invalidation — 95d785c
+- [x] 4.2 `web-deploy.yaml` mirrors the Makefile edits (excludes, upload step, invalidation paths) — 95d785c
 
 #### Manual
 
-- [x] 4.3 `curl -I` CloudFront `/sw.js` + `/manifest.webmanifest`: 200, no-cache, correct content-types
-- [x] 4.4 A later deploy is picked up by an installed client (new-version toast appears)
+- [x] 4.3 `curl -I` CloudFront `/sw.js` + `/manifest.webmanifest`: 200, no-cache, correct content-types — 95d785c
+- [x] 4.4 A later deploy is picked up by an installed client (new-version toast appears) — 95d785c
 
 ### Phase 5: Verification
 
 #### Automated
 
-- [ ] 5.1 `npm run test:e2e` passes `e2e/pwa-install.spec.ts` (manifest link + SW ready)
-- [ ] 5.2 Spec passes review against the five /10x-e2e anti-patterns
+- [x] 5.1 `npm run test:e2e` passes `e2e/pwa-install.spec.ts` (manifest link + SW ready)
+- [x] 5.2 Spec passes review against the five /10x-e2e anti-patterns
 - [ ] 5.3 The e2e GitHub Actions workflow runs the new spec green
 
 #### Manual
