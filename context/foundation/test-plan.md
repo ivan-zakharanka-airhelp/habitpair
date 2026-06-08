@@ -107,7 +107,7 @@ The classic test base for this project. AI-native tools (if any) carry a
 | unit + integration (web) | Vitest | 4 | `*.test.ts(x)`, colocated; reference `apps/web/src/features/habits/lib/metricsFormat.test.ts` |
 | integration (HTTP + DB) | Jest + Supertest (NestJS e2e) | 29 | `apps/*/test/app.e2e-spec.ts`; CI runs `migrate:deploy` against a real Postgres 16 service container. Phase 1 extends this. |
 | API mocking (web) | none yet — see §3 Phase 2 | — | No MSW today; the e2e layer will exercise the real backend rather than mocks. |
-| e2e (browser) | Playwright — none yet, see §3 Phase 2 | n/a (net-new) | No browser e2e exists anywhere in the repo today. |
+| e2e (browser) | Playwright | 1.60 | Repo root: `playwright.config.ts` + `e2e/` (Chromium-only). Run `npm run test:e2e`; `webServer` boots/reuses `make up`. Levers: `e2e/seed.spec.ts` + `e2e/E2E_RULES.md`. See §6.3. |
 | accessibility | none automated yet | — | PRD baseline is keyboard operability + semantic landmarks; an `axe-core` pass inside the Phase-2 e2e is optional, not required. |
 | (optional) AI-native | multimodal visual review (Claude Preview / vision) — checked: 2026-06-07 | n/a | Selective: the calendar grid only. **When NOT to use:** any time a deterministic DOM/integration assertion already catches the regression. |
 
@@ -164,7 +164,16 @@ The two-user Supertest pattern over a real Postgres. Lives under `apps/<service>
 
 ### 6.3 Adding an e2e test (browser)
 
-- TBD — see §3 Phase 2.
+Playwright at the **repo root** (`playwright.config.ts` + `e2e/`), because the flows span the whole stack (SPA + both APIs + Postgres). Driven by the **`/10x-e2e`** skill — one risk per spec, looping plan → generate → review (five anti-patterns) → verify.
+
+- **Location**: `e2e/` at the repo root. `<flow>.spec.ts` per risk; the storageState bootstrap is `e2e/auth.setup.ts` (a `*.setup.ts` runs in the `setup` project, not the chromium one).
+- **Naming**: name the test after the risk it guards — `test('an invalidated session redirects to login and gates /app', …)`, not `test('test 1', …)`.
+- **Two quality levers** (read both before generating): `e2e/seed.spec.ts` (the worked exemplar — what you show is what you get) and [`e2e/E2E_RULES.md`](../../e2e/E2E_RULES.md) (the rules + harvested locator table the generator reads automatically).
+- **Locators**: `getByRole` / `getByLabel` / `getByText` only — never CSS/XPath/DOM structure. The mark control's accessible name (`Mark <name> done today` ↔ `… not done today`, `aria-pressed`) doubles as the status assertion.
+- **Waits**: never `page.waitForTimeout()`; wait for state (`toBeVisible()`, `waitForURL()`, `waitForResponse()`).
+- **Isolation**: register a **unique user per test** (`e2e-${Date.now()}-<rand>@test.local`) — a fresh user is a clean slate. **Tear down via the API**: the SPA access token is in-memory only, so read `localStorage['habitpair.refreshToken']`, exchange it at `POST /auth/refresh`, then `DELETE /habits/:id`.
+- **Auth**: the `setup` project mints `playwright/.auth/user.json` for future authed-only tests; the session/activation risk specs (#3/#4) deliberately **do not** reuse it (they manage their own users) — opt out with `test.use({ storageState: { cookies: [], origins: [] } })`.
+- **Run locally**: with `make up` running, `npm run test:e2e` (whole suite) or `npm run test:e2e -- e2e/<file>.spec.ts` / `--grep "<name>"` (single). First time only: `npx playwright install chromium`. The `webServer` boots `make up` and reuses an already-running local stack.
 
 ### 6.4 Adding a test for a new API endpoint
 

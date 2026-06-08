@@ -27,6 +27,14 @@ Thumbs.db
 # Test coverage
 coverage/
 
+# Playwright / browser E2E
+playwright/.auth/
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+.playwright-cli/
+
 # K8s secrets (real values, not the example)
 infra/k8s/secrets.yaml
 infra/k8s/secrets.local.yaml
