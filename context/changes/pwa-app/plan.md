@@ -614,26 +614,26 @@ anti-patterns. Depends on Phase 1's `devOptions.enabled` (the harness serves `ma
 
 #### Automated
 
-- [x] 3.1 `typecheck`/`lint`/`test -w @habitpair/web` pass; pwaInstall store import-safe under node
-- [x] 3.2 `npm run build -w @habitpair/web` succeeds
+- [x] 3.1 `typecheck`/`lint`/`test -w @habitpair/web` pass; pwaInstall store import-safe under node — dcdb6a5
+- [x] 3.2 `npm run build -w @habitpair/web` succeeds — dcdb6a5
 
 #### Manual
 
-- [x] 3.3 Chrome: Install button appears when installable; click prompts; hides once installed
-- [x] 3.4 iOS Safari: "Add to Home Screen" hint shown instead
-- [x] 3.5 No install button when already installed / unsupported
+- [x] 3.3 Chrome: Install button appears when installable; click prompts; hides once installed — dcdb6a5
+- [x] 3.4 iOS Safari: "Add to Home Screen" hint shown instead — dcdb6a5
+- [x] 3.5 No install button when already installed / unsupported — dcdb6a5
 
 ### Phase 4: Deploy & caching
 
 #### Automated
 
-- [ ] 4.1 `make -n aws-deploy-web` shows excludes + no-cache upload + extended invalidation
-- [ ] 4.2 `web-deploy.yaml` mirrors the Makefile edits (excludes, upload step, invalidation paths)
+- [x] 4.1 `make -n aws-deploy-web` shows excludes + no-cache upload + extended invalidation
+- [x] 4.2 `web-deploy.yaml` mirrors the Makefile edits (excludes, upload step, invalidation paths)
 
 #### Manual
 
-- [ ] 4.3 `curl -I` CloudFront `/sw.js` + `/manifest.webmanifest`: 200, no-cache, correct content-types
-- [ ] 4.4 A later deploy is picked up by an installed client (new-version toast appears)
+- [x] 4.3 `curl -I` CloudFront `/sw.js` + `/manifest.webmanifest`: 200, no-cache, correct content-types
+- [x] 4.4 A later deploy is picked up by an installed client (new-version toast appears)
 
 ### Phase 5: Verification
 
