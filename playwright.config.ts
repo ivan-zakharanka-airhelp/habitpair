@@ -13,7 +13,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  reporter: 'list',
+  // `list` for local console output; on CI also emit an `html` report so the e2e
+  // workflow can upload a browsable artifact (traces from retried runs embed in it).
+  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
@@ -29,7 +31,11 @@ export default defineConfig({
   webServer: {
     command: 'make up',
     url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
+    // Always attach to a stack that's already listening on 5173. Locally that's
+    // a developer's running `make up`; on CI the e2e workflow pre-starts the
+    // stack and health-gates all three services first, so Playwright must reuse
+    // it rather than spawn a second one and collide on 5173/3000/3001/5434.
+    reuseExistingServer: true,
     timeout: 120_000,
   },
 });
