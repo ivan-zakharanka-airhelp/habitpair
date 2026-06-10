@@ -40,17 +40,22 @@ export class TokenService {
     }
     // Delete the old token and mint its replacement atomically — a failure
     // mid-rotation must never leave the user with no valid refresh token.
+    // The deleteMany doubles as the atomic claim: concurrent rotations of the
+    // same token (second tab, network retry) race on the row, and the loser
+    // sees 0 rows — that must surface as a 401, not a P2025 (delete-by-id
+    // would throw, and Nest's default filter turns it into a 500).
     const refreshToken = randomBytes(32).toString('base64url');
-    await this.prisma.$transaction([
-      this.prisma.refreshToken.delete({ where: { id: existing.id } }),
-      this.prisma.refreshToken.create({
+    await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.refreshToken.deleteMany({ where: { id: existing.id } });
+      if (count === 0) throw new UnauthorizedException('Invalid refresh token');
+      await tx.refreshToken.create({
         data: {
           userId: existing.userId,
           tokenHash: hashToken(refreshToken),
           expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
         },
-      }),
-    ]);
+      });
+    });
     return { userId: existing.userId, refreshToken };
   }
 
