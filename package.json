@@ -12,11 +12,14 @@
     "dev:habits": "npm run start:dev -w @habitpair/habits-api",
     "dev:web": "npm run dev -w @habitpair/web",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "depcruise": "depcruise apps --config .dependency-cruiser.cjs",
+    "depcruise:graph": "depcruise apps --config .dependency-cruiser.cjs --output-type dot | dot -T svg > dependency-graph.svg"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
     "concurrently": "^9.0.0",
+    "dependency-cruiser": "^17.4.3",
     "lefthook": "^2.1.9"
   }
 }

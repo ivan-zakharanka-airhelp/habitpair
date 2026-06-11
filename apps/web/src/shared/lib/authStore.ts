@@ -1,4 +1,4 @@
-import { authApi } from '../api/apiClient';
+import { authApi, configureAuth } from '../api/apiClient';
 import type { AuthResponse, User } from '../types/auth';
 
 const REFRESH_TOKEN_KEY = 'habitpair.refreshToken';
@@ -124,3 +124,11 @@ export const authStore = {
   refresh,
   bootstrap,
 };
+
+// Hand the transport layer the accessors it needs, so apiClient never has to
+// import this module back (which would re-form the cycle). Runs when this
+// module is first evaluated — main.tsx imports it at boot.
+configureAuth({
+  getAccessToken: authStore.getAccessToken,
+  refresh: authStore.refresh,
+});
