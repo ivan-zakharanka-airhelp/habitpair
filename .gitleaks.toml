@@ -1,0 +1,8 @@
+# Extends the default gitleaks ruleset with project-specific false-positive allowlists.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Cloudflare Web Analytics beacon token — public by design, shipped in HTML to every browser"
+regexTarget = "line"
+regexes = ['''data-cf-beacon=''']
