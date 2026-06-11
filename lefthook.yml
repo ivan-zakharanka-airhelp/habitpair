@@ -49,3 +49,12 @@ pre-commit:
       env:
         AI_AGENT: "1"
       run: npx vitest related {staged_files} --run --passWithNoTests
+
+    # --- architectural boundaries (whole graph; runs from repo root, not per workspace) ---
+    # depcruise checks cross-app imports + cycles across all apps at once, so it
+    # can't be scoped to one workspace or to {staged_files}. Gated on any staged
+    # .ts/.tsx so it only runs when source changed.
+    depcruise:
+      glob: "*.{ts,tsx}"
+      exclude: '(\.gen\.ts$|(^|/)(generated|dist)/)'
+      run: npm run depcruise
