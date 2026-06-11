@@ -23,7 +23,7 @@ export default defineConfig({
         theme_color: '#2e7d5b',
         background_color: '#faf8f4',
         display: 'standalone',
-        start_url: '/',
+        start_url: '/app',
         scope: '/',
         icons: [
           { src: 'favicon-192.png', sizes: '192x192', type: 'image/png' },
