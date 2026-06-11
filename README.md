@@ -165,25 +165,9 @@ Run `make help` to see all targets. Summary:
 | `make db-studio` | Open Prisma Studio (auth-api by default — change the `-w` flag for habits) |
 | `make build` / `make lint` / `make test` | All apps |
 
-**Local K8s (k3d, optional)**
+**Local K8s (k3d)** — `make k8s-setup` / `make k8s`, described in [Mode 2](#mode-2--local-kubernetes-via-k3d-optional).
 
-| Command | Description |
-|---|---|
-| `make k8s-setup` | Create k3d cluster |
-| `make k8s` | Start Skaffold dev loop against k3d (builds both service images, port-forwards) |
-
-**AWS deploy**
-
-| Command | Description |
-|---|---|
-| `make aws-up` | Terraform apply + k3s bootstrap (creates both DBs + all K8s secrets) + sync GH Actions vars |
-| `make aws-deploy` | Build + push + roll out both backends and the frontend |
-| `make aws-deploy-auth` | auth-api only (Docker → GHCR → kubectl) |
-| `make aws-deploy-habits` | habits-api only |
-| `make aws-deploy-web` | Frontend only (Vite build → S3 sync → CloudFront invalidate) |
-| `make aws-status` | Terraform outputs + pod status |
-| `make aws-ssh` | SSH into the current EC2 instance |
-| `make aws-down` | Destroy everything (prompts for confirmation) |
+**AWS** — `make aws-up`, `make aws-deploy[-auth|-habits|-web]`, `make aws-status` / `aws-ssh` / `aws-down`, described in [Deployment to AWS](#deployment-to-aws).
 
 ## Adding a new service
 
@@ -205,10 +189,10 @@ Grouped by where they run.
 | Tool | Purpose | Why this one |
 |---|---|---|
 | **make** | Single entry point for every workflow (`make up`, `make k8s`, `make aws-up`, …) | One command set instead of "remember which npm/docker/kubectl/terraform incantation goes where" |
-| **npm workspaces** | Monorepo for `apps/*` (auth-api, habits-api, web) | Built into npm, no extra tooling; each service is still independently buildable |
-| **NestJS 11** | Backend framework for both services | Module system + DI; bundled `terminus` (health probes) module fits K8s probes cleanly |
-| **Prisma 6** | ORM + migrations, **per service** | Type-safe queries; `output` path keeps each service's generated client isolated (no hoist conflicts) |
-| **Vite + React 18** | Frontend SPA | Fast dev server, static output → trivial to host on S3 + CloudFront |
+| **npm workspaces** | Monorepo for `apps/*` (auth-api, habits-api, web) | No extra tooling on top of npm; each service is still independently buildable |
+| **NestJS 11** | Backend framework for both services | Bundled `terminus` (health probes) module fits K8s probes cleanly |
+| **Prisma 6** | ORM + migrations, **per service** | `output` path keeps each service's generated client isolated (no hoist conflicts) |
+| **Vite 8 + React 19** | Frontend SPA | Static output → trivial to host on S3 + CloudFront |
 | **kustomize** | K8s manifests with base + overlays (`local/`, `aws/`) | Same base manifests in dev and prod; only env-specific patches differ |
 
 ### Local development only
@@ -224,6 +208,6 @@ Grouped by where they run.
 | Tool | Purpose | Why this one |
 |---|---|---|
 | **Terraform** | AWS + Cloudflare infrastructure as code | One `make aws-up` provisions EC2, RDS, S3, CloudFront, ACM, DNS, IAM |
-| **k3s** | Kubernetes distribution on EC2 | Single binary (~512 MB RAM), CNCF-certified, Traefik bundled — fits a `t4g.small` |
+| **k3s** | Kubernetes distribution on EC2 | Single binary (~512 MB RAM), Traefik bundled — fits a `t4g.small` |
 | **Traefik** (bundled with k3s) | Ingress + TLS | Automatic Let's Encrypt cert issuance; path-prefix routing per service |
 | **GitHub Actions** | CI/CD, path-filtered per service | A change to `apps/auth-api/**` only triggers auth-api's pipeline — others stay green |
