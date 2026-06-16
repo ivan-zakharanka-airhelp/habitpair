@@ -2,7 +2,8 @@
 .PHONY: help setup install up web down db-up db-migrate db-migrate-habits db-studio build lint test test-e2e \
         k8s-setup k8s deploy \
         aws-up aws-bootstrap aws-down aws-status aws-ssh \
-        aws-deploy aws-deploy-auth aws-deploy-habits aws-deploy-web aws-cleanup-manual
+        aws-deploy aws-deploy-auth aws-deploy-habits aws-deploy-web aws-cleanup-manual \
+        gh-sync-secrets
 
 # ── First-time setup ──
 
@@ -127,6 +128,11 @@ aws-deploy-web:                  ## Build SPA + sync to S3 + invalidate CloudFro
 	aws cloudfront create-invalidation \
 		--distribution-id $(DIST_ID) \
 		--paths "/index.html" "/" "/sw.js" "/manifest.webmanifest" "/workbox-*.js"
+
+# ── GitHub Actions secrets ──
+
+gh-sync-secrets:                 ## Refresh rotating AWS creds (from local SSO) in GitHub Actions secrets
+	bash infra/scripts/gh-sync-aws-secrets.sh
 
 # ── Legacy Skaffold deploy target (kept for reference) ──
 
