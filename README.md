@@ -116,6 +116,8 @@ Two stages: provision infra once, then deploy app images on every release.
 
    The remaining values (`SERVER_HOST`, `SERVER_SSH_KEY`, `WEB_BUCKET_NAME`, `WEB_DISTRIBUTION_ID`) are written automatically by `make aws-up` via the `gh` CLI.
 
+   The three `AWS_*` secrets come from AWS SSO and expire ~12h. Instead of re-editing them by hand in the GitHub UI, refresh all three from your current local SSO session with **`make gh-sync-secrets`** — re-run it after each `aws sso login`. (OIDC → IAM-role federation would remove these static secrets entirely; this target is the workaround for environments where that role can't be created.)
+
 5. **Make the GHCR packages public.** After the first image push, two packages appear at `ghcr.io/<owner>/habitpair/auth-api` and `ghcr.io/<owner>/habitpair/habits-api`. Open each in GitHub → **Package settings → Change visibility → Public**. k3s on the EC2 instance pulls anonymously, so private packages cause `ImagePullBackOff`.
 
 ### Deploy app images
@@ -167,7 +169,7 @@ Run `make help` to see all targets. Summary:
 
 **Local K8s (k3d)** — `make k8s-setup` / `make k8s`, described in [Mode 2](#mode-2--local-kubernetes-via-k3d-optional).
 
-**AWS** — `make aws-up`, `make aws-deploy[-auth|-habits|-web]`, `make aws-status` / `aws-ssh` / `aws-down`, described in [Deployment to AWS](#deployment-to-aws).
+**AWS** — `make aws-up`, `make aws-deploy[-auth|-habits|-web]`, `make gh-sync-secrets` (refresh rotating AWS creds in GitHub secrets), `make aws-status` / `aws-ssh` / `aws-down`, described in [Deployment to AWS](#deployment-to-aws).
 
 ## Adding a new service
 
