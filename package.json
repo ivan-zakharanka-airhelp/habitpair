@@ -18,7 +18,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
-    "concurrently": "^9.0.0",
+    "concurrently": "^9.2.3",
     "dependency-cruiser": "^17.4.3",
     "lefthook": "^2.1.9"
   }
