@@ -1,0 +1,60 @@
+name: ai / review
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Comment-only, non-blocking review. Needs write on PRs to post the comment;
+# read on contents for the checkout + diff. PR_TITLE/PR_BODY are passed through
+# `env:` (not interpolated into a run script) so untrusted PR text can't inject shell.
+permissions:
+  pull-requests: write
+  contents: read
+
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # full history so the merge-base diff against the PR base resolves
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Triple-dot diff = changes on this branch since it forked from the base.
+      # base_ref is empty on manual dispatch → fall back to main (an empty diff
+      # there is handled gracefully by the reviewer's empty-diff guard).
+      - name: Compute PR diff
+        run: |
+          BASE="${{ github.base_ref || 'main' }}"
+          git diff "origin/$BASE"...HEAD \
+            -- . ':(exclude)package-lock.json' ':(exclude)**/generated/**' \
+                 ':(exclude)apps/web/src/routeTree.gen.ts' > "$GITHUB_WORKSPACE/pr.diff"
+          echo "diff bytes: $(wc -c < "$GITHUB_WORKSPACE/pr.diff")"
+
+      # Absolute DIFF_FILE/COMMENT_FILE because `npm run -w` runs with cwd set to
+      # the package dir, but the diff is written at the repo root.
+      - name: Run reviewer
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          DIFF_FILE: ${{ github.workspace }}/pr.diff
+          COMMENT_FILE: ${{ github.workspace }}/comment.md
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: npm run review -w @habitpair/code-reviewer
+
+      - name: Post review comment
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment ${{ github.event.pull_request.number }} --body-file "$GITHUB_WORKSPACE/comment.md"
