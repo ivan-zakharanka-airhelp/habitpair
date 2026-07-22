@@ -75,6 +75,15 @@ describe('computePatterns — RATE mode (daily)', () => {
     expect(q?.year).toEqual([{ year: 2026, done: 1, total: 1, partial: true }]);
   });
 
+  it('resolves partial flags conservatively when the first mark is today (inverted span)', () => {
+    // Anchor = today → evaluated span [06-16, 06-15] is inverted, so no
+    // calendar instance can be fully covered; buckets with data stay partial.
+    const p = computePatterns(input(DAILY, 1, '2026-06-16', [mark('2026-06-16')]));
+    expect(p?.weekday[TUE]).toEqual({ done: 1, total: 1, partial: false });
+    expect(p?.month[5]).toEqual({ done: 1, total: 1, partial: true });
+    expect(p?.year).toEqual([{ year: 2026, done: 1, total: 1, partial: true }]);
+  });
+
   it('counts an explicit MISSED as a miss', () => {
     const p = computePatterns(
       input(DAILY, 1, '2026-06-15', [

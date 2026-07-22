@@ -137,7 +137,9 @@ export function HabitDetail({ habitId }: { habitId: string }) {
 
       <HabitCalendar data={data} onCycle={onCycle} />
 
-      <HabitPatterns metrics={metricsQuery.data} firstMarkDate={firstMarkDate} />
+      {metricsQuery.data ? (
+        <HabitPatterns metrics={metricsQuery.data} firstMarkDate={firstMarkDate} />
+      ) : null}
 
       {metricsQuery.data ? <BestStreaks metrics={metricsQuery.data} /> : null}
 

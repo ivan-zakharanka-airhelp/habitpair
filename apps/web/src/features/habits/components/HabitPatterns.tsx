@@ -216,11 +216,11 @@ export function HabitPatterns({
   metrics,
   firstMarkDate,
 }: {
-  metrics: HabitMetricsResponse | undefined;
+  metrics: HabitMetricsResponse;
   firstMarkDate: string | null;
 }) {
   const [view, setView] = useState<PatView>(loadView);
-  const patterns = metrics?.patterns;
+  const patterns = metrics.patterns;
   if (firstMarkDate == null || !patterns) return null;
 
   const setV = (v: PatView) => {

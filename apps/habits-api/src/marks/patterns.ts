@@ -64,6 +64,8 @@ export function computePatterns(input: MetricsInput): HabitPatterns | null {
       if (m.status !== MarkStatus.COMPLETED) continue;
       add(m.date, true);
     }
+    // Invariant: marks is non-empty here — anchor is the earliest mark date,
+    // so the !anchor early return above already yielded null.
     spanFirst = formatDateOnly(marks[0].date);
     spanLast = formatDateOnly(marks[marks.length - 1].date);
   }
