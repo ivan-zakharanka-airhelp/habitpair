@@ -262,30 +262,30 @@ None — no schema, API, or stored-data changes. The old calendar query key shap
 
 #### Automated
 
-- [x] 1.1 Frontend tests pass: `npm run test -w @habitpair/web`
-- [x] 1.2 Frontend typecheck passes: `npm run typecheck -w @habitpair/web`
-- [x] 1.3 Frontend lint passes: `npm run lint -w @habitpair/web`
+- [x] 1.1 Frontend tests pass: `npm run test -w @habitpair/web` — 0b9c0eb
+- [x] 1.2 Frontend typecheck passes: `npm run typecheck -w @habitpair/web` — 0b9c0eb
+- [x] 1.3 Frontend lint passes: `npm run lint -w @habitpair/web` — 0b9c0eb
 
 #### Manual
 
-- [x] 1.4 Detail page renders identically to before (no visible behavior change)
-- [x] 1.5 Cycling a mark in any visible month still updates instantly and settles correctly
+- [x] 1.4 Detail page renders identically to before (no visible behavior change) — 0b9c0eb
+- [x] 1.5 Cycling a mark in any visible month still updates instantly and settles correctly — 0b9c0eb
 
 ### Phase 2: Full-History Surfaces
 
 #### Automated
 
-- [ ] 2.1 Frontend tests pass: `npm run test -w @habitpair/web`
-- [ ] 2.2 Frontend typecheck passes: `npm run typecheck -w @habitpair/web`
-- [ ] 2.3 Frontend lint passes: `npm run lint -w @habitpair/web`
+- [x] 2.1 Frontend tests pass: `npm run test -w @habitpair/web`
+- [x] 2.2 Frontend typecheck passes: `npm run typecheck -w @habitpair/web`
+- [x] 2.3 Frontend lint passes: `npm run lint -w @habitpair/web`
 
 #### Manual
 
-- [ ] 2.4 Sheet auto-loads past 24 months to the first mark (seeded 3-year data)
-- [ ] 2.5 "Load earlier months" appears only past the anchor and appends older months
-- [ ] 2.6 Main nav steps past 24 months without visible stalls (prefetch)
-- [ ] 2.7 Cycling a 3-year-old mark works optimistically and persists
-- [ ] 2.8 No regressions in the ≤24-month experience
+- [x] 2.4 Sheet auto-loads past 24 months to the first mark (seeded 3-year data)
+- [x] 2.5 "Load earlier months" appears only past the anchor and appends older months
+- [x] 2.6 Main nav steps past 24 months without visible stalls (prefetch)
+- [x] 2.7 Cycling a 3-year-old mark works optimistically and persists
+- [x] 2.8 No regressions in the ≤24-month experience
 
 ### Phase 3: Statistics Regression Lock
 
