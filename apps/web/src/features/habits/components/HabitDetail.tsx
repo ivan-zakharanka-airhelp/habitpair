@@ -13,7 +13,7 @@ import { useDeleteHabit } from '../hooks/useDeleteHabit';
 import { useHabitCalendar } from '../hooks/useHabitCalendar';
 import { useHabitMetrics } from '../hooks/useHabitMetrics';
 import { useUpdateHabit } from '../hooks/useUpdateHabit';
-import { calendarQueryRange } from '../lib/calendarRange';
+import { mergeCalendarPages } from '../api/calendar';
 import { todayLocalISO } from '../lib/today';
 import type { Modality } from '../types';
 import { BestStreaks } from './BestStreaks';
@@ -50,13 +50,12 @@ function DetailSkeleton() {
 
 export function HabitDetail({ habitId }: { habitId: string }) {
   const today = todayLocalISO();
-  // Fetch a fixed 24-month window once; the calendar slides its display window
-  // over it client-side, so month navigation never refetches. The anchor
-  // (firstMarkDate) comes back with the data and only shapes the display.
-  const range = calendarQueryRange();
-  const query = useHabitCalendar(habitId, range.fromMonth, range.toMonth, today);
-  // Bound to the same window so optimistic writes + invalidation target this key.
-  const cycleMark = useCycleMark(habitId, range.fromMonth, range.toMonth, today);
+  // Paged (infinite) fetch: page 0 is the last 24 months, older pages load on
+  // demand as navigation/the history sheet reach the loaded edge. The anchor
+  // (firstMarkDate) comes back on page 0 and shapes the display.
+  const query = useHabitCalendar(habitId, today);
+  // Same key so optimistic writes + invalidation target this query.
+  const cycleMark = useCycleMark(habitId, today);
   // One metrics query feeds both the strip and the best-streaks leaderboard.
   const metricsQuery = useHabitMetrics(habitId, today);
 
@@ -79,7 +78,7 @@ export function HabitDetail({ habitId }: { habitId: string }) {
     );
   }
 
-  const data = query.data;
+  const data = mergeCalendarPages(query.data.pages);
   const { habit, firstMarkDate } = data;
   const pos = habit.modality === 'POSITIVE';
 
@@ -135,7 +134,13 @@ export function HabitDetail({ habitId }: { habitId: string }) {
         <HabitMetrics metrics={metricsQuery.data} firstMarkDate={firstMarkDate} />
       ) : null}
 
-      <HabitCalendar data={data} onCycle={onCycle} />
+      <HabitCalendar
+        data={data}
+        onCycle={onCycle}
+        fetchNextPage={() => void query.fetchNextPage()}
+        isFetchingNextPage={query.isFetchingNextPage}
+        loadedPages={query.data.pages.length}
+      />
 
       {metricsQuery.data ? (
         <HabitPatterns metrics={metricsQuery.data} firstMarkDate={firstMarkDate} />

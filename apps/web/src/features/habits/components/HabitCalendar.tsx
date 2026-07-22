@@ -42,6 +42,12 @@ function buildFailSet(data: HabitCalendarResponse): Set<string> {
 interface HabitCalendarProps {
   data: HabitCalendarResponse;
   onCycle: (iso: string) => void;
+  // Paging controls from the parent's infinite query. Wired here in phase 1 but
+  // not yet consumed — the floor still comes from ALL_CAP_MONTHS; phase 2 uses
+  // these to page beyond 24 months.
+  fetchNextPage: () => void;
+  isFetchingNextPage: boolean;
+  loadedPages: number;
 }
 
 // The detail centerpiece: a 1–3 month sliding window over the fetched marks,
