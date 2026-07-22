@@ -13,7 +13,8 @@ import {
   monthSpan,
   parseDateOnly,
 } from '../marks/period';
-import { computeMetrics } from '../marks/metrics';
+import { computeMetrics, type MetricsInput } from '../marks/metrics';
+import { computePatterns } from '../marks/patterns';
 
 @Injectable()
 export class HabitsService {
@@ -182,13 +183,16 @@ export class HabitsService {
       orderBy: { date: 'asc' },
     });
 
-    return computeMetrics({
+    const metricsInput: MetricsInput = {
       frequency: habit.frequency,
       target: habit.targetCount ?? 1,
       anchor: marks[0]?.date ?? null,
       today: todayDate,
       marks,
-    });
+    };
+
+    // patterns rides the same input and Prisma read — zero new I/O.
+    return { ...computeMetrics(metricsInput), patterns: computePatterns(metricsInput) };
   }
 
   // Edits only name/modality. frequency/targetCount stay immutable — the DTO
