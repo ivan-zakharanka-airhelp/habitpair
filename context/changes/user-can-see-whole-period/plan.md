@@ -291,6 +291,6 @@ None — no schema, API, or stored-data changes. The old calendar query key shap
 
 #### Automated
 
-- [x] 3.1 Backend tests pass: `npm test -w @habitpair/habits-api`
-- [x] 3.2 Backend build/typecheck passes: `make build`
-- [x] 3.3 Backend lint passes: `make lint`
+- [x] 3.1 Backend tests pass: `npm test -w @habitpair/habits-api` — 0f6d9b2
+- [x] 3.2 Backend build/typecheck passes: `make build` — 0f6d9b2
+- [x] 3.3 Backend lint passes: `make lint` — 0f6d9b2

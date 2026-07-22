@@ -1,7 +1,7 @@
 ---
 change_id: user-can-see-whole-period
 title: Show users their full habit history, not just the last 2 years
-status: implementing
+status: implemented
 created: 2026-07-22
 updated: 2026-07-22
 archived_at: null
