@@ -334,6 +334,39 @@ describe('HabitsService', () => {
     });
   });
 
+  describe('getMetrics — unbounded whole-history read', () => {
+    it('reads marks with no date filter (whole history, not a windowed range)', async () => {
+      prismaMock.habit.findFirst.mockResolvedValue(habit({ frequency: HabitFrequency.DAILY }));
+      prismaMock.mark.findMany.mockResolvedValue([]);
+
+      await service.getMetrics('u1', 'h1', '2026-06-15');
+
+      // The unbounded-read invariant (habits.service.ts): metrics must span all
+      // marks, so the where clause carries no date constraint that would clip
+      // history to the calendar window.
+      const args = prismaMock.mark.findMany.mock.calls[0][0];
+      expect(args.where).toEqual({ habitId: 'h1' });
+      expect(args.where.date).toBeUndefined();
+    });
+
+    it('counts marks far older than the 24-month calendar window', async () => {
+      prismaMock.habit.findFirst.mockResolvedValue(habit({ frequency: HabitFrequency.DAILY }));
+      prismaMock.mark.findMany.mockResolvedValue([
+        { date: parseDateOnly('2023-02-01'), status: MarkStatus.COMPLETED },
+        { date: parseDateOnly('2023-02-02'), status: MarkStatus.COMPLETED },
+        { date: parseDateOnly('2023-02-03'), status: MarkStatus.COMPLETED },
+      ]);
+
+      const metrics = await service.getMetrics('u1', 'h1', '2026-06-15');
+
+      expect(metrics.bestStreaks).toContainEqual({
+        start: '2023-02-01',
+        end: '2023-02-03',
+        length: 3,
+      });
+    });
+  });
+
   describe('update', () => {
     it('applies name and modality for an owned habit, scoped by id+userId', async () => {
       prismaMock.habit.findFirst.mockResolvedValue({ id: 'h1' });

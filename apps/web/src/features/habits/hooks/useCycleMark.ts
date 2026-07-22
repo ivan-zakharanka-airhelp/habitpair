@@ -1,5 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { deleteMark, putMark } from '../api/habits';
+import { pageIndexForMonth } from '../lib/calendarRange';
 import { todayLocalISO } from '../lib/today';
 import type { HabitCalendarResponse, MarkStatus } from '../types';
 
@@ -24,9 +25,9 @@ interface CycleVars {
 // tint reconciles on the settle refetch. onSettled also invalidates the list key
 // (a retroactive change can shift the current-period progress shown on the list)
 // and the metrics key (it can shift the streak/consistency/completion numbers).
-export function useCycleMark(habitId: string, from: string, to: string, today: string) {
+export function useCycleMark(habitId: string, today: string) {
   const queryClient = useQueryClient();
-  const calendarKey = ['habits', habitId, 'calendar', from, to, today] as const;
+  const calendarKey = ['habits', habitId, 'calendar', today] as const;
   const listKey = ['habits', todayLocalISO()] as const;
   // Prefix match across the `today` segment of the metrics key.
   const metricsKey = ['habits', habitId, 'metrics'] as const;
@@ -38,14 +39,22 @@ export function useCycleMark(habitId: string, from: string, to: string, today: s
     },
     onMutate: async ({ date, storedStatus }: CycleVars) => {
       await queryClient.cancelQueries({ queryKey: calendarKey });
-      const previous = queryClient.getQueryData<HabitCalendarResponse>(calendarKey);
+      const previous = queryClient.getQueryData<InfiniteData<HabitCalendarResponse>>(calendarKey);
       const next = nextStatus(storedStatus);
-      queryClient.setQueryData<HabitCalendarResponse>(calendarKey, (old) => {
-        if (!old) return old;
-        const marks = { ...old.marks };
-        if (next === null) delete marks[date];
-        else marks[date] = next;
-        return { ...old, marks };
+      // Patch only the page whose window contains the date: each page's `marks`
+      // record holds dates inside its own span, and the merged view folds pages
+      // oldest→newest, so writing into the wrong page could be masked or doubled.
+      const pageIndex = pageIndexForMonth(date.slice(0, 7));
+      queryClient.setQueryData<InfiniteData<HabitCalendarResponse>>(calendarKey, (old) => {
+        if (!old || pageIndex < 0 || pageIndex >= old.pages.length) return old;
+        const pages = old.pages.map((page, i) => {
+          if (i !== pageIndex) return page;
+          const marks = { ...page.marks };
+          if (next === null) delete marks[date];
+          else marks[date] = next;
+          return { ...page, marks };
+        });
+        return { ...old, pages };
       });
       return { previous };
     },
