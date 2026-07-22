@@ -240,14 +240,14 @@ None. The response change is additive; no schema, DTO, or route changes.
 
 #### Automated
 
-- [x] 2.1 Frontend tests pass: `npm run test -w @habitpair/web`
-- [x] 2.2 Frontend lint passes: `npm run lint -w @habitpair/web`
-- [x] 2.3 Frontend typecheck passes: `npm run typecheck -w @habitpair/web`
+- [x] 2.1 Frontend tests pass: `npm run test -w @habitpair/web` — ba62fdb
+- [x] 2.2 Frontend lint passes: `npm run lint -w @habitpair/web` — ba62fdb
+- [x] 2.3 Frontend typecheck passes: `npm run typecheck -w @habitpair/web` — ba62fdb
 
 #### Manual
 
-- [x] 2.4 Patterns section renders per design between calendar and Best Streaks
-- [x] 2.5 View switch works and persists across reload
-- [x] 2.6 Daily rates include computed misses; weekly habit shows session counts
-- [x] 2.7 Section absent for a habit with no marks
-- [x] 2.8 Dark mode and narrow viewport render correctly
+- [x] 2.4 Patterns section renders per design between calendar and Best Streaks — ba62fdb
+- [x] 2.5 View switch works and persists across reload — ba62fdb
+- [x] 2.6 Daily rates include computed misses; weekly habit shows session counts — ba62fdb
+- [x] 2.7 Section absent for a habit with no marks — ba62fdb
+- [x] 2.8 Dark mode and narrow viewport render correctly — ba62fdb
