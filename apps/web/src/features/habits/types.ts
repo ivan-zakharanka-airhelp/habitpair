@@ -77,6 +77,21 @@ export interface BestStreak {
   length: number; // consecutive success periods, in the native unit
 }
 
+export interface PatternBucket {
+  done: number;
+  total: number;
+  partial: boolean;
+}
+
+// Mirrors habits-api computePatterns (marks/patterns.ts). Bucket facts only —
+// normalization, tones, and insight copy are derived client-side.
+export interface HabitPatterns {
+  mode: 'RATE' | 'COUNT'; // RATE for DAILY, COUNT for WEEKLY/MONTHLY
+  weekday: PatternBucket[]; // length 7, Monday-first; partial always false
+  month: PatternBucket[]; // length 12, January-first
+  year: Array<{ year: number } & PatternBucket>; // ascending, only years with history
+}
+
 // Mirrors habits-api computeMetrics (marks/metrics.ts). All four metrics are
 // computed on read from the habit's stored marks; the SPA only formats them.
 export interface HabitMetricsResponse {
@@ -89,4 +104,5 @@ export interface HabitMetricsResponse {
   rollingConsistency: MetricFraction;
   recentCompletion: MetricFraction & { phase: 'RATIO' | 'PERCENT' };
   bestStreaks: BestStreak[]; // top 10, longest-first (ties broken by recency)
+  patterns: HabitPatterns | null; // null when the habit has no marks yet
 }

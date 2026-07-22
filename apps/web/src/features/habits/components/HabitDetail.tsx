@@ -20,6 +20,7 @@ import { BestStreaks } from './BestStreaks';
 import { HabitActionsMenu } from './HabitActionsMenu';
 import { HabitCalendar } from './HabitCalendar';
 import { HabitMetrics } from './HabitMetrics';
+import { HabitPatterns } from './HabitPatterns';
 
 function freqText(frequency: string, targetCount: number | null): string {
   if (frequency === 'DAILY') return 'Daily';
@@ -135,6 +136,10 @@ export function HabitDetail({ habitId }: { habitId: string }) {
       ) : null}
 
       <HabitCalendar data={data} onCycle={onCycle} />
+
+      {metricsQuery.data ? (
+        <HabitPatterns metrics={metricsQuery.data} firstMarkDate={firstMarkDate} />
+      ) : null}
 
       {metricsQuery.data ? <BestStreaks metrics={metricsQuery.data} /> : null}
 

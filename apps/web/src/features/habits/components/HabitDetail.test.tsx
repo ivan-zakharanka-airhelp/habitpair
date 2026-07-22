@@ -49,6 +49,7 @@ function metricsData(): HabitMetricsResponse {
     rollingConsistency: { numerator: 0, denominator: 0, percent: null },
     recentCompletion: { numerator: 0, denominator: 0, percent: null, phase: 'RATIO' },
     bestStreaks: [],
+    patterns: null,
   };
 }
 
