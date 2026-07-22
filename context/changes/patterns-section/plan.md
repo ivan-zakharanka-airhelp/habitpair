@@ -228,26 +228,26 @@ None. The response change is additive; no schema, DTO, or route changes.
 
 #### Automated
 
-- [x] 1.1 Backend tests pass: `npm test -w @habitpair/habits-api`
-- [x] 1.2 Lint passes: `make lint`
-- [x] 1.3 Backends build (typecheck): `make build`
+- [x] 1.1 Backend tests pass: `npm test -w @habitpair/habits-api` — c8b8d65
+- [x] 1.2 Lint passes: `make lint` — c8b8d65
+- [x] 1.3 Backends build (typecheck): `make build` — c8b8d65
 
 #### Manual
 
-- [x] 1.4 Metrics endpoint returns plausible `patterns` buckets for a seeded daily habit
+- [x] 1.4 Metrics endpoint returns plausible `patterns` buckets for a seeded daily habit — c8b8d65
 
 ### Phase 2: Frontend — HabitPatterns Component
 
 #### Automated
 
-- [ ] 2.1 Frontend tests pass: `npm run test -w @habitpair/web`
-- [ ] 2.2 Frontend lint passes: `npm run lint -w @habitpair/web`
-- [ ] 2.3 Frontend typecheck passes: `npm run typecheck -w @habitpair/web`
+- [x] 2.1 Frontend tests pass: `npm run test -w @habitpair/web`
+- [x] 2.2 Frontend lint passes: `npm run lint -w @habitpair/web`
+- [x] 2.3 Frontend typecheck passes: `npm run typecheck -w @habitpair/web`
 
 #### Manual
 
-- [ ] 2.4 Patterns section renders per design between calendar and Best Streaks
-- [ ] 2.5 View switch works and persists across reload
-- [ ] 2.6 Daily rates include computed misses; weekly habit shows session counts
-- [ ] 2.7 Section absent for a habit with no marks
-- [ ] 2.8 Dark mode and narrow viewport render correctly
+- [x] 2.4 Patterns section renders per design between calendar and Best Streaks
+- [x] 2.5 View switch works and persists across reload
+- [x] 2.6 Daily rates include computed misses; weekly habit shows session counts
+- [x] 2.7 Section absent for a habit with no marks
+- [x] 2.8 Dark mode and narrow viewport render correctly
