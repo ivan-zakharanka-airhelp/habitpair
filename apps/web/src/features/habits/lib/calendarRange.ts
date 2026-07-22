@@ -63,5 +63,10 @@ export function calendarQueryRange(): CalendarRange {
 // Inverse of calendarPageRange: which page's window contains this month. Used by
 // the optimistic mutation to patch only the page that holds the edited date.
 export function pageIndexForMonth(month: string): number {
-  return Math.floor((monthIndex(currentMonth()) - monthIndex(month)) / ALL_CAP_MONTHS);
+  const offset = monthIndex(currentMonth()) - monthIndex(month);
+  // Page 0 ends at the current month, so a future month belongs to no page.
+  // Return a sentinel the caller reads as "not loaded" rather than a bogus
+  // negative index that varies with how far ahead the month is.
+  if (offset < 0) return -1;
+  return Math.floor(offset / ALL_CAP_MONTHS);
 }

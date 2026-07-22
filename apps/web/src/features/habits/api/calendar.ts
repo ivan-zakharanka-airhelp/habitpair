@@ -39,6 +39,8 @@ export function habitCalendarInfiniteOptions(habitId: string, today: string) {
 // folding in HabitCalendar is idempotent).
 export function mergeCalendarPages(pages: HabitCalendarResponse[]): HabitCalendarResponse {
   const [first] = pages;
+  // Callers only merge a settled infinite query, which always holds page 0.
+  if (!first) throw new Error('mergeCalendarPages called with no pages');
   const marks: Record<string, MarkStatus> = {};
   const computedMissedDates: string[] = [];
   const failedPeriods: FailedPeriod[] = [];

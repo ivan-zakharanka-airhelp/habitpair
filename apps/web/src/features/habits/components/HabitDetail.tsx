@@ -137,7 +137,7 @@ export function HabitDetail({ habitId }: { habitId: string }) {
       <HabitCalendar
         data={data}
         onCycle={onCycle}
-        fetchNextPage={() => void query.fetchNextPage()}
+        fetchNextPage={query.fetchNextPage}
         isFetchingNextPage={query.isFetchingNextPage}
         loadedPages={query.data.pages.length}
       />
