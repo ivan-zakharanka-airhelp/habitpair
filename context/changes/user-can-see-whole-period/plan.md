@@ -275,22 +275,22 @@ None — no schema, API, or stored-data changes. The old calendar query key shap
 
 #### Automated
 
-- [x] 2.1 Frontend tests pass: `npm run test -w @habitpair/web`
-- [x] 2.2 Frontend typecheck passes: `npm run typecheck -w @habitpair/web`
-- [x] 2.3 Frontend lint passes: `npm run lint -w @habitpair/web`
+- [x] 2.1 Frontend tests pass: `npm run test -w @habitpair/web` — b99e740
+- [x] 2.2 Frontend typecheck passes: `npm run typecheck -w @habitpair/web` — b99e740
+- [x] 2.3 Frontend lint passes: `npm run lint -w @habitpair/web` — b99e740
 
 #### Manual
 
-- [x] 2.4 Sheet auto-loads past 24 months to the first mark (seeded 3-year data)
-- [x] 2.5 "Load earlier months" appears only past the anchor and appends older months
-- [x] 2.6 Main nav steps past 24 months without visible stalls (prefetch)
-- [x] 2.7 Cycling a 3-year-old mark works optimistically and persists
-- [x] 2.8 No regressions in the ≤24-month experience
+- [x] 2.4 Sheet auto-loads past 24 months to the first mark (seeded 3-year data) — b99e740
+- [x] 2.5 "Load earlier months" appears only past the anchor and appends older months — b99e740
+- [x] 2.6 Main nav steps past 24 months without visible stalls (prefetch) — b99e740
+- [x] 2.7 Cycling a 3-year-old mark works optimistically and persists — b99e740
+- [x] 2.8 No regressions in the ≤24-month experience — b99e740
 
 ### Phase 3: Statistics Regression Lock
 
 #### Automated
 
-- [ ] 3.1 Backend tests pass: `npm test -w @habitpair/habits-api`
-- [ ] 3.2 Backend build/typecheck passes: `make build`
-- [ ] 3.3 Backend lint passes: `make lint`
+- [x] 3.1 Backend tests pass: `npm test -w @habitpair/habits-api`
+- [x] 3.2 Backend build/typecheck passes: `make build`
+- [x] 3.3 Backend lint passes: `make lint`

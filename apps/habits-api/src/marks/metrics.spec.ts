@@ -262,6 +262,56 @@ describe('recentCompletion', () => {
   });
 });
 
+describe('whole-history (beyond the 24-month calendar window)', () => {
+  // The SPA fetches/renders the calendar in 24-month pages, but the metrics
+  // engine has no window — it classifies every period from the anchor to today.
+  // These specs fail if a date filter is ever reintroduced that would drop marks
+  // older than the calendar window.
+
+  it('counts a run ~40 months old in bestStreaks', () => {
+    // Anchor Feb 2023, today Jun 2026 → the run is ~40 months back, far beyond
+    // the 24-month calendar window, yet must still appear at full length.
+    const m = computeMetrics(
+      input(DAILY, 1, '2026-06-15', [mark('2023-02-01'), mark('2023-02-02'), mark('2023-02-03')]),
+    );
+    expect(m.bestStreaks).toEqual([{ start: '2023-02-01', end: '2023-02-03', length: 3 }]);
+    expect(m.currentStreak).toBe(0); // the old run is not the active streak
+  });
+
+  it('spans the all-time recentCompletion denominator across the whole history', () => {
+    // Monthly, anchor Feb 2023, today Jun 2026 → 41 periods (Feb 2023..Jun 2026),
+    // June open → 40 closed. Only the two oldest months are completed, so an
+    // all-time (unbounded) read is the only way to reach denominator 40 with the
+    // two old completions still counted.
+    const m = computeMetrics(
+      input(MONTHLY, 1, '2026-06-15', [mark('2023-02-10'), mark('2023-03-10')]),
+    );
+    expect(m.recentCompletion).toEqual({
+      numerator: 2,
+      denominator: 40,
+      percent: 5,
+      phase: 'PERCENT',
+    });
+    expect(m.bestStreaks).toEqual([{ start: '2023-02-01', end: '2023-03-31', length: 2 }]);
+  });
+
+  it('does not truncate a streak that straddles the 24-month boundary', () => {
+    // 24 months before today (Jun 2026) lands mid-June 2024. A daily run from
+    // Jun 13–17 2024 straddles that cutoff and must read length 5, not the
+    // portion that would fall inside a 24-month window.
+    const m = computeMetrics(
+      input(DAILY, 1, '2026-06-15', [
+        mark('2024-06-13'),
+        mark('2024-06-14'),
+        mark('2024-06-15'),
+        mark('2024-06-16'),
+        mark('2024-06-17'),
+      ]),
+    );
+    expect(m.bestStreaks).toEqual([{ start: '2024-06-13', end: '2024-06-17', length: 5 }]);
+  });
+});
+
 describe('bestStreaks', () => {
   it('enumerates every run and displays them longest-first (ties broken by recency)', () => {
     // Runs: Jun 1–3 (3), Jun 5–9 (5), Jun 11–12 (2); today far ahead, all closed.
